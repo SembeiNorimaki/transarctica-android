@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://btugnyquyw30q"]
+
+[ext_resource type="Script" uid="uid://cufinpkot2uh1" path="res://scripts/trains/horizontal_train.gd" id="1_uttmi"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_uttmi"]
+size = Vector2(50, 20)
+
+[node name="HorizontalTrain" type="Node2D" unique_id=1459319408]
+script = ExtResource("1_uttmi")
+
+[node name="WagonsContainer" type="Node2D" parent="." unique_id=977516385]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=2020843534]
+texture = SubResource("PlaceholderTexture2D_uttmi")

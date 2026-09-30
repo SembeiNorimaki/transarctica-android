@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://b4u8vieuc48la"]
+
+[ext_resource type="SpriteFrames" uid="uid://blq0dn775s1fu" path="res://assets/tilesets/unit.tres" id="1_1voyx"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_swqdm"]
+radius = 8.0
+
+[node name="Soldier" type="CharacterBody2D" unique_id=827601383]
+scale = Vector2(2, 2)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=370511880]
+shape = SubResource("CircleShape2D_swqdm")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1591190798]
+position = Vector2(0, -8)
+sprite_frames = ExtResource("1_1voyx")
+animation = &"E"
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1942748695]
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="Area2D" unique_id=453261146]
+shape = SubResource("CircleShape2D_swqdm")

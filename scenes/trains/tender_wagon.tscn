@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://dfrafcscjrok4"]
+
+[ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/trains/generic_wagon.tscn" id="1_kqfmt"]
+[ext_resource type="Texture2D" uid="uid://catt23mfg5wjx" path="res://assets/wagons/tender_tr.png" id="2_f0ld1"]
+
+[node name="TenderWagon" unique_id=420343912 instance=ExtResource("1_kqfmt")]
+
+[node name="Sprite2D" parent="." index="0" unique_id=1095718610]
+texture = ExtResource("2_f0ld1")

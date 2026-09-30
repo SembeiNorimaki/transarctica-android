@@ -1,0 +1,56 @@
+[gd_scene format=3 uid="uid://cdya4gou0iadb"]
+
+[ext_resource type="Script" uid="uid://dh6sipghmg6sp" path="res://scripts/trade_resources/trade_resource.gd" id="1_8cwai"]
+[ext_resource type="Texture2D" uid="uid://d03nb7xwi56to" path="res://assets/resources/resources_120x46.png" id="1_g5iax"]
+[ext_resource type="Texture2D" uid="uid://bpggnd2x2g56i" path="res://assets/resources/button_buy1.png" id="3_gyyvh"]
+[ext_resource type="Texture2D" uid="uid://7enncj0ianpw" path="res://assets/resources/button_sell1.png" id="4_1ui54"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g5iax"]
+size = Vector2(98, 35)
+
+[node name="TradeResource" type="Node2D" unique_id=806818944]
+script = ExtResource("1_8cwai")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1729581738]
+texture = ExtResource("1_g5iax")
+hframes = 3
+vframes = 7
+
+[node name="Area2D" type="Area2D" parent="." unique_id=294603995]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=1905228643]
+position = Vector2(0, -0.5)
+shape = SubResource("RectangleShape2D_g5iax")
+
+[node name="QtyLabel" type="Label" parent="." unique_id=518141290]
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 60.0
+offset_bottom = 39.0
+text = "Qty"
+
+[node name="PriceLabel" type="Label" parent="." unique_id=1908563681]
+offset_left = -50.0
+offset_top = 16.0
+offset_right = -10.0
+offset_bottom = 39.0
+text = "Price"
+
+[node name="BuyButton" type="Button" parent="." unique_id=1239647215]
+offset_left = 57.0
+offset_top = -96.0
+offset_right = 245.0
+offset_bottom = -16.0
+icon = ExtResource("3_gyyvh")
+
+[node name="SellButton" type="Button" parent="." unique_id=702466737]
+visible = false
+offset_left = 57.0
+offset_top = -96.0
+offset_right = 245.0
+offset_bottom = -16.0
+icon = ExtResource("4_1ui54")
+
+[connection signal="input_event" from="Area2D" to="." method="_on_area_2d_input_event"]
+[connection signal="pressed" from="BuyButton" to="." method="_on_buy_button_pressed"]
+[connection signal="pressed" from="SellButton" to="." method="_on_sell_button_pressed"]

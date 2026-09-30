@@ -1,0 +1,29 @@
+{
+    "u0": {
+        "id": "u0",
+        "unit_type": "liquidator",
+        "hp": 100,
+        "max_hp": 100,
+        "experience": 0,
+        "weapon_type": "AK47",
+        "owner_id": "Player"
+    },
+    "u1": {
+        "id": "u1",
+        "unit_type": "pioneer",
+        "hp": 80,
+        "max_hp": 100,
+        "experience": 45,
+        "weapon_type": "SniperRifle",
+        "owner_id": "Player"
+    },
+    "u2": {
+        "id": "u2",
+        "unit_type": "redops",
+        "hp": 80,
+        "max_hp": 100,
+        "experience": 45,
+        "weapon_type": "AK47",
+        "owner_id": "Player"
+    }
+}

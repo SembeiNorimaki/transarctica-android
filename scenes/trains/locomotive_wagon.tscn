@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://cg00rv13so7pj"]
+
+[ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/trains/generic_wagon.tscn" id="1_0locc"]
+[ext_resource type="Texture2D" uid="uid://2ia7tvo72e57" path="res://assets/wagons/locomotive_tr.png" id="2_883wn"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_883wn"]
+size = Vector2(255, 53)
+
+[node name="LocomotiveWagon" unique_id=420343912 instance=ExtResource("1_0locc")]
+
+[node name="Sprite2D" parent="." index="0" unique_id=1095718610]
+position = Vector2(0, -33)
+texture = ExtResource("2_883wn")
+
+[node name="Area2D" parent="." index="1" unique_id=389534507]
+position = Vector2(0, 0)
+
+[node name="CollisionShape2D" parent="Area2D" index="0" unique_id=2099382771]
+position = Vector2(0.5, -26.5)
+shape = SubResource("RectangleShape2D_883wn")

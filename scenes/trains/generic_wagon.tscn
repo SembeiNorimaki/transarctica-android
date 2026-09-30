@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://c5shnpxi4qi1b"]
+
+[ext_resource type="Script" uid="uid://bhjdharapr7o7" path="res://scripts/trains/generic_wagon.gd" id="1_806n2"]
+[ext_resource type="Texture2D" uid="uid://se2bgg2hhdnh" path="res://assets/wagons/barracks_tr.png" id="2_ctreh"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_curk6"]
+size = Vector2(128, 47)
+
+[node name="GenericWagon" type="Node2D" unique_id=420343912]
+script = ExtResource("1_806n2")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1095718610]
+position = Vector2(0, -24)
+texture = ExtResource("2_ctreh")
+
+[node name="Area2D" type="Area2D" parent="." unique_id=389534507]
+position = Vector2(0, -24)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=2099382771]
+position = Vector2(1, 0.5)
+shape = SubResource("RectangleShape2D_curk6")
+
+[connection signal="input_event" from="Area2D" to="." method="_on_area_2d_input_event"]

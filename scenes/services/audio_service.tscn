@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://d26hs5d2ck6wi"]
+
+[ext_resource type="Script" uid="uid://wu0opgspna01" path="res://scripts/services/audio_service.gd" id="1_3lnil"]
+
+[node name="AudioService" type="Node" unique_id=364359120]
+script = ExtResource("1_3lnil")

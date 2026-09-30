@@ -1,0 +1,59 @@
+{
+    "id": "TP0",
+    "owner": "Player",
+    "position": [
+        2,
+        4,
+        "E"
+    ],
+    "fuel": 40,
+    "max_fuel": 100,
+    "max_speed": 100,
+    "acceleration": 10,
+    "deceleration": 20,
+    "wagons": [
+        {
+            "type": "LocomotiveWagon",
+            "hp": 100,
+            "max_hp": 100,
+            "capacity": 0,
+            "cargo_name": "",
+            "cargo_qty": 0
+        },
+        {
+            "type": "TenderWagon",
+            "hp": 60,
+            "max_hp": 60,
+            "capacity": 100,
+            "cargo_name": "coal",
+            "cargo_qty": 40
+        },
+        {
+            "type": "BarracksWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 6,
+            "unit_ids": [
+                "u0",
+                "u1",
+                "u2"
+            ]
+        },
+        {
+            "type": "MerchandiseWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 20,
+            "cargo_name": "caviar",
+            "cargo_qty": 2
+        },
+        {
+            "type": "MerchandiseWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 20,
+            "cargo_name": "",
+            "cargo_qty": 0
+        }
+    ]
+}

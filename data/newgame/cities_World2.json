@@ -1,0 +1,202 @@
+{
+    "0": {
+        "Name": "Paris",
+        "Type": "City",
+        "Location": [
+            14,
+            6
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyPrice": 20,
+                "SellPrice": 10,
+                "Quantity": 4
+            },
+            "fishingrods": {
+                "BuyPrice": 2,
+                "SellPrice": 5,
+                "Quantity": 6
+            },
+            "furs": {
+                "BuyPrice": 5,
+                "SellPrice": 10,
+                "Quantity": 12
+            },
+            "mammothdung": {
+                "BuyPrice": 1,
+                "SellPrice": 3,
+                "Quantity": 20
+            }
+        }
+    },
+    "1": {
+        "Name": "Mont Saint-Michel",
+        "Type": "City",
+        "Location": [
+            -11,
+            11
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyPrice": 6,
+                "SellPrice": 7,
+                "Quantity": 11
+            },
+            "caviar": {
+                "BuyPrice": 8,
+                "SellPrice": 9,
+                "Quantity": 5
+            }
+        }
+    },
+    "2": {
+        "Name": "London",
+        "Type": "City",
+        "Location": [
+            0,
+            -8
+        ],
+        "TradeResources": {
+            "plants": {
+                "BuyPrice": 10,
+                "SellPrice": 20,
+                "Quantity": 10
+            },
+            "wolfmeat": {
+                "BuyPrice": 5,
+                "SellPrice": 10,
+                "Quantity": 6
+            },
+            "fish": {
+                "BuyPrice": 3,
+                "SellPrice": 4,
+                "Quantity": 12
+            },
+            "fishingrods": {
+                "BuyPrice": 2,
+                "SellPrice": 5,
+                "Quantity": 12
+            }
+        }
+    },
+    "3": {
+        "Name": "Amsterdam",
+        "Type": "City",
+        "Location": [
+            11,
+            -8
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyPrice": 10,
+                "SellPrice": 14,
+                "Quantity": 20
+            },
+            "oil": {
+                "BuyPrice": 5,
+                "SellPrice": 8,
+                "Quantity": 16
+            },
+            "gasoline": {
+                "BuyPrice": 30,
+                "SellPrice": 32,
+                "Quantity": 12
+            },
+            "salt": {
+                "BuyPrice": 2,
+                "SellPrice": 5,
+                "Quantity": 10
+            }
+        }
+    },
+    "4": {
+        "Name": "Leeds Station",
+        "Type": "City",
+        "Location": [
+            -9,
+            -20
+        ],
+        "TradeResources": {
+            "missiles": {
+                "BuyPrice": 2,
+                "SellPrice": 3,
+                "Quantity": 10
+            },
+            "salt": {
+                "BuyPrice": 4,
+                "SellPrice": 5,
+                "Quantity": 6
+            }
+        }
+    },
+    "5": {
+        "Name": "Ruhr",
+        "Type": "City",
+        "Location": [
+            22,
+            -12
+        ],
+        "TradeResources": {
+            "oil": {
+                "BuyPrice": 5,
+                "SellPrice": 10,
+                "Quantity": 10
+            },
+            "caviar": {
+                "BuyPrice": 10,
+                "SellPrice": 12,
+                "Quantity": 16
+            },
+            "fish": {
+                "BuyPrice": 12,
+                "SellPrice": 15,
+                "Quantity": 6
+            }
+        }
+    },
+    "6": {
+        "Name": "Berlin",
+        "Type": "City",
+        "Location": [
+            31,
+            -10
+        ],
+        "TradeResources": {
+            "missiles": {
+                "BuyPrice": 5,
+                "SellPrice": 7,
+                "Quantity": 20
+            },
+            "alcohol": {
+                "BuyPrice": 4,
+                "SellPrice": 5,
+                "Quantity": 6
+            }
+        }
+    },
+    "7": {
+        "Name": "Bayreuth",
+        "Type": "City",
+        "Location": [
+            32,
+            -2
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyPrice": 10,
+                "SellPrice": 3,
+                "Quantity": 5
+            },
+            "mammothdung": {
+                "BuyPrice": 4,
+                "SellPrice": 5,
+                "Quantity": 16
+            },
+            "plants": {
+                "BuyPrice": 12,
+                "SellPrice": 14,
+                "Quantity": 12
+            }
+        }
+    }
+}
