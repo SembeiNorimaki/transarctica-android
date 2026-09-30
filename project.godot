@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 AudioService="*uid://d26hs5d2ck6wi"
 GameState="*uid://bcvh3u1ovbte"
 WagonTypes="*uid://cjiarrvnlw4od"
+SceneService="*uid://bhyg46o8k5sww"
 
 [physics]
 
