@@ -7,7 +7,7 @@ var city_scene
 func enter_city(city_name: String):
     # Disable navigation scene
     navigation_scene.visible = false
-    navigation_scene.camera_controller.cam.enabled = false
+    navigation_scene.camera_service.cam.enabled = false
     navigation_scene.set_process(false)
     navigation_scene.set_physics_process(false)
 
@@ -28,9 +28,8 @@ func leave_city():
     
     # Re-enable navigation scene
     navigation_scene.visible = true
-    navigation_scene.camera_controller.cam.enabled = true
+    navigation_scene.camera_service.cam.enabled = true
     navigation_scene.set_process(true)
     navigation_scene.set_physics_process(true)
 
     navigation_scene.recenter_player_train()
-    navigation_scene.reverse_player_train_direction()

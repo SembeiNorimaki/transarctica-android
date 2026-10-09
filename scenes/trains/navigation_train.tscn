@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://d006n745wtyp0"]
+
+[ext_resource type="Script" uid="uid://c4q2pybo7iv27" path="res://scripts/trains/navigation_train.gd" id="1_sesny"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_4mv1t"]
+size = Vector2(50, 50)
+
+[node name="NavigationTrain" type="Node2D" unique_id=717148787]
+script = ExtResource("1_sesny")
+
+[node name="WagonContainer" type="Node2D" parent="." unique_id=1160581834]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=657054658]
+texture = SubResource("PlaceholderTexture2D_4mv1t")

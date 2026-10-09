@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bjimkyj5p8ehk"
-path="res://.godot/imported/terrain260_208.png-2c3195c098b9e53e3d24d173a990c498.ctex"
+uid="uid://1eh76jax0q6d"
+path="res://.godot/imported/Village.png-efbd04a377eeda73cb64100ce7237b57.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tracks/terrain260_208.png"
-dest_files=["res://.godot/imported/terrain260_208.png-2c3195c098b9e53e3d24d173a990c498.ctex"]
+source_file="res://assets/tilesets/imgs/Village.png"
+dest_files=["res://.godot/imported/Village.png-efbd04a377eeda73cb64100ce7237b57.ctex"]
 
 [params]
 

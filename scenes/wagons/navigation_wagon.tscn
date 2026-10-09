@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://dsycwuigynhpx"]
+
+[ext_resource type="Script" uid="uid://duc3dxmy6qg6o" path="res://scripts/wagons/navigation_wagon.gd" id="1_qn3xa"]
+
+[node name="NavigationWagon" type="Node2D" unique_id=1710477873]
+script = ExtResource("1_qn3xa")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1798289321]
+
+[node name="Label" type="Label" parent="." unique_id=1276251182]
+offset_right = 40.0
+offset_bottom = 23.0

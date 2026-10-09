@@ -1,87 +1,181 @@
 extends Node2D
 class_name NavigationScene
 
-@onready var camera_2d: Camera2D = $Camera2D
+
+# Managers
+@onready var navigation_train_manager: NavigationTrainManager = $Managers/NavigationTrainManager
+@onready var cities_manager: CitiesManager = $Managers/CitiesManager
+
+# Services
 @onready var navigation_rail_service: NavigationRailService = $Services/NavigationRailService
+@onready var grid_service: GridService = $Services/GridService
+@onready var camera_service: CameraService = $Services/CameraService
+@onready var rail_service: RailService = $Services/RailService
+
+# Overlays
+@onready var rails_overlay: RailsOverlay = $Overlays/RailsOverlay
+
+# Map 
+@onready var map_root: Node2D = $MapRoot
+
+# Containers
+@onready var train_container: Node2D = $TrainContainer
+@onready var city_labels_container: Node2D = $CityLabelsContainer
 
 const MUSIC_TRAVEL: AudioStream = preload("res://assets/audio/Travelling.mp3")
 
 var dragging := false
 var last_pos := Vector2.ZERO
 
+# TODO: This values should be loaded from somewhere else
+var map_name: String = "world_1"
 
+# This should be read from navigationtrainmanager.playerTrain
+var initial_player_train_pos = Vector2i(25, 9)
+
+
+#region Lifecycle & Setup
 func _ready() -> void:
+    _inject_services()
+    _wire_signals()
+    _load_map(map_name)
+
+
+    camera_service.center_at_tile(initial_player_train_pos)
+    camera_service.set_zoom(1.0)
+
     AudioService.play_music(MUSIC_TRAVEL, 0.0)
 
 func _inject_services() -> void:
-    pass
+    navigation_train_manager.camera_service = camera_service
+    navigation_train_manager.cities_manager = cities_manager
+    navigation_train_manager.grid_service = grid_service
+    navigation_train_manager.rail_service = rail_service
+    navigation_train_manager.train_container = train_container
+
+    cities_manager.rail_service = rail_service
+    cities_manager.city_labels_container = city_labels_container
+    cities_manager.grid_service = grid_service
+
+    camera_service.grid_service = grid_service
+
+    rail_service.grid_service = grid_service
+
+    rails_overlay.grid_service = grid_service
+    rails_overlay.rail_service = rail_service
 
 func _wire_signals() -> void:
-    pass
+    navigation_train_manager.train_reached_city.connect(_on_train_reached_city)
+    rail_service.rail_changed.connect(_on_rail_changed)
+#endregion
+
+#region Map Loading
+# TODO: children (trains, cities, rails, labels) spawned from the old map are not cleaned up when you reload a map, only the map node is removed. Containers train_container and city_labels_container, plus rail and city data in services, would keep stale entries.
+func _load_map(map_name: String) -> void:
+    var map_path := "res://scenes/maps/%s.tscn" % map_name
+    if not ResourceLoader.exists(map_path):
+        push_error("Map not found for map: %s at path: %s" % [map_name, map_path])
+        return
+
+    # remove existing map
+    if map_root.get_child_count() > 0:
+        var existing_map: Node2D = map_root.get_child(0)
+        map_root.remove_child(existing_map)
+        existing_map.queue_free()
+
+    # load new map
+    var new_map: Node2D = load(map_path).instantiate()
+    map_root.add_child(new_map)
+    map_root.move_child(new_map, 0)
+
+    # Set tilesize to grid service and tile occupancy service
+    var terrain: TileMapLayer = new_map.get_node("Terrain")
+    grid_service.set_tile_size(terrain.tile_set.tile_size)
+    grid_service.set_map_rect(terrain.get_used_rect()) # instead of map_size = ...size
+    camera_service.set_world_bounds(grid_service.get_world_bounds())
+
+    rail_service.rails_tilemap = new_map.get_node("Rails")
+    navigation_train_manager.clear_trains()
+    rail_service.clear()
+    
+    _build_rails_from_map(new_map.get_node("Rails"))
+    #_build_bridges_from_map(new_map.get_node("Bridges"))
+    _spawn_cities_from_map(new_map.get_node("CitiesIds"))
+    
+    _spawn_trains_from_map(new_map.get_node("Trains"))
+    #_spawn_wagons()
 
 func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
     for tile in cities_ids_tilemap.get_used_cells():
+        #print("Spawn city on tile %s" % tile)
         var atlas_coords = cities_ids_tilemap.get_cell_atlas_coords(tile)
         var city_id = atlas_coords.y * 10 + atlas_coords.x
-        #cities_manager.spawn_city(city_id, tile)
+        cities_manager.spawn_city(city_id, tile)
 
+# TODO: This spawns the train as player and East. Should spawn enemy trains too
 func _spawn_trains_from_map(trains_tilemap: TileMapLayer) -> void:
     for tile in trains_tilemap.get_used_cells():
-        var atlas_coords = trains_tilemap.get_cell_atlas_coords(tile)
-        var source_id = trains_tilemap.get_cell_source_id(tile)
-        var orientation = "E"
-        var team = "Player"
-        #train_manager.spawn_train(tile, orientation, team)
-
+        navigation_train_manager.spawn_train(tile, "E", NavigationTrainManager.Team.PLAYER) # no add_child here anymore
         # Remove the placeholder tile
         trains_tilemap.erase_cell(tile)
 
 func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
     for tile in rails_tilemap.get_used_cells():
         var atlas_coords = rails_tilemap.get_cell_atlas_coords(tile)
-        var source_id = rails_tilemap.get_cell_source_id(tile)
+        # var source_id = rails_tilemap.get_cell_source_id(tile)
         
-        #rail_service.spawn_rail(tile, atlas_coords)
+        rail_service.spawn_rail(tile, atlas_coords)
 
-func _input(event):
-    # --- Touch input (Android) ---
-    if event is InputEventScreenTouch:
-        if event.pressed:
-            dragging = true
-            last_pos = event.position
-        else:
-            dragging = false
+# func _unhandled_inputOLD(event) -> void:
+#     # --- Touch input (Android) ---
+#     if event is InputEventScreenTouch:
+#         if event.pressed:
+#             dragging = true
+#             last_pos = event.position
+#         else:
+#             dragging = false
 
-    if dragging and event is InputEventScreenDrag:
-        var delta = event.position - last_pos
-        camera_2d.global_position -= delta
+#     if dragging and event is InputEventScreenDrag:
+#         var delta = event.position - last_pos
+#         camera_service.cam.global_position -= delta / camera_service.cam.zoom
+#         last_pos = event.position
+
+#     # --- Mouse input (Desktop) ---
+#     if event is InputEventMouseButton:
+#         if event.button_index == MOUSE_BUTTON_LEFT:
+#             if event.pressed:
+#                 dragging = true
+#                 last_pos = event.position
+#             else:
+#                 dragging = false
+
+#     if dragging and event is InputEventMouseMotion:
+#         var delta = event.position - last_pos
+#         camera_service.cam.global_position -= delta / camera_service.cam.zoom
+#         last_pos = event.position
+
+func _unhandled_input(event: InputEvent) -> void:
+    if event is InputEventScreenTouch or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
+        dragging = event.pressed
+        last_pos = event.position
+    elif dragging and (event is InputEventScreenDrag or event is InputEventMouseMotion):
+        camera_service.pan(event.position - last_pos)
         last_pos = event.position
 
-    # --- Mouse input (Desktop) ---
-    if event is InputEventMouseButton:
-        if event.button_index == MOUSE_BUTTON_LEFT:
-            if event.pressed:
-                dragging = true
-                last_pos = event.position
-            else:
-                dragging = false
-
-    if dragging and event is InputEventMouseMotion:
-        var delta = event.position - last_pos
-        camera_2d.global_position -= delta
-        last_pos = event.position
-
-
-func _on_train_reached_city(city_name: String):
-    # print("Nav Scene: Train reached city %s" % city_name)
+func _on_train_reached_city(city_name: String) -> void:
+    print("Nav Scene: Train reached city %s" % city_name)
     # Fade out travel music before entering the city scene.
     AudioService.stop_music(1.5)
     #QuestManager.notify_city_reached(city_name)
     SceneService.enter_city(city_name)
 
-func _on_button_pressed() -> void:
-    navigation_train_manager.gear_toggle()
+func _on_rail_changed(tile: Vector2i) -> void:
+    map_root.get_child(0).get_node("Rails").set_cell(tile, 0, RailService.RAILNAME_TO_ATLAS[rail_service.rails[tile]])
 
 
-func _on_button_2_pressed() -> void:
-    navigation_train_manager.reverse_player_train()
+func _on_button_left_pressed() -> void:
+    navigation_train_manager.player_train_reverse()
+
+
+func _on_button_right_pressed() -> void:
+    navigation_train_manager.player_train_gear_toggle()

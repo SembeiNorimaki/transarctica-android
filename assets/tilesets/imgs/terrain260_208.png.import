@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://couya37twxhp8"
-path="res://.godot/imported/soldier0.png-94105f4ce03bb62b103bfc6fce2e6a20.ctex"
+uid="uid://wj72wcvlwi18"
+path="res://.godot/imported/terrain260_208.png-96c80146e88221185c1e6c3fcedf960e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/units/soldier0.png"
-dest_files=["res://.godot/imported/soldier0.png-94105f4ce03bb62b103bfc6fce2e6a20.ctex"]
+source_file="res://assets/tilesets/imgs/terrain260_208.png"
+dest_files=["res://.godot/imported/terrain260_208.png-96c80146e88221185c1e6c3fcedf960e.ctex"]
 
 [params]
 
