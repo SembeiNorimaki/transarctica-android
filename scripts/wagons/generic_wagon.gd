@@ -57,6 +57,11 @@ func set_wagon_type(t: String) -> void:
 func set_cargo_type(t: String) -> void:
     cargo_type = t
 
+func set_cargo(resource_name: String, qty: int) -> void:
+    cargo_type = resource_name
+    cargo_amount = qty
+    _refresh_visuals()
+
 
 # Adds (positive) or removes (negative) cargo, limited to 0..capacity.
 # Returns the amount that was actually added or removed.

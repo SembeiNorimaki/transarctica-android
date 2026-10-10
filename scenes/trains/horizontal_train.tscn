@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cufinpkot2uh1" path="res://scripts/trains/horizontal_train.gd" id="1_uttmi"]
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_uttmi"]
-size = Vector2(50, 20)
+size = Vector2(100, 50)
 
 [node name="HorizontalTrain" type="Node2D" unique_id=1459319408]
 script = ExtResource("1_uttmi")

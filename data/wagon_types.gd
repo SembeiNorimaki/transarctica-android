@@ -5,7 +5,7 @@ const FOOTPRINTS = {
 
 const TYPES = {
     "LocomotiveWagon": {
-        "horizontal_scene": preload("res://scenes/trains/locomotive_wagon.tscn"),
+        "horizontal_scene": preload("res://scenes/wagons/locomotive_wagon.tscn"),
         "team": "Player",
         "horizontal_size": Vector2i(256, 66),
         "stores": [],
@@ -14,7 +14,7 @@ const TYPES = {
         "footprint": "wagon_large"
     },
     "BarracksWagon": {
-        "horizontal_scene": preload("res://scenes/trains/barracks_wagon.tscn"),
+        "horizontal_scene": preload("res://scenes/wagons/barracks_wagon.tscn"),
         "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_BarracksWagon.png",
         "navigation_atlas_orientations": ["SE", "S", "SW", "W", "NW", "N", "NE", "E"],
         "navigation_atlas_cargo": ["Empty_Soldiers"],
@@ -27,7 +27,7 @@ const TYPES = {
         "footprint": "wagon_small"
     },
     "CannonWagon": {
-        "horizontal_scene": preload("res://scenes/trains/cannon_wagon.tscn"),
+        "horizontal_scene": preload("res://scenes/wagons/cannon_wagon.tscn"),
         "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_CannonWagon.png",
         "navigation_atlas_orientations": ["SE", "S", "SW", "W", "NW", "N", "NE", "E"],
         "navigation_atlas_cargo": ["Empty_Ammunition"],
@@ -40,7 +40,7 @@ const TYPES = {
         "footprint": "wagon_small"
     },
     "MerchandiseWagon": {
-        "horizontal_scene": preload("res://scenes/trains/merchandise_wagon.tscn"),
+        "horizontal_scene": preload("res://scenes/wagons/merchandise_wagon.tscn"),
         "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_MerchandiseWagon.png",
         "navigation_atlas_orientations": ["SE", "S", "SW", "W", "NW", "N", "NE", "E"],
         "navigation_atlas_cargo": ["Empty_Crate"],
@@ -53,7 +53,7 @@ const TYPES = {
         "footprint": "wagon_small"
     },
     "TenderWagon": {
-        "horizontal_scene": preload("res://scenes/trains/tender_wagon.tscn"),
+        "horizontal_scene": preload("res://scenes/wagons/tender_wagon.tscn"),
         "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_TenderWagon.png",
         "navigation_atlas_orientations": ["SE", "S", "SW", "W", "NW", "N", "NE", "E"],
         "navigation_atlas_cargo": ["Empty_Coal"],

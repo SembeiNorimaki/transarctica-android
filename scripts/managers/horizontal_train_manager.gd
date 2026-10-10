@@ -17,6 +17,27 @@ var enemy_trains: Array[HorizontalTrain] = []
 
 
 #region spawning
+# Adopts a train that already exists in the scene (placed in the editor): builds its wagons
+# and registers it. Returns false (with an error) if the data is invalid.
+func setup_train(train: HorizontalTrain, train_data: Dictionary, team: Team) -> bool:
+    if team == Team.PLAYER and is_instance_valid(player_train):
+        push_error("HorizontalTrainManager: a player train already exists")
+        return false
+    var wagons_data: Array = train_data.get("wagons", [])
+    if wagons_data.is_empty():
+        push_error("HorizontalTrainManager: train data has no wagons")
+        return false
+    
+    for wagon_data in wagons_data:
+        train.add_wagon(wagon_data)
+    train.tree_exiting.connect(_on_train_tree_exiting.bind(train))
+
+    if team == Team.PLAYER:
+        player_train = train
+    else:
+        enemy_trains.append(train)
+    return true
+
 # train_data has the structure of GameState.get_player_train() (a "wagons" array with one entry per wagon).
 # The manager adds the train to train_container. Returns null if the data is invalid.
 func spawn_train(initial_pos: Vector2, train_data: Dictionary, team: Team) -> HorizontalTrain:
@@ -34,16 +55,21 @@ func spawn_train(initial_pos: Vector2, train_data: Dictionary, team: Team) -> Ho
     var train := HORIZONTAL_TRAIN_SCENE.instantiate() as HorizontalTrain
     train.position = initial_pos
     train_container.add_child(train) # in the tree BEFORE the wagons are added
-    for wagon_data in wagons_data:
-        train.add_wagon(wagon_data)
+    if not setup_train(train, train_data, team):
+        train.queue_free()
+        return null
+    
+        
+    # for wagon_data in wagons_data:
+    #     train.add_wagon(wagon_data)
 
-    # Forget the train if it is freed (e.g. destroyed in combat)
-    train.tree_exiting.connect(_on_train_tree_exiting.bind(train))
+    # # Forget the train if it is freed (e.g. destroyed in combat)
+    # train.tree_exiting.connect(_on_train_tree_exiting.bind(train))
 
-    if team == Team.PLAYER:
-        player_train = train
-    else:
-        enemy_trains.append(train)
+    # if team == Team.PLAYER:
+    #     player_train = train
+    # else:
+    #     enemy_trains.append(train)
     return train
 
 

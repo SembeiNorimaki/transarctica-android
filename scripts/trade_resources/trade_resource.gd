@@ -1,5 +1,15 @@
 extends Node2D
 class_name TradeResource
+# One resource of the city, shown in a cell of the trade scene.
+# It is only a VIEW: it shows what it is told, and emits signals when the player taps it or
+# presses a button. The scene decides what that means (TradeService) and updates the numbers
+# from the inventories' signals.
+
+signal clicked(resource: TradeResource)
+signal buy_requested(resource_name: String, qty: int)
+signal sell_requested(resource_name: String, qty: int)
+
+const UNITS_PER_PRESS := 1
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var area2d: Area2D = $Area2D
@@ -8,77 +18,98 @@ class_name TradeResource
 @onready var buy_button: Button = $BuyButton
 @onready var sell_button: Button = $SellButton
 
-const RESOURCE_TYPES = {
-    "alcohol": 0,
-    "antiques": 1,
-    "missiles": 2,
-    "bricks": 3,
-    "caviar": 4,
-    "oil": 5,
-    "earth": 6,
-    "coal": 7,
-    "plants": 8,
-    "red": 9,
-    "mammothdung": 10,
-    "rails": 11,
-    "fish": 12,
-    "fishingrods": 13,
-    "salt": 14,
-    "furs": 15,
-    "gasoline": 16,
-    "inspection": 17,
-    "gray": 18,
-    "meat": 19,
-    "wood": 20
-}
-
 var resource_type := ""
-var qty: int = 0
-var price: int = 100
+var qty := 0
+var buy_price := 0 # what the player pays for 1 unit
+var sell_price := 0 # what the city pays the player for 1 unit
+
+var _selected := false
+var _can_buy := true
+var _can_sell := true
+var _shown := true
 
 
-func set_selected(value: bool) -> void:
-    buy_button.visible = value
-    
+func _ready() -> void:
+    _refresh()
+
+
+#region view state (the setters are safe to call before the node is in the tree)
 func set_resource_type(t: String) -> void:
     resource_type = t
-    call_deferred("_set_texture", t)
+    if not ResourceTypes.is_known(t) or ResourceTypes.frame_for(t) < 0:
+        push_warning("TradeResource: no sprite for resource '%s'" % t)
+    _refresh()
+
 
 func set_qty(q: int) -> void:
     qty = q
-    call_deferred("_update_labels")
+    _refresh()
 
+
+func set_prices(buy: int, sell: int) -> void:
+    buy_price = buy
+    sell_price = sell
+    _refresh()
+
+
+# Kept for compatibility: sets the buy price
 func set_price(p: int) -> void:
-    price = p
-    call_deferred("_update_labels")
+    buy_price = p
+    _refresh()
 
-func _update_labels():
+
+# Selected: the buy and sell buttons are shown. The scene keeps a single resource selected.
+func set_selected(value: bool) -> void:
+    _selected = value
+    _refresh()
+
+
+func set_can_buy(value: bool) -> void:
+    _can_buy = value
+    _refresh()
+
+
+func set_can_sell(value: bool) -> void:
+    _can_sell = value
+    _refresh()
+
+
+# Hides the sprite and stops it from being clickable
+func set_visibility(value: bool) -> void:
+    _shown = value
+    _refresh()
+
+
+func _refresh() -> void:
+    if not is_node_ready():
+        return
+
     qty_label.text = str(qty)
-    price_label.text = str(price)
+    price_label.text = str(buy_price) # TODO: also show sell_price (e.g. on the sell button)
 
-func _set_texture(t: String) -> void:
-    sprite.frame = RESOURCE_TYPES[t]
+    var frame = ResourceTypes.frame_for(resource_type)
+    if frame >= 0:
+        sprite.frame = frame
+    sprite.visible = _shown and frame >= 0
+    area2d.input_pickable = _shown
 
-func set_visibility(value: bool):
-    sprite.visible = value
-    area2d.monitoring = value
-
-func _on_area_2d_input_event(viewport: Node, event: InputEvent, shape_idx: int) -> void:
-    if event is InputEventScreenTouch or event is InputEventMouseButton:
-        if event.pressed:
-            print("Resource %s tapped" % resource_type)
-            set_selected(true)
+    buy_button.visible = _selected
+    sell_button.visible = _selected
+    buy_button.disabled = not _can_buy
+    sell_button.disabled = not _can_sell
+#endregion
 
 
-func _on_sell_button_pressed() -> void:
-    if qty >= 1:
-        set_qty(qty - 1)
-    if qty == 0:
-        sell_button.disabled = true
+#region input
+func _on_area_2d_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+    if InputUtils.is_tap(event):
+        clicked.emit(self)
 
 
 func _on_buy_button_pressed() -> void:
-    if qty >= 1:
-        set_qty(qty - 1)
-    if qty == 0:
-        buy_button.disabled = true
+    buy_requested.emit(resource_type, UNITS_PER_PRESS)
+
+
+func _on_sell_button_pressed() -> void:
+    sell_requested.emit(resource_type, UNITS_PER_PRESS)
+#endregion

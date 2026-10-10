@@ -32,7 +32,8 @@ func _init(city_name_: String = "") -> void:
 
 #region setup
 # Builds the stock from GameState. TradeResources: { name: { Quantity, BuyPrice, SellPrice, MaxCapacity? } }
-func load_from_game_state() -> bool:
+func load_from_game_state(city_name_: String) -> bool:
+    city_name = city_name_
     var city_data: Dictionary = GameState.get_city_by_name(city_name)
     if city_data.is_empty():
         push_error("CityInventory: city '%s' not found in GameState" % city_name)

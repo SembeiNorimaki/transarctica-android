@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c5shnpxi4qi1b"]
 
-[ext_resource type="Script" uid="uid://bhjdharapr7o7" path="res://scripts/trains/generic_wagon.gd" id="1_806n2"]
+[ext_resource type="Script" uid="uid://bhjdharapr7o7" path="res://scripts/wagons/generic_wagon.gd" id="1_806n2"]
 [ext_resource type="Texture2D" uid="uid://se2bgg2hhdnh" path="res://assets/wagons/barracks_tr.png" id="2_ctreh"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_curk6"]

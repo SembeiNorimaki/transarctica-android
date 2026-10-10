@@ -35,6 +35,9 @@ var state := {
     "cities": {},
 }
 
+# Signals
+signal money_changed(money: int)
+
 # # this are examples for showing the structure of the data. They are removed when loading data from JSON files
 # var _cities_state = {
 #     "ËxampleCity": {
@@ -217,4 +220,5 @@ func add_money(delta: int) -> bool: # false if the result would be below 0
     if _player_money + delta < 0:
         return false
     _player_money += delta
+    money_changed.emit(_player_money)
     return true

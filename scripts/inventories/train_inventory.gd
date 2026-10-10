@@ -92,7 +92,7 @@ func get_wagon_free_space(idx: int) -> int:
 func wagon_can_store(wagon_idx: int, resource_name: String) -> bool:
     if not has_wagon(wagon_idx):
         return false
-    var needed_type := ResourceTypes.wagon_type_for(resource_name) # "" if the resource is unknown
+    var needed_type = ResourceTypes.wagon_type_for(resource_name) # "" if the resource is unknown
     var wagon: Dictionary = wagons[wagon_idx]
     if needed_type.is_empty() or wagon.wagon_type != needed_type:
         return false

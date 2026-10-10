@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cg00rv13so7pj"]
 
-[ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/trains/generic_wagon.tscn" id="1_0locc"]
+[ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_0locc"]
 [ext_resource type="Texture2D" uid="uid://2ia7tvo72e57" path="res://assets/wagons/locomotive_tr.png" id="2_883wn"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_883wn"]

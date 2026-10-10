@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://do6vosuhxeady"]
 
-[ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/trains/generic_wagon.tscn" id="1_uv5ns"]
-[ext_resource type="Script" uid="uid://b25o03l4vvvsr" path="res://scenes/trains/merchandise_wagon.gd" id="2_3genk"]
+[ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_uv5ns"]
+[ext_resource type="Script" uid="uid://b25o03l4vvvsr" path="res://scenes/wagons/merchandise_wagon.gd" id="2_3genk"]
 [ext_resource type="Texture2D" uid="uid://cih0ttv7slpk6" path="res://assets/wagons/merchandise_tr.png" id="3_5bhlm"]
 [ext_resource type="PackedScene" uid="uid://cdya4gou0iadb" path="res://scenes/trade_resources/trade_resource.tscn" id="4_4tf13"]
 

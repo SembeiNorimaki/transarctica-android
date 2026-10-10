@@ -27,7 +27,7 @@ tile_map_data = PackedByteArray("AAAWAAcAAAAAAAAAAAAgAAcAAAAAAAAAAAA=")
 tile_map_data = PackedByteArray("AAAXAAkAAAAAAAEAAAAfAAkAAAAAAAAAAAA=")
 
 [node name="CitiesIds" parent="." index="7" unique_id=133513815]
-tile_map_data = PackedByteArray("AAAWAAcAAAAAAAAAAAAgAAcAAAABAAAAAAA=")
+tile_map_data = PackedByteArray("AAAgAAcAAAAAAAAAAAAWAAcAAAABAAAAAAA=")
 tile_set = ExtResource("3_r50x4")
 
 [node name="Tunnels" parent="." index="8" unique_id=1795313605]

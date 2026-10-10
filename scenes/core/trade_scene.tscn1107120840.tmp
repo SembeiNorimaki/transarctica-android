@@ -1,0 +1,65 @@
+[gd_scene format=3 uid="uid://q6x7akixx2wv"]
+
+[ext_resource type="Script" uid="uid://dlposd2pyyv07" path="res://scripts/core/trade_scene.gd" id="1_05ctg"]
+[ext_resource type="Texture2D" uid="uid://c0oik1yifuuk0" path="res://assets/background_snow.PNG" id="2_05ctg"]
+[ext_resource type="PackedScene" uid="uid://b4u8vieuc48la" path="res://scenes/units/soldier.tscn" id="3_3w71q"]
+[ext_resource type="Script" uid="uid://dw3l6s4soosod" path="res://scripts/services/trade_resource_service.gd" id="3_8c8m6"]
+[ext_resource type="Script" uid="uid://bkns6sat14dwr" path="res://scripts/managers/horizontal_train_manager.gd" id="5_05ctg"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_p3vpg"]
+size = Vector2(50, 50)
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_8c8m6"]
+size = Vector2(50, 50)
+
+[node name="TradeScene" type="Node2D" unique_id=1976862330]
+script = ExtResource("1_05ctg")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=395653607]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.5
+offset_top = 10.5
+offset_right = 1157.0
+offset_bottom = 644.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_05ctg")
+
+[node name="Soldier" parent="." unique_id=827601383 instance=ExtResource("3_3w71q")]
+position = Vector2(81, 41.5)
+
+[node name="TrainContainer" type="Node2D" parent="." unique_id=1849739645]
+
+[node name="ResourceContainer" type="Node2D" parent="." unique_id=1897419785]
+
+[node name="Buttons" type="Node2D" parent="." unique_id=1809129082]
+
+[node name="RightButton" type="Button" parent="Buttons" unique_id=608431534]
+offset_left = 1019.0
+offset_top = 288.0
+offset_right = 1077.0
+offset_bottom = 346.0
+icon = SubResource("PlaceholderTexture2D_p3vpg")
+
+[node name="LeftButton" type="Button" parent="Buttons" unique_id=1617972688]
+offset_left = 15.0
+offset_top = 278.0
+offset_right = 73.0
+offset_bottom = 336.0
+icon = SubResource("PlaceholderTexture2D_8c8m6")
+
+[node name="Services" type="Node" parent="." unique_id=1630094170]
+
+[node name="TradeResourceService" type="Node" parent="Services" unique_id=1598723754]
+script = ExtResource("3_8c8m6")
+
+[node name="Managers" type="Node" parent="." unique_id=537888426]
+
+[node name="HorizontalTrainManager" type="Node" parent="Managers" unique_id=19362582]
+script = ExtResource("5_05ctg")
+
+[connection signal="pressed" from="Buttons/RightButton" to="." method="_on_right_button_pressed"]
+[connection signal="pressed" from="Buttons/LeftButton" to="." method="_on_left_button_pressed"]
