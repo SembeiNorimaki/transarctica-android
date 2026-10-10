@@ -42,7 +42,7 @@ func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vecto
     locomotive.tile_changed.connect(_on_wagon_tile_changed)
 
 func _place_wagons(tile_pos: Vector2i, ori: String) -> void:
-    var back := grid_service.orientation_to_delta(grid_service.turn_right(ori, 4))
+    var back: Vector2i = grid_service.orientation_to_delta(grid_service.turn_right(ori, 4))
     for i in wagons.size():
         # Straight-line placement only. With real wagons, walk the rail backwards via rail_service.
         var tile := tile_pos + back * i * WAGON_SPACING_TILES

@@ -67,6 +67,11 @@ func player_train_reverse() -> void:
 func player_train_gear_toggle() -> void:
     if is_instance_valid(player_train):
         player_train.gear_toggle()
+
+func recenter_player_train() -> void:
+    if not is_instance_valid(player_train) or player_train.wagons.is_empty():
+        return
+    camera_service.set_pos(player_train.wagons[0].global_position)
 #endregion
 
 

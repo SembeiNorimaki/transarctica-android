@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://q6x7akixx2wv"]
 
-[ext_resource type="Script" uid="uid://b2rwbkjfb3n52" path="res://scripts/trade_scene.gd" id="1_goa25"]
+[ext_resource type="Script" uid="uid://dlposd2pyyv07" path="res://scripts/core/trade_scene.gd" id="1_05ctg"]
 [ext_resource type="Texture2D" uid="uid://c0oik1yifuuk0" path="res://assets/background_snow.PNG" id="2_05ctg"]
 [ext_resource type="PackedScene" uid="uid://b4u8vieuc48la" path="res://scenes/units/soldier.tscn" id="3_3w71q"]
 [ext_resource type="Script" uid="uid://4o8uhiydulma" path="res://scripts/services/trade_resource_service.gd" id="3_8c8m6"]
-[ext_resource type="PackedScene" uid="uid://b0qsyh31xh6b8" path="res://scenes/services/horizontal_train_service.tscn" id="4_8c8m6"]
+[ext_resource type="Script" uid="uid://bkns6sat14dwr" path="res://scripts/managers/horizontal_train_manager.gd" id="5_05ctg"]
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_p3vpg"]
 size = Vector2(50, 50)
@@ -13,7 +13,7 @@ size = Vector2(50, 50)
 size = Vector2(50, 50)
 
 [node name="TradeScene" type="Node2D" unique_id=1976862330]
-script = ExtResource("1_goa25")
+script = ExtResource("1_05ctg")
 
 [node name="TextureRect" type="TextureRect" parent="." unique_id=395653607]
 visible = false
@@ -56,7 +56,10 @@ icon = SubResource("PlaceholderTexture2D_8c8m6")
 [node name="TradeResourceService" type="Node" parent="Services" unique_id=1598723754]
 script = ExtResource("3_8c8m6")
 
-[node name="HorizontalTrainService" parent="Services" unique_id=1782924621 instance=ExtResource("4_8c8m6")]
+[node name="Managers" type="Node" parent="." unique_id=537888426]
+
+[node name="HorizontalTrainManager" type="Node" parent="Managers" unique_id=19362582]
+script = ExtResource("5_05ctg")
 
 [connection signal="pressed" from="Buttons/RightButton" to="." method="_on_right_button_pressed"]
 [connection signal="pressed" from="Buttons/LeftButton" to="." method="_on_left_button_pressed"]

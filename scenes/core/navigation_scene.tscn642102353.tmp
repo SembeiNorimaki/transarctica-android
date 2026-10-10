@@ -1,0 +1,80 @@
+[gd_scene format=3 uid="uid://cqs53rwxbpqva"]
+
+[ext_resource type="Script" uid="uid://baevny3r2q51o" path="res://scripts/navigation_scene.gd" id="1_2bgtl"]
+[ext_resource type="PackedScene" uid="uid://cm3taqyltqkqe" path="res://scenes/maps/world_1.tscn" id="2_43f6w"]
+[ext_resource type="Script" uid="uid://b4tva1gkpsvfi" path="res://scripts/services/camera_service.gd" id="5_bopww"]
+[ext_resource type="Script" uid="uid://1lsfccayubl3" path="res://scripts/services/rail_service.gd" id="5_wk2tj"]
+[ext_resource type="Script" uid="uid://ifhp7kyt4fie" path="res://scripts/services/navigation_rail_service.gd" id="6_rn36o"]
+[ext_resource type="Script" uid="uid://jj6wpd6833yn" path="res://scripts/managers/cities_manager.gd" id="7_43f6w"]
+[ext_resource type="Script" uid="uid://d1w4icvk1fuqd" path="res://scripts/services/grid_service.gd" id="7_wk2tj"]
+[ext_resource type="Script" uid="uid://dqpn1aki2nwea" path="res://scripts/managers/navigation_train_manager.gd" id="8_43f6w"]
+[ext_resource type="Script" uid="uid://cfh5rluepjuub" path="res://scripts/overlays/rails_overlay.gd" id="9_43f6w"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_e8twf"]
+size = Vector2(50, 50)
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_a7ohx"]
+size = Vector2(50, 50)
+
+[node name="NavigationScene" type="Node2D" unique_id=1605647357]
+script = ExtResource("1_2bgtl")
+
+[node name="MapRoot" type="Node2D" parent="." unique_id=2144155385]
+
+[node name="World1" parent="MapRoot" unique_id=1301367354 instance=ExtResource("2_43f6w")]
+
+[node name="ExplorationLayer" type="TileMapLayer" parent="MapRoot" unique_id=1816378619]
+
+[node name="Services" type="Node" parent="." unique_id=974117156]
+
+[node name="NavigationRailService" type="Node" parent="Services" unique_id=1229779236]
+script = ExtResource("6_rn36o")
+
+[node name="GridService" type="Node" parent="Services" unique_id=321096132]
+script = ExtResource("7_wk2tj")
+
+[node name="RailService" type="Node" parent="Services" unique_id=1937176550]
+script = ExtResource("5_wk2tj")
+
+[node name="CameraService" type="Node2D" parent="Services" unique_id=1892645610]
+script = ExtResource("5_bopww")
+
+[node name="Camera2D" type="Camera2D" parent="Services/CameraService" unique_id=496061260]
+
+[node name="Managers" type="Node" parent="." unique_id=230947252]
+
+[node name="NavigationTrainManager" type="Node" parent="Managers" unique_id=842458318]
+script = ExtResource("8_43f6w")
+
+[node name="CitiesManager" type="Node" parent="Managers" unique_id=1506118795]
+script = ExtResource("7_43f6w")
+
+[node name="TrainContainer" type="Node2D" parent="." unique_id=1572720261]
+
+[node name="CityLabelsContainer" type="Node2D" parent="." unique_id=1893294954]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2112287858]
+
+[node name="Buttons" type="Node2D" parent="CanvasLayer" unique_id=1095360656]
+
+[node name="ButtonLeft" type="Button" parent="CanvasLayer/Buttons" unique_id=96057289]
+offset_left = 29.0
+offset_top = 557.0
+offset_right = 87.0
+offset_bottom = 615.0
+icon = SubResource("PlaceholderTexture2D_e8twf")
+
+[node name="ButtonRight" type="Button" parent="CanvasLayer/Buttons" unique_id=898647245]
+offset_left = 1068.0
+offset_top = 563.0
+offset_right = 1126.0
+offset_bottom = 621.0
+icon = SubResource("PlaceholderTexture2D_a7ohx")
+
+[node name="Overlays" type="Node2D" parent="." unique_id=1417787132]
+
+[node name="RailsOverlay" type="Node2D" parent="Overlays" unique_id=930995069]
+script = ExtResource("9_43f6w")
+
+[connection signal="pressed" from="CanvasLayer/Buttons/ButtonLeft" to="." method="_on_button_left_pressed"]
+[connection signal="pressed" from="CanvasLayer/Buttons/ButtonRight" to="." method="_on_button_right_pressed"]

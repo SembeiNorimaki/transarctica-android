@@ -1,5 +1,5 @@
 extends Node
-class_name RailService
+class_name RailServiceOLD
 
 # Injected by NavigationScene
 var rails_tilemap: TileMapLayer

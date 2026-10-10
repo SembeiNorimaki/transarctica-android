@@ -1,5 +1,5 @@
 extends Node2D
-class_name NavigationTrain
+class_name NavigationTrainOLD
 
 # Dependencies
 var train_manager: NavigationTrainManager

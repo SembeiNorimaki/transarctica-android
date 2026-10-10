@@ -3,6 +3,7 @@
 [ext_resource type="TileSet" uid="uid://d2uvx33jrelml" path="res://assets/tilesets/navigation_terrain.tres" id="1_d1vn1"]
 [ext_resource type="TileSet" uid="uid://bbjxv1glk7q3r" path="res://assets/tilesets/navigation_tracks.tres" id="2_hctaa"]
 [ext_resource type="TileSet" uid="uid://b0iq75h61whcq" path="res://assets/tilesets/navigation_cities.tres" id="3_75oc5"]
+[ext_resource type="TileSet" uid="uid://dkfq0a766sqds" path="res://assets/tilesets/navigation_locomotive.tres" id="4_ivt2f"]
 
 [node name="GenericNavigationMap" type="Node2D" unique_id=1195897361]
 
@@ -26,6 +27,7 @@ tile_set = ExtResource("2_hctaa")
 tile_set = ExtResource("3_75oc5")
 
 [node name="Trains" type="TileMapLayer" parent="." unique_id=142093996]
+tile_set = ExtResource("4_ivt2f")
 
 [node name="CitiesIds" type="TileMapLayer" parent="." unique_id=133513815]
 

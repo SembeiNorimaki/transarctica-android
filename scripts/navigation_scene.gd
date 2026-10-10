@@ -22,7 +22,14 @@ class_name NavigationScene
 @onready var train_container: Node2D = $TrainContainer
 @onready var city_labels_container: Node2D = $CityLabelsContainer
 
+# Constants
 const MUSIC_TRAVEL: AudioStream = preload("res://assets/audio/Travelling.mp3")
+# Train placeholder atlas: row = team, column = orientation (clockwise from E, tile-space names)
+const TRAIN_ATLAS_TEAMS := [
+    NavigationTrainManager.Team.PLAYER, # row 0
+    NavigationTrainManager.Team.ENEMY, # row 1
+]
+const TRAIN_ATLAS_ORIENTATIONS: Array[String] = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
 
 var dragging := false
 var last_pos := Vector2.ZERO
@@ -36,6 +43,8 @@ var initial_player_train_pos = Vector2i(25, 9)
 
 #region Lifecycle & Setup
 func _ready() -> void:
+    SceneService.register_navigation_scene(self)
+
     _inject_services()
     _wire_signals()
     _load_map(map_name)
@@ -44,6 +53,21 @@ func _ready() -> void:
     camera_service.center_at_tile(initial_player_train_pos)
     camera_service.set_zoom(1.0)
 
+    AudioService.play_music(MUSIC_TRAVEL, 0.0)
+
+
+func suspend() -> void:
+    process_mode = Node.PROCESS_MODE_DISABLED # stops _process, _input and all children
+    hide()
+    camera_service.cam.enabled = false
+    # if the HUD buttons live in a CanvasLayer, hide that layer here too
+
+func resume() -> void:
+    process_mode = Node.PROCESS_MODE_INHERIT
+    show()
+    camera_service.cam.enabled = true
+    navigation_train_manager.resume() # only if you adopted the _transitioning flag
+    navigation_train_manager.recenter_player_train()
     AudioService.play_music(MUSIC_TRAVEL, 0.0)
 
 func _inject_services() -> void:
@@ -112,12 +136,31 @@ func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
         var city_id = atlas_coords.y * 10 + atlas_coords.x
         cities_manager.spawn_city(city_id, tile)
 
-# TODO: This spawns the train as player and East. Should spawn enemy trains too
+
 func _spawn_trains_from_map(trains_tilemap: TileMapLayer) -> void:
+    var player_spawned := false
     for tile in trains_tilemap.get_used_cells():
-        navigation_train_manager.spawn_train(tile, "E", NavigationTrainManager.Team.PLAYER) # no add_child here anymore
-        # Remove the placeholder tile
-        trains_tilemap.erase_cell(tile)
+        var atlas := trains_tilemap.get_cell_atlas_coords(tile)
+        trains_tilemap.erase_cell(tile) # remove the placeholder whatever happens below
+
+        var valid_col := atlas.x >= 0 and atlas.x < TRAIN_ATLAS_ORIENTATIONS.size()
+        var valid_row := atlas.y >= 0 and atlas.y < TRAIN_ATLAS_TEAMS.size()
+        if not (valid_col and valid_row):
+            push_warning("Train placeholder at %s has unknown atlas coords %s" % [tile, atlas])
+            continue
+
+        var team: NavigationTrainManager.Team = TRAIN_ATLAS_TEAMS[atlas.y]
+        if team == NavigationTrainManager.Team.PLAYER:
+            if player_spawned:
+                push_warning("Second player train at %s ignored (only one is supported)" % tile)
+                continue
+            player_spawned = true
+
+        if not rail_service.has_rail(tile):
+            push_warning("Train placeholder at %s has no rail under it" % tile)
+
+        print("Spawning %s train at tile %s" % [team, tile])
+        navigation_train_manager.spawn_train(tile, TRAIN_ATLAS_ORIENTATIONS[atlas.x], team)
 
 func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
     for tile in rails_tilemap.get_used_cells():

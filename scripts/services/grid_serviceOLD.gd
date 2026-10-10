@@ -1,5 +1,5 @@
 extends Node
-class_name GridService
+class_name GridServiceOLD
 
 # ─────────────────────────────────────────────
 #  GridService

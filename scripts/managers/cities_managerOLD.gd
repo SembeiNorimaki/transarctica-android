@@ -1,5 +1,5 @@
 extends Node
-class_name CitiesManager
+class_name CitiesManagerOLD
 
 # Dependencies
 var rail_service: RailService

@@ -1,5 +1,5 @@
 extends Node
-class_name NavigationTrainManager
+class_name NavigationTrainManagerOLD
 
 
 # Dependencies

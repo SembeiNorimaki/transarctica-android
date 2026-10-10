@@ -7,4 +7,4 @@
 
 [node name="AnimatedSprite2D" parent="." index="0" unique_id=1798289321]
 sprite_frames = ExtResource("2_7u1a4")
-animation = &"NW"
+animation = &"SE"

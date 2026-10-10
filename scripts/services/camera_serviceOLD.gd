@@ -1,5 +1,5 @@
 extends Node2D
-class_name CameraService
+class_name CameraServiceOLD
 
 #signal camera_moved(global_transform: Transform2D)
 

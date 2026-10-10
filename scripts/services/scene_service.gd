@@ -1,35 +1,45 @@
 extends Node
+# Autoload. Swaps between the navigation scene and the city (trade) scene.
 
-@onready var navigation_scene = get_tree().get_root().get_node("MainScene/NavigationScene")
+const TRADE_SCENE: PackedScene = preload("res://scenes/core/trade_scene.tscn")
 
-var city_scene
+# Registered by NavigationScene in its _ready().
+# (An autoload's _ready runs before the main scene exists, so it can't look the scene up itself.)
+var navigation_scene: NavigationScene
 
-func enter_city(city_name: String):
-    # Disable navigation scene
-    navigation_scene.visible = false
-    navigation_scene.camera_service.cam.enabled = false
-    navigation_scene.set_process(false)
-    navigation_scene.set_physics_process(false)
+# If trade_scene.gd has a class_name (e.g. TradeScene), use it as the type here.
+var city_scene: Node
 
-    # Load and instantiate the city scene
-    var CITY_SCENE_CLASS = load("res://scenes/core/trade_scene.tscn")
-    city_scene = CITY_SCENE_CLASS.instantiate()
 
-    # Pass city data to the cisty scene
-    city_scene.call_deferred("initialize", city_name)
+func register_navigation_scene(scene: NavigationScene) -> void:
+    navigation_scene = scene
 
-    # Add it to scene tree
-    get_parent().add_child(city_scene)
 
-func leave_city():
-    if city_scene:
-        city_scene.queue_free()
-        city_scene = null
-    
-    # Re-enable navigation scene
-    navigation_scene.visible = true
-    navigation_scene.camera_service.cam.enabled = true
-    navigation_scene.set_process(true)
-    navigation_scene.set_physics_process(true)
+func is_in_city() -> bool:
+    return city_scene != null
 
-    navigation_scene.recenter_player_train()
+
+func enter_city(city_name: String) -> void:
+    if city_scene != null:
+        return # already in a city (e.g. two entry events in the same frame)
+    if not is_instance_valid(navigation_scene):
+        push_error("SceneService: navigation scene not registered")
+        return
+
+    navigation_scene.suspend()
+
+    city_scene = TRADE_SCENE.instantiate()
+    get_tree().root.add_child(city_scene)
+    # After add_child (so its @onready vars exist) and synchronous, so there is no frame
+    # where the city scene is in the tree but not initialized.
+    city_scene.initialize(city_name)
+
+
+func leave_city() -> void:
+    if city_scene == null:
+        return
+    city_scene.queue_free()
+    city_scene = null
+
+    if is_instance_valid(navigation_scene):
+        navigation_scene.resume()
