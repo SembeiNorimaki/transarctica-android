@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://cmxr1tn24hlb2"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_io20h"]
+size = Vector2(100, 100)
+
+[node name="BuySellMenu" type="Control" unique_id=2121969279]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 280.0
+offset_bottom = 271.0
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1281528706]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.24840015, 0.24840018, 0.24840015, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1160094563]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CloseButton" type="Button" parent="VBoxContainer" unique_id=1140962556]
+layout_mode = 2
+text = " X "
+
+[node name="ResourceName" type="Label" parent="VBoxContainer" unique_id=1629789578]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Resource name
+"
+
+[node name="ResourceImage" type="TextureRect" parent="VBoxContainer" unique_id=1119404772]
+layout_mode = 2
+texture = SubResource("PlaceholderTexture2D_io20h")
+stretch_mode = 2
+
+[node name="ResourceQty" type="Label" parent="VBoxContainer" unique_id=534224442]
+layout_mode = 2
+text = "Qty:"
+
+[node name="ResourceSellPrice" type="Label" parent="VBoxContainer" unique_id=308611999]
+layout_mode = 2
+text = "Sell Price"
+
+[node name="Label4" type="Label" parent="VBoxContainer" unique_id=292538735]
+layout_mode = 2
+text = "Button 4"
+
+[node name="ResourceBuy1" type="Button" parent="VBoxContainer" unique_id=1064227244]
+layout_mode = 2
+text = "Buy 1"
+
+[node name="ResourceFillWagon" type="Button" parent="VBoxContainer" unique_id=1012785838]
+layout_mode = 2
+text = "Fill Wagon"

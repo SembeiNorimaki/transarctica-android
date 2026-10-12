@@ -59,6 +59,7 @@ func add_wagon(wagon_data: Dictionary) -> GenericWagon:
 
 
 func _on_wagon_clicked(wagon: GenericWagon) -> void:
+    print("HorizontalTrain: wagon clicked: %s" % wagon)
     wagon_clicked.emit(wagon)
 
 

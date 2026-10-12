@@ -26,6 +26,14 @@ static func max_sellable(city: CityInventory, train: TrainInventory, resource_na
     if not city.has_resource(resource_name):
         return 0
     return mini(train.get_total_qty_of(resource_name), city.get_free_capacity(resource_name))
+
+# Most units that can be sold from this wagon: what it holds, limited by the city's free space.
+static func max_sellable_from_wagon(city: CityInventory, train: TrainInventory, wagon_index: int) -> int:
+    var resource_name := train.get_wagon_current_resource(wagon_index)
+    if resource_name == "" or not city.has_resource(resource_name):
+        return 0
+    return mini(train.get_wagon_resource_qty(wagon_index), city.get_free_capacity(resource_name))
+
 #endregion
 
 
@@ -64,6 +72,23 @@ static func sell(city: CityInventory, train: TrainInventory, resource_name: Stri
     ok = GameState.add_money(income) and ok
     if not ok:
         push_error("TradeService: sell of %d %s failed after validation" % [qty, resource_name])
+    return Result.OK
+
+static func sell_from_wagon(city: CityInventory, train: TrainInventory, wagon_index: int, qty: int) -> Result:
+    var resource_name := train.get_wagon_current_resource(wagon_index)
+    if qty <= 0 or resource_name == "" or not city.has_resource(resource_name):
+        return Result.INVALID
+    if train.get_wagon_resource_qty(wagon_index) < qty:
+        return Result.NOT_IN_TRAIN
+    if city.get_free_capacity(resource_name) < qty:
+        return Result.NO_CITY_SPACE
+    var income := city.get_sell_price(resource_name) * qty
+
+    var ok := train.remove_resource_qty_from_wagon(wagon_index, qty)
+    ok = city.add_resource_amount(resource_name, qty) and ok
+    ok = GameState.add_money(income) and ok
+    if not ok:
+        push_error("TradeService: sell from wagon %d failed after validation" % wagon_index)
     return Result.OK
 #endregion
 

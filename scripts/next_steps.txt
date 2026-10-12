@@ -1,0 +1,29 @@
+I’d go in this order.
+
+1. Close the core loop, and make the navigation train come from GameState
+The hand-off between navigating and trading is the foundation for everything else. Right now the two scenes disagree about the train. GameState holds the wagons, stats and cargo, and the trade scene uses them. The navigation train ignores them: it spawns from a map placeholder, uses constants for speed, and doesn’t save its position. Fix that first, because every feature on top will otherwise have to work around it. Then walk through the whole loop (navigate, enter a city, trade, leave, continue) and check what happens when you come back:
+
+The train faces out of the city, so it doesn’t walk back into it.
+The manager’s _transitioning flag is reset.
+The music restarts, and the camera recenters.
+
+I’ve never seen what calls SceneService.leave_city(), so that is the piece I’d want to look at.
+
+2. A minimal save and load
+GameState is already plain dictionaries, so writing it to user:// as JSON is small work. Do it right after step 1, so that the position is part of what gets saved. It will save you a lot of replaying while you test on the phone.
+
+3. Fuel, as the first gameplay system that ties everything together
+GameState already has fuel and max_fuel, and the tender wagon stores coal. If moving costs fuel, the player has a reason to trade: buy coal in a city, fill the tender, and run out of fuel far from help. It exercises the navigation train, the inventories and the trade scene together. It would also be the natural first use of the disabled Fill Wagon and Sell Wagon buttons, since filling the tender with coal is exactly “fill wagon”.
+
+4. Player feedback
+trade_failed currently goes nowhere, so a refused trade is silent. Add a message area to the trade scene, plus a small HUD for the navigation scene with fuel, gear and money. That is also the moment a reusable money label becomes worth having. On a phone, without feedback you’re guessing why nothing happened.
+
+5. Data validation at startup
+We have found about six mismatches between data tables so far: resource names and sprites, wagon types that don’t exist, and capacities in two places. As content grows, that is the most likely source of silent bugs. A debug-only check that goes through the cities, maps, resources and wagon types and logs every inconsistency is cheap, and ResourceTypes.find_problems() is already a start. It’s also the time to fill the table gaps (red, meat/wolfmeat, water, copper, iron, and the tanker, container and gondola wagons).
+
+6. One pass on the device for layout
+The trade scene still uses a few fixed pixel positions, and the menus were built on the desktop. Check the stretch mode, the tap sizes and the performance once, before more UI exists. It is much cheaper now than later.
+
+What I’d leave for later: wagons following the locomotive in the navigation view (a larger feature that needs step 1 first), dynamic prices, and combat.
+
+If you want to start with step 1, send the code that leaves the city (the exit button or whatever calls leave_city) and your current NavigationScene. Which one would you like to take first?

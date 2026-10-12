@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://nfn44fiqwyhr"]
+
+[ext_resource type="PackedScene" uid="uid://cmxr1tn24hlb2" path="res://scenes/menus/buy_sell_menu.tscn" id="1_4njfg"]
+[ext_resource type="Script" uid="uid://c61r01jnq82mv" path="res://scripts/menus/sell_menu.gd" id="2_f32xc"]
+
+[node name="SellMenu" unique_id=2121969279 instance=ExtResource("1_4njfg")]
+script = ExtResource("2_f32xc")

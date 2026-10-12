@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://swu4wkh6mhyx"]
+
+[ext_resource type="PackedScene" uid="uid://cmxr1tn24hlb2" path="res://scenes/menus/buy_sell_menu.tscn" id="1_io12f"]
+[ext_resource type="Script" uid="uid://c8bp2hkrdr2n5" path="res://scripts/menus/buy_menu.gd" id="1_ypclv"]
+
+[node name="BuyMenu" unique_id=2121969279 instance=ExtResource("1_io12f")]
+script = ExtResource("1_ypclv")

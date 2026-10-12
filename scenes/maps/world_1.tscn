@@ -32,3 +32,6 @@ tile_set = ExtResource("3_r50x4")
 
 [node name="Tunnels" parent="." index="8" unique_id=1795313605]
 tile_map_data = PackedByteArray("AAAPAA0AAQAAAAAAAAARAAwAAQADAAAAAAA=")
+
+[node name="Trees" parent="." index="9" unique_id=534418288]
+tile_map_data = PackedByteArray("AAAAAAQAAAAAAAAAAAAAAAUAAAAAAAAAAAD//wcAAAAAAAAAAAD//wUAAAAAAAAAAAAAAAYAAAAAAAAAAAABAAcAAAACAAIAAAABAAgAAAACAAIAAAABAAkAAAACAAIAAAACAAgAAAACAAIAAAAAAAkAAAACAAIAAAA=")

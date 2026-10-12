@@ -27,6 +27,13 @@
                 "SellPrice": 3,
                 "Quantity": 20
             }
+        },
+        "TradeWagons": {
+            "MerchandiseWagon": {
+                "BuyPrice": 20,
+                "SellPrice": 10,
+                "Quantity": 4
+            }
         }
     },
     "1": {

@@ -7,13 +7,14 @@ class_name TradeResourceManager
 
 signal resource_buy_requested(resource_name: String, qty: int)
 signal resource_sell_requested(resource_name: String, qty: int)
+signal resource_clicked(resource_name: String)
 
 const RESOURCE_SCENE: PackedScene = preload("res://scenes/trade_resources/trade_resource.tscn")
 
 # Where the resources go, in the container's coordinates (one per resource).
 # Replace with set_slot_positions(), e.g. from Marker2D nodes in the scene.
 const DEFAULT_SLOTS: Array[Vector2] = [
-    Vector2(100, 100), Vector2(200, 100), Vector2(300, 100), Vector2(400, 100),
+    Vector2(100, 100), Vector2(250, 100), Vector2(400, 100), Vector2(550, 100),
 ]
 
 # Injected by TradeScene
@@ -104,7 +105,7 @@ func select_resource(resource_name: String) -> void:
 
 #region relayed signals
 func _on_resource_clicked(resource: TradeResource) -> void:
-    select_resource(resource.resource_type)
+    resource_clicked.emit(resource.resource_type)
 
 
 func _on_buy_requested(resource_name: String, qty: int) -> void:

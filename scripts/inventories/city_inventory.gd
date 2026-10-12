@@ -24,7 +24,7 @@ const DEFAULT_MAX_CAPACITY := 999 # used when the city data has no MaxCapacity
 
 var city_name := ""
 var resources := {} # resource_name -> {qty, buy_price, sell_price, max_capacity}
-
+var wagons := {} # wagon_name -> {qty, buy_price, sell_price, max_capacity}
 
 func _init(city_name_: String = "") -> void:
     city_name = city_name_
@@ -50,6 +50,20 @@ func load_from_game_state(city_name_: String) -> bool:
             int(data.get("BuyPrice", 0)),
             int(data.get("SellPrice", 0)),
             int(data.get("MaxCapacity", DEFAULT_MAX_CAPACITY)))
+    
+    wagons.clear()
+    var trade_wagons: Dictionary = city_data.get("TradeWagons", {}) # optional: most cities don't sell wagons
+    for wagon_type in trade_wagons:
+        if not WagonTypes.TYPES.has(wagon_type):
+            push_error("CityInventory: '%s' in %s is not a wagon type" % [wagon_type, city_name])
+            continue
+        var data: Dictionary = trade_wagons[wagon_type]
+        var buy_price := int(data.get("BuyPrice", 0))
+        var sell_price := int(data.get("SellPrice", 0))
+        if buy_price < sell_price:
+            push_warning("CityInventory: wagon '%s' in %s has buy_price %d < sell_price %d (infinite money)" % [wagon_type, city_name, buy_price, sell_price])
+        wagons[wagon_type] = {"qty": int(data.get("Quantity", 0)), "buy_price": buy_price, "sell_price": sell_price}
+    
     return true
 
 
@@ -99,6 +113,23 @@ func get_sell_price(resource_name: String) -> int:
 func get_free_capacity(resource_name: String) -> int:
     var info: Dictionary = resources.get(resource_name, {})
     return info.get("max_capacity", 0) - info.get("qty", 0)
+
+
+func has_wagon_type(wagon_type: String) -> bool:
+    return wagons.has(wagon_type)
+
+func get_wagon_types() -> Array:
+    return wagons.keys()
+
+func get_wagon_available_qty(wagon_type: String) -> int:
+    return wagons.get(wagon_type, {}).get("qty", 0)
+
+func get_wagon_buy_price(wagon_type: String) -> int:
+    return wagons.get(wagon_type, {}).get("buy_price", 0)
+
+func get_wagon_sell_price(wagon_type: String) -> int:
+    return wagons.get(wagon_type, {}).get("sell_price", 0)
+
 #endregion
 
 

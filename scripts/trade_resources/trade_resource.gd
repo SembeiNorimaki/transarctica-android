@@ -100,6 +100,15 @@ func _refresh() -> void:
 #endregion
 
 
+func get_icon() -> Texture2D:
+    if sprite.texture == null or ResourceTypes.frame_for(resource_type) < 0:
+        return null
+    var cell := sprite.texture.get_size() / Vector2(sprite.hframes, sprite.vframes)
+    var atlas := AtlasTexture.new()
+    atlas.atlas = sprite.texture
+    atlas.region = Rect2(Vector2(sprite.frame_coords) * cell, cell)
+    return atlas
+
 #region input
 func _on_area_2d_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
     if InputUtils.is_tap(event):
