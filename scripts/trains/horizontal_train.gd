@@ -97,7 +97,6 @@ func gear_down() -> void:
     elif gear == "N":
         gear = "R"
 
-
 # Called every frame by HorizontalTrainManager
 func update(delta: float) -> void:
     var target := 0.0

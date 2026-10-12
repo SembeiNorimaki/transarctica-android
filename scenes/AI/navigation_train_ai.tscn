@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c17fdua7xxbub"]
+
+[ext_resource type="Script" uid="uid://bn7qlmnw5eksl" path="res://scripts/AI/navigation_train_ai.gd" id="1_tagx0"]
+
+[node name="NavigationTrainAI" type="Node" unique_id=1959285409]
+script = ExtResource("1_tagx0")

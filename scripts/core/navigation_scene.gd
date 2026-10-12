@@ -90,7 +90,9 @@ func _inject_services() -> void:
 
 func _wire_signals() -> void:
     navigation_train_manager.train_reached_city.connect(_on_train_reached_city)
+    navigation_train_manager.trains_collided.connect(_on_trains_collided)
     rail_service.rail_changed.connect(_on_rail_changed)
+    
 #endregion
 
 #region Map Loading
@@ -197,13 +199,24 @@ func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
 #         camera_service.cam.global_position -= delta / camera_service.cam.zoom
 #         last_pos = event.position
 
+func end_combat(enemy: NavigationTrain) -> void:
+    # TODO: depends on the combat result. For now the enemy is removed. Otherwise it would collide
+    # again as soon as the scene is enabled, because its area is still overlapping the player's.
+    if is_instance_valid(enemy):
+        navigation_train_manager.remove_train(enemy)
+    resume()
+    
 func _unhandled_input(event: InputEvent) -> void:
+    # Godot also sends a mouse event for every touch. Ignore those, the touch events are used instead.
+    if event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION:
+        return
+        
     if event is InputEventScreenTouch or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
         dragging = event.pressed
-        last_pos = event.position
+        #last_pos = event.position
     elif dragging and (event is InputEventScreenDrag or event is InputEventMouseMotion):
-        camera_service.pan(event.position - last_pos)
-        last_pos = event.position
+        camera_service.pan(event.relative)
+        #last_pos = event.position
 
 func _on_train_reached_city(city_name: String) -> void:
     print("Nav Scene: Train reached city %s" % city_name)
@@ -215,6 +228,9 @@ func _on_train_reached_city(city_name: String) -> void:
 func _on_rail_changed(tile: Vector2i) -> void:
     map_root.get_child(0).get_node("Rails").set_cell(tile, 0, RailService.RAILNAME_TO_ATLAS[rail_service.rails[tile]])
 
+func _on_trains_collided(_player: NavigationTrain, enemy: NavigationTrain) -> void:
+    AudioService.stop_music(1.5)
+    SceneService.enter_combat(enemy)
 
 func _on_button_left_pressed() -> void:
     navigation_train_manager.player_train_reverse()

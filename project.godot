@@ -30,9 +30,10 @@ window/size/viewport_height=1080
 window/size/mode=3
 window/stretch/mode="canvas_items"
 
-[input_devices]
+[layer_names]
 
-pointing/emulate_mouse_from_touch=false
+2d_physics/layer_1="player_train"
+2d_physics/layer_2="enemy_train"
 
 [physics]
 

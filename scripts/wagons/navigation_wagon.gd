@@ -1,7 +1,9 @@
 extends Node2D
 class_name NavigationWagon
 
+# Signals
 signal tile_changed(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i)
+signal collided(wagon: NavigationWagon, other_wagon: NavigationWagon)
 
 var grid_service: GridService # injected
 var speed := 0.0
@@ -10,8 +12,27 @@ var heading := Vector2.RIGHT
 var current_tile := Vector2i.ZERO
 var _placed := false # nothing moves or emits before place_at()
 
-@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+const LAYER_PLAYER_TRAIN := 1 # layer numbers, as named in step 1
+const LAYER_ENEMY_TRAIN := 2
 
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var hit_area: Area2D = $HitArea
+
+func _ready() -> void:
+    hit_area.area_entered.connect(_on_hit_area_entered)
+
+# The player's area detects enemies. Enemy areas are only detected, so they never see each other.
+func setup_collision(is_player: bool) -> void:
+    hit_area.input_pickable = false
+    hit_area.collision_layer = 0
+    hit_area.collision_mask = 0
+    if is_player:
+        hit_area.set_collision_layer_value(LAYER_PLAYER_TRAIN, true)
+        hit_area.set_collision_mask_value(LAYER_ENEMY_TRAIN, true)
+    else:
+        hit_area.set_collision_layer_value(LAYER_ENEMY_TRAIN, true)
+    hit_area.set_deferred("monitoring", is_player)
+    hit_area.set_deferred("monitorable", not is_player)
 
 ## Never emits tile_changed.
 func place_at(tile: Vector2i, ori: String) -> void:
@@ -26,6 +47,11 @@ func set_orientation(ori: String) -> void:
         orientation = ori
         sprite.play(ori)
 
+func set_sprite_frames(frames: SpriteFrames) -> void:
+    sprite.sprite_frames = frames
+    if orientation != "":
+        sprite.play(orientation) # a new SpriteFrames stops the current animation
+        
 func reverse() -> void:
     set_orientation(grid_service.turn_right(orientation, 4))
 
@@ -45,3 +71,8 @@ func advance(delta: float) -> void:
             var old := current_tile
             current_tile = tile
             tile_changed.emit(self, old, tile) # handler may change orientation or stop
+
+func _on_hit_area_entered(area: Area2D) -> void:
+    var other := area.get_parent() as NavigationWagon
+    if other != null:
+        collided.emit(self, other)

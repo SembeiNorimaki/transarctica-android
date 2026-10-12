@@ -2,6 +2,7 @@ extends Node
 class_name NavigationTrainManager
 
 signal train_reached_city(city_name: String)
+signal trains_collided(player_train: NavigationTrain, enemy_train: NavigationTrain)
 
 enum Team {PLAYER, ENEMY}
 
@@ -30,6 +31,7 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain
     train.grid_service = grid_service
     train.rail_service = rail_service
     train.train_tile_changed.connect(_on_train_tile_changed)
+    train.train_collided.connect(_on_train_collided)
 
     train_container.add_child(train) # manager owns placement
     train.initialize(_make_id(team), team, tile_pos, ori)
@@ -38,8 +40,14 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain
         player_train = train
     else:
         enemy_trains.append(train)
+        _add_ai(train)
     return train
 
+func _add_ai(train: NavigationTrain) -> void:
+    var ai := NavigationTrainAI.new()
+    ai.cities_manager = cities_manager # set before add_child, the AI uses it in _ready
+    train.add_child(ai)
+    
 func clear_trains() -> void:
     for train in enemy_trains:
         if is_instance_valid(train):
@@ -104,3 +112,22 @@ func _check_city_entry(tile: Vector2i) -> void:
     set_process(false) # freeze all trains; call clear_trains() or resume() on return
     train_reached_city.emit.call_deferred(city.name)
 #endregion
+
+func _on_train_collided(train: NavigationTrain, other_wagon: NavigationWagon) -> void:
+    if _transitioning or train != player_train:
+        return
+    for enemy in enemy_trains:
+        if is_instance_valid(enemy) and enemy.wagons.has(other_wagon):
+            _transitioning = true
+            _emit_collision.call_deferred(enemy)
+            return
+
+func _emit_collision(enemy: NavigationTrain) -> void:
+    trains_collided.emit(player_train, enemy)
+
+func remove_train(train: NavigationTrain) -> void:
+    if train == player_train:
+        return
+    enemy_trains.erase(train)
+    train.process_mode = Node.PROCESS_MODE_DISABLED # also disables its collision area right away
+    train.queue_free()

@@ -5,12 +5,18 @@ enum Gear {NEUTRAL, DRIVE}
 
 signal train_tile_changed(navigation_train: NavigationTrain, old_tile: Vector2i, new_tile: Vector2i)
 signal gear_changed(gear: Gear)
+signal train_collided(navigation_train: NavigationTrain, other_wagon: NavigationWagon)
+
 
 const LOCOMOTIVE_SCENE: PackedScene = preload("res://scenes/wagons/navigation_locomotive.tscn")
 const MAX_SPEED := 300.0
 const ACCELERATION := 50.0
 const DECELERATION := 200.0
 const WAGON_SPACING_TILES := 1 # replaces Vector2(-32, -16); adjust to what you actually want
+
+const PLAYER_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_spriteframes.tres")
+const ENEMY_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_enemy_spriteframes.tres")
+
 
 # Injected (train_manager removed: it was never used here)
 var grid_service: GridService
@@ -34,12 +40,15 @@ func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vecto
     var locomotive := LOCOMOTIVE_SCENE.instantiate() as NavigationWagon
     locomotive.grid_service = grid_service
     wagon_container.add_child(locomotive)
+    locomotive.set_sprite_frames(_get_sprite_frames())
     wagons.append(locomotive)
 
     _place_wagons(tile_pos, ori)
     # Connect AFTER placement so the teleport from (0,0) isn't reported as movement.
     # (If the locomotive tracks its tile in _process, reset that tracking in set_pos.)
     locomotive.tile_changed.connect(_on_wagon_tile_changed)
+    locomotive.setup_collision(team == NavigationTrainManager.Team.PLAYER)
+    locomotive.collided.connect(_on_wagon_collided)
 
 func _place_wagons(tile_pos: Vector2i, ori: String) -> void:
     var back: Vector2i = grid_service.orientation_to_delta(grid_service.turn_right(ori, 4))
@@ -52,6 +61,11 @@ func _place_wagons(tile_pos: Vector2i, ori: String) -> void:
 func _face(wagon: NavigationWagon, ori: String) -> void:
     wagon.set_orientation(ori)
     #wagon.set_heading(grid_service.orientation_to_heading(ori))
+
+func _get_sprite_frames() -> SpriteFrames:
+    if team == NavigationTrainManager.Team.ENEMY:
+        return ENEMY_SPRITE_FRAMES
+    return PLAYER_SPRITE_FRAMES
 #endregion
 
 
@@ -87,6 +101,13 @@ func reverse_train() -> void:
         var target := wagons[n - i - 1]
         _face(target, grid_service.turn_right(oris[i], 4))
 
+func drive() -> void:
+    _set_gear(Gear.DRIVE)
+
+func is_driving() -> bool:
+    return gear == Gear.DRIVE
+
+
 func _set_gear(new_gear: Gear) -> void:
     if gear == new_gear:
         return
@@ -113,3 +134,6 @@ func _follow_rail(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i
     _face(wagon, new_ori)
     return true
 #endregion
+
+func _on_wagon_collided(_wagon: NavigationWagon, other_wagon: NavigationWagon) -> void:
+    train_collided.emit(self, other_wagon)

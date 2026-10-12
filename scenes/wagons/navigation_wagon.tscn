@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://duc3dxmy6qg6o" path="res://scripts/wagons/navigation_wagon.gd" id="1_qn3xa"]
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_qn3xa"]
+
 [node name="NavigationWagon" type="Node2D" unique_id=1710477873]
 script = ExtResource("1_qn3xa")
 
@@ -10,3 +12,8 @@ script = ExtResource("1_qn3xa")
 [node name="Label" type="Label" parent="." unique_id=1276251182]
 offset_right = 40.0
 offset_bottom = 23.0
+
+[node name="HitArea" type="Area2D" parent="." unique_id=2088949314]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitArea" unique_id=844717126]
+shape = SubResource("CircleShape2D_qn3xa")
