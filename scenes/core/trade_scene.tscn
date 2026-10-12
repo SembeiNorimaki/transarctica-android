@@ -6,15 +6,16 @@
 [ext_resource type="Script" uid="uid://brgr2wy32ruvh" path="res://scripts/services/trade_service.gd" id="4_05ctg"]
 [ext_resource type="Script" uid="uid://bkns6sat14dwr" path="res://scripts/managers/horizontal_train_manager.gd" id="5_05ctg"]
 [ext_resource type="Script" uid="uid://jvn6ykj3gndt" path="res://scripts/managers/trade_resource_manager.gd" id="6_e4mxe"]
+[ext_resource type="Script" uid="uid://brpr1wiygu1w" path="res://scripts/managers/trade_wagon_manager.gd" id="7_2djvw"]
 [ext_resource type="Script" uid="uid://bo4vcuwauepxj" path="res://scripts/inventories/city_inventory.gd" id="7_oh1aj"]
 [ext_resource type="Script" uid="uid://83xnpffg07jw" path="res://scripts/inventories/train_inventory.gd" id="8_jdot1"]
 [ext_resource type="PackedScene" uid="uid://swu4wkh6mhyx" path="res://scenes/menus/buy_menu.tscn" id="9_io20h"]
 [ext_resource type="PackedScene" uid="uid://nfn44fiqwyhr" path="res://scenes/menus/sell_menu.tscn" id="10_wiigk"]
 
-[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_p3vpg"]
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_8c8m6"]
 size = Vector2(100, 100)
 
-[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_8c8m6"]
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_p3vpg"]
 size = Vector2(100, 100)
 
 [node name="TradeScene" type="Node2D" unique_id=1976862330]
@@ -45,6 +46,9 @@ script = ExtResource("5_05ctg")
 [node name="TradeResourceManager" type="Node" parent="Managers" unique_id=1304254149]
 script = ExtResource("6_e4mxe")
 
+[node name="TradeWagonManager" type="Node" parent="Managers" unique_id=204211102]
+script = ExtResource("7_2djvw")
+
 [node name="Inventories" type="Node" parent="." unique_id=1052194190]
 
 [node name="CityInventory" type="Node" parent="Inventories" unique_id=781160467]
@@ -55,40 +59,40 @@ script = ExtResource("8_jdot1")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1341117639]
 
-[node name="Buttons" type="Node2D" parent="CanvasLayer" unique_id=1809129082]
+[node name="UI" type="Control" parent="CanvasLayer" unique_id=377886592]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
 
-[node name="RightButton" type="Button" parent="CanvasLayer/Buttons" unique_id=608431534]
-offset_left = 2265.0
-offset_top = 937.0
-offset_right = 2373.0
-offset_bottom = 1045.0
-icon = SubResource("PlaceholderTexture2D_p3vpg")
+[node name="BuyMenu" parent="CanvasLayer/UI" unique_id=2121969279 instance=ExtResource("9_io20h")]
+visible = false
+layout_mode = 0
 
-[node name="LeftButton" type="Button" parent="CanvasLayer/Buttons" unique_id=1617972688]
+[node name="SellMenu" parent="CanvasLayer/UI" unique_id=143864169 instance=ExtResource("10_wiigk")]
+visible = false
+layout_mode = 0
+
+[node name="PlayerMoney" type="Label" parent="CanvasLayer/UI" unique_id=1849574525]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="LeftButton" type="Button" parent="CanvasLayer/UI" unique_id=1617972688]
+layout_mode = 0
 offset_left = 18.0
 offset_top = 951.0
 offset_right = 126.0
 offset_bottom = 1059.0
 icon = SubResource("PlaceholderTexture2D_8c8m6")
 
-[node name="UI" type="Control" parent="." unique_id=377886592]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="BuyMenu" parent="UI" unique_id=2121969279 instance=ExtResource("9_io20h")]
-visible = false
+[node name="RightButton" type="Button" parent="CanvasLayer/UI" unique_id=608431534]
 layout_mode = 0
+offset_left = 2265.0
+offset_top = 937.0
+offset_right = 2373.0
+offset_bottom = 1045.0
+icon = SubResource("PlaceholderTexture2D_p3vpg")
 
-[node name="SellMenu" parent="UI" unique_id=143864169 instance=ExtResource("10_wiigk")]
-visible = false
-layout_mode = 0
-
-[node name="PlayerMoney" type="Label" parent="UI" unique_id=1849574525]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
-
-[connection signal="pressed" from="CanvasLayer/Buttons/RightButton" to="." method="_on_right_button_pressed"]
-[connection signal="pressed" from="CanvasLayer/Buttons/LeftButton" to="." method="_on_left_button_pressed"]
+[connection signal="pressed" from="CanvasLayer/UI/LeftButton" to="." method="_on_left_button_pressed"]
+[connection signal="pressed" from="CanvasLayer/UI/RightButton" to="." method="_on_right_button_pressed"]

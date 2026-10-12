@@ -222,3 +222,9 @@ func add_money(delta: int) -> bool: # false if the result would be below 0
     _player_money += delta
     money_changed.emit(_player_money)
     return true
+
+func save_game():
+    pass
+
+func load_game():
+    pass

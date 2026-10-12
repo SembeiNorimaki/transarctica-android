@@ -19,9 +19,9 @@ signal trade_failed(message: String) # for the HUD
 @onready var player_train: HorizontalTrain = $TrainContainer/PlayerTrain
 
 # UI
-@onready var buy_menu: BuyMenu = $UI/BuyMenu
-@onready var sell_menu: SellMenu = $UI/SellMenu
-@onready var player_money_label: Label = $UI/PlayerMoney
+@onready var buy_menu: BuyMenu = $CanvasLayer/UI/BuyMenu
+@onready var sell_menu: SellMenu = $CanvasLayer/UI/SellMenu
+@onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
 
 const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
 

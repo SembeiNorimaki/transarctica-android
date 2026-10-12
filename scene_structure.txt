@@ -1,0 +1,44 @@
+TradeScene (Node2D)
+  Background (TilemapLayer)
+  TrainContainer (Node2D)
+    PlayerTrain (HoriontalTrain)
+  ResourceContainer (Node2D)
+  Services (Node)
+    TradeService (TradeService)
+  Managers (Node)
+    HorizontalTrainManager
+	TradeResourceManager
+  Inventories (Node)
+    TrainInventory (TrainInventory)
+	CityInventory (CityInventory)
+  CanvasLayer (CanvasLayer)
+	UI (Control)
+	  BuyMenu (BuyMenu)
+	  SellMenu (SellMenu)
+	  PlayerMoney (Label)
+	  LeftButton (Button)
+	  RightButton (Button)
+
+NavigationScene
+  Maproot
+    World1
+	ExplorationLayer
+  Services
+  Managers
+  TrainContainer
+  CityLabelsContainer
+  CanvasLayer
+  Overlays
+  
+World1
+  Terrain+1
+  Terrain
+  Terrain-1
+  Bridges
+  Rails
+  Cities
+  Trains
+  CitiesIds
+  Tunnels
+  Trees
+  

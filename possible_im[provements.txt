@@ -1,0 +1,13 @@
+Executive Summary
+Area	ImportanceReplace String orientations with enum/constants	5/5
+Reduce Dictionary-heavy APIs with typed classes	5/5
+Add save system	5/5
+Train collision system	5/5
+Inventory transaction validation	5/5
+Rail pathfinding/reservation system	4/5
+City economy simulation	4/5
+Mobile input improvements	4/5
+Event bus/signals for game events	4/5
+Performance optimization for large maps	3/5
+Undo junction changes	2/5
+Replay/statistics system	1/5

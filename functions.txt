@@ -1,0 +1,324 @@
+main_scene.gd
+
+navigation_scene.gd
+  func _ready() -> void:
+  func suspend() -> void:
+  func resume() -> void:
+  func _inject_services() -> void:
+  func _wire_signals() -> void:
+  func _load_map(map_name: String) -> void:
+  func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
+  func _spawn_trains_from_map(trains_tilemap: TileMapLayer) -> void:
+  func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
+  func _unhandled_input(event: InputEvent) -> void:
+  func _on_train_reached_city(city_name: String) -> void:
+  func _on_rail_changed(tile: Vector2i) -> void:
+  func _on_button_left_pressed() -> void:
+  func _on_button_right_pressed() -> void:
+
+trade_scene.gd
+  func _ready() -> void:
+  func _set_resource_slots() -> void:
+  func initialize(city_name_: String) -> void:
+  func _load_train() -> void:
+  func _load_city_resources() -> void:
+  func _on_buy_requested(resource_name: String, qty: int) -> void:
+  func _on_sell_requested(resource_name: String, qty: int) -> void:
+  func _on_sell_from_wagon_requested(wagon_index: int, qty: int) -> void:
+  func _on_resource_clicked(resource_name: String) -> void:
+  func _on_wagon_clicked(wagon: GenericWagon) -> void:
+  func _refresh_buy_menu() -> void:
+  func _refresh_sell_menu() -> void:
+  func _trade(resource_name: String, qty: int, buying: bool) -> void:
+  func _update_wagon_price(wagon_index: int) -> void:
+  func _update_all_wagon_prices() -> void:
+  func _on_city_resource_amount_changed(resource_name: String, qty: int) -> void:
+  func _on_wagon_resource_amount_changed(wagon_index: int, resource_name: String, qty: int) -> void:
+  func _on_money_changed(money: int) -> void:
+  func _on_right_button_pressed() -> void:
+  func _on_left_button_pressed() -> void:
+  func _print_inventories() -> void:
+
+city_inventory.gd
+  func _init(city_name_: String = "") -> void:
+  func load_from_game_state(city_name_: String) -> bool:
+  func initialize_resource(resource_name: String, qty: int, buy_price: int, sell_price: int, max_capacity: int) -> void:
+  func has_resource(resource_name: String) -> bool:
+  func get_resource_names() -> Array:
+  func get_all_info() -> Dictionary:
+  func get_resource_info(resource_name: String) -> Dictionary:
+  func get_available_qty(resource_name: String) -> int:
+  func get_buy_price(resource_name: String) -> int:
+  func get_sell_price(resource_name: String) -> int:
+  func get_free_capacity(resource_name: String) -> int:
+  func has_wagon_type(wagon_type: String) -> bool:
+  func get_wagon_types() -> Array:
+  func get_wagon_available_qty(wagon_type: String) -> int:
+  func get_wagon_buy_price(wagon_type: String) -> int:
+  func get_wagon_sell_price(wagon_type: String) -> int:
+  func add_resource_amount(resource_name: String, qty: int) -> bool:
+  func remove_resource_amount(resource_name: String, qty: int) -> bool:
+  func _apply_change(resource_name: String, delta: int) -> void:
+
+train_inventory.gd
+  func load_from_game_state() -> bool:
+  func _append_wagon(wagon_type: String, cargo: String, qty: int) -> void:
+  func has_wagon(idx: int) -> bool:
+  func get_wagon_count() -> int:
+  func get_wagon_info(idx: int) -> Dictionary:
+  func get_wagon_type(idx: int) -> String:
+  func get_wagon_capacity(idx: int) -> int:
+  func get_wagon_current_resource(idx: int) -> String:
+  func get_wagon_resource_qty(idx: int) -> int:
+  func get_wagon_free_space(idx: int) -> int:
+  func wagon_can_store(wagon_idx: int, resource_name: String) -> bool:
+  func get_wagons_idx_that_can_store(resource_name: String) -> Array:
+  func get_wagon_capacity_for_resource(wagon_idx: int, resource_name: String) -> int:
+  func get_total_qty_of(resource_name: String) -> int:
+  func get_free_capacity_for(resource_name: String) -> int:
+  func add_resource_qty_to_wagon(wagon_idx: int, resource_name: String, qty: int) -> bool:
+  func remove_resource_qty_from_wagon(wagon_idx: int, qty: int) -> bool:
+  func add_resource_amount(resource_name: String, qty: int) -> bool:
+  func remove_resource_amount(resource_name: String, qty: int) -> bool:
+  func _commit(wagon_idx: int, type_changed: bool) -> void:
+
+cities_manager.gd
+  func clear() -> void:
+  func spawn_city(city_id: int, city_tile: Vector2i) -> void:
+  func create_label(city_name: String, city_tile: Vector2i) -> void:
+  func _find_entry_tile(city_tile: Vector2i) -> Vector2i:
+  func get_city_by_entry_tile(tile: Vector2i) -> Dictionary:
+  func is_entry_tile(tile: Vector2i) -> bool:
+
+horizontal_train_manager.gd
+  func setup_train(train: HorizontalTrain, train_data: Dictionary, team: Team) -> bool:
+  func spawn_train(initial_pos: Vector2, train_data: Dictionary, team: Team) -> HorizontalTrain:
+  func clear_trains() -> void:
+  func _on_train_tree_exiting(train: HorizontalTrain) -> void:
+  func player_train_gear_up() -> void:
+  func player_train_gear_down() -> void:
+  func _process(delta: float) -> void:
+
+navigation_train_manager.gd
+  func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain:
+  func clear_trains() -> void:
+  func _make_id(team: Team) -> String:
+  func player_train_reverse() -> void:
+  func player_train_gear_toggle() -> void:
+  func recenter_player_train() -> void:
+  func _process(delta: float) -> void:
+  func _on_train_tile_changed(train: NavigationTrain, _old_tile: Vector2i, new_tile: Vector2i) -> void:
+  func _check_city_entry(tile: Vector2i) -> void:
+
+trade_resource_manager.gd
+  func set_slot_positions(positions: Array[Vector2]) -> void:
+  func spawn_resource(resource_name: String, qty: int, buy_price := 0, sell_price := 0) -> TradeResource:
+  func clear_resources() -> void:
+  func get_resource(resource_name: String) -> TradeResource:
+  func set_resource_qty(resource_name: String, qty: int) -> void:
+  func set_resource_can_buy(resource_name: String, value: bool) -> void:
+  func set_resource_can_sell(resource_name: String, value: bool) -> void:
+  func select_resource(resource_name: String) -> void:
+  func _on_resource_clicked(resource: TradeResource) -> void:
+  func _on_buy_requested(resource_name: String, qty: int) -> void:
+  func _on_sell_requested(resource_name: String, qty: int) -> void:
+
+buy_menu.gd
+  func _ready() -> void:
+  func show_resource(resource_name: String, icon: Texture2D, qty: int, buy_price: int) -> void:
+  func set_qty(qty: int) -> void:
+  func set_can_buy(value: bool) -> void:
+  func close() -> void:
+  func _on_buy1_pressed() -> void:
+  func _on_fill_wagon_pressed() -> void:
+
+sell_menu.gd
+  func _ready() -> void:
+  func show_wagon(wagon_index: int, resource_name: String, icon: Texture2D, qty: int, sell_price: int) -> void:
+  func set_qty(qty: int) -> void:
+  func set_can_sell(value: bool) -> void:
+  func close() -> void:
+  func _on_sell1_pressed() -> void:
+  func _on_sell_wagon_pressed() -> void:
+
+rails_overlay.gd
+  func _ready():
+  func update():
+  func _draw():
+
+audio_service.gd
+  func _ready() -> void:
+  func _setup_buses() -> void:
+  func _setup_music_players() -> void:
+  func _setup_sfx_pool() -> void:
+  func play_music(stream: AudioStream, fade_in: float = DEFAULT_FADE_TIME, loop: bool = true) -> void:
+  func stop_music(fade_out: float = DEFAULT_FADE_TIME) -> void:
+  func crossfade_music(stream: AudioStream, duration: float = DEFAULT_FADE_TIME, loop: bool = true) -> void:
+  func pause_music() -> void:
+  func resume_music() -> void:
+  func set_music_volume(db: float) -> void:
+  func is_music_playing() -> bool:
+  func play_sfx(stream: AudioStream, volume_db: float = 0.0, pitch: float = 1.0) -> AudioStreamPlayer:
+  func play_sfx_at(stream: AudioStream, world_position: Vector2,
+  func set_sfx_volume(db: float) -> void:
+  func _next_sfx_player() -> AudioStreamPlayer:
+  func _kill_music_tween() -> void:
+  func _resolve_bus(preferred: String) -> String:
+  func _set_stream_loop(player: AudioStreamPlayer, loop: bool) -> void:
+
+camera_service.gd
+  func _ready() -> void:
+  func center_at_tile(tile: Vector2i) -> void:
+  func set_pos(pos: Vector2) -> void:
+  func set_zoom(val: float) -> void:
+  func set_world_bounds(rect: Rect2) -> void:
+  func pan(screen_delta: Vector2) -> void:
+  func zoom_at_screen_pos(factor: float, screen_pos: Vector2) -> void:
+  func _unhandled_input(event: InputEvent) -> void:
+  func _process(delta: float) -> void:
+  func _move_to(world_pos: Vector2) -> void:
+
+game_state.gd
+  func _ready() -> void:
+  func _read_json(path: String) -> Variant:
+  func _load_initial_cities(path: String):
+  func _load_initial_player_train(path: String) -> void:
+  func get_player_train() -> Dictionary:
+  func set_player_train(player_train_data: Dictionary) -> void:
+  func set_wagon_cargo(_wagon_idx: int, _resource_name: String, _qty: int) -> void:
+  func get_wagon_cargo(_wagon_idx: int) -> Dictionary:
+  func get_all_city_names() -> Array:
+  func get_city_by_name(city_name: String) -> Dictionary:
+  func get_city_by_location(loc: Vector2i) -> Dictionary:
+  func get_city_by_id(id: int) -> Dictionary:
+  func set_city(city_name: String, city_data: Dictionary) -> void:
+  func change_city_goods(city_name: String, resource_name: String, delta: int) -> bool:
+  func get_money() -> int:
+  func add_money(delta: int) -> bool: # false if the result would be below 0
+
+grid_service.gd
+  func set_tile_size(size: Vector2i) -> void:
+  func set_map_rect(rect: Rect2i) -> void:
+  func is_inside_map(tile: Vector2i) -> bool:
+  func tile_delta_to_world_delta(delta_tile: Vector2) -> Vector2: # Vector2, not Vector2i
+  func tile_to_world(tile: Vector2) -> Vector2:
+  func world_to_tilef(world_pos: Vector2) -> Vector2:
+  func world_to_tile(world_pos: Vector2) -> Vector2i:
+  func orientation_to_delta(ori: String) -> Vector2i:
+  func orientation_to_heading(ori: String) -> Vector2:
+  func get_world_bounds() -> Rect2:
+  func get_neighbors(tile: Vector2i, diagonals := true) -> Array[Vector2i]:
+  func turn_right(ori: String, steps: int) -> String:
+  func turn_left(ori: String, steps: int) -> String:
+  func get_orientation(from_tile: Vector2i, to_tile: Vector2i) -> String:
+  func _cone_key(view_range: int, view_angle: float, orientation: String) -> Vector3i:
+
+horizontal_train_service.gd
+  func spawn_train(initial_pos: Vector2i, train_data: Dictionary) -> HorizontalTrain:
+
+input_utils.gd
+
+navigation_rail_service.gd
+  func spawn_rail(tile: Vector2i, atlas_coords: Vector2i) -> void:
+  func spawn_bridge(tile: Vector2i, atlas_coords: Vector2i) -> void:
+  func _rebuild_edges_for_tile(tile: Vector2i, rail_name: String) -> void:
+  func get_tile_edges(tile: Vector2i) -> Array:
+  func calculate_new_orientation(tile: Vector2i, delta: Vector2i):
+  func change_junction(tile: Vector2i) -> void:
+  func has_junction(tile: Vector2i) -> bool:
+  func has_rail(tile: Vector2i) -> bool:
+
+rail_edge.gd
+  func _init(a: String, b: String, cost: float):
+  func get_edges() -> Array[String]:
+  func get_cost() -> float:
+
+rail_service.gd
+  func clear() -> void:
+  func spawn_rail(tile: Vector2i, atlas_coords: Vector2i) -> void:
+  func _rebuild_edges_for_tile(tile: Vector2i, rail_name: String) -> void:
+  func get_tile_edges(tile: Vector2i) -> Array:
+  func calculate_new_orientation(tile: Vector2i, delta: Vector2i) -> String:
+  func change_junction(tile: Vector2i) -> void:
+  func has_junction(tile: Vector2i) -> bool:
+  func has_rail(tile: Vector2i) -> bool:
+
+scene_service.gd
+  func register_navigation_scene(scene: NavigationScene) -> void:
+  func is_in_city() -> bool:
+  func enter_city(city_name: String) -> void:
+  func leave_city() -> void:
+
+trade_service.gd
+
+trade_resource.gd
+  func _ready() -> void:
+  func set_resource_type(t: String) -> void:
+  func set_qty(q: int) -> void:
+  func set_prices(buy: int, sell: int) -> void:
+  func set_price(p: int) -> void:
+  func set_selected(value: bool) -> void:
+  func set_can_buy(value: bool) -> void:
+  func set_can_sell(value: bool) -> void:
+  func set_visibility(value: bool) -> void:
+  func _refresh() -> void:
+  func get_icon() -> Texture2D:
+  func _on_area_2d_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+  func _on_buy_button_pressed() -> void:
+  func _on_sell_button_pressed() -> void:
+
+horizontal_train.gd
+  func add_wagon(wagon_data: Dictionary) -> GenericWagon:
+  func _on_wagon_clicked(wagon: GenericWagon) -> void:
+  func _on_wagon_cargo_changed(wagon: GenericWagon) -> void:
+  func set_bounds(left: float, right: float) -> void:
+  func set_speed(speed_: float) -> void:
+  func gear_up() -> void:
+  func gear_down() -> void:
+  func update(delta: float) -> void:
+
+navigation_locomotive.gd
+  func _ready() -> void:
+  func set_pos(new_pos: Vector2):
+  func set_orientation(new_ori: String):
+  func set_heading(new_heading: Vector2):
+  func update_animation():
+  func _update_labels():
+  func _process(delta):
+  func _move(delta: float):
+  func _check_tile_change():
+
+navigation_train.gd
+  func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vector2i, ori: String) -> void:
+  func _place_wagons(tile_pos: Vector2i, ori: String) -> void:
+  func _face(wagon: NavigationWagon, ori: String) -> void:
+  func update(delta: float) -> void:
+  func gear_toggle() -> void:
+  func immediate_stop() -> void:
+  func reverse_train() -> void:
+  func _set_gear(new_gear: Gear) -> void:
+  func _on_wagon_tile_changed(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i) -> void:
+  func _follow_rail(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i) -> bool:
+
+generic_wagon.gd
+  func _ready() -> void:
+  func _refresh_visuals() -> void:
+  func apply_data(wagon_data: Dictionary, type_info: Dictionary) -> void:
+  func set_wagon_type(t: String) -> void:
+  func set_cargo_type(t: String) -> void:
+  func set_cargo(resource_name: String, qty: int) -> void:
+  func add_cargo_amount(amount: int) -> int:
+  func get_free_capacity() -> int:
+  func _on_area_2d_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+  func _is_tap(event: InputEvent) -> bool:
+
+merchandise_wagon.gd
+  func set_sell_price(price: int) -> void:
+  func _refresh_visuals() -> void:
+
+navigation_wagon.gd
+  func place_at(tile: Vector2i, ori: String) -> void:
+  func set_orientation(ori: String) -> void:
+  func reverse() -> void:
+  func advance(delta: float) -> void:
+
