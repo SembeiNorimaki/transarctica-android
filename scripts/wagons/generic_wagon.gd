@@ -62,7 +62,15 @@ func set_cargo(resource_name: String, qty: int) -> void:
     cargo_amount = qty
     _refresh_visuals()
 
-
+func get_icon() -> Texture2D:
+    if sprite == null or sprite.texture == null:
+        return null
+    var cell := sprite.texture.get_size() / Vector2(sprite.hframes, sprite.vframes)
+    var atlas := AtlasTexture.new()
+    atlas.atlas = sprite.texture
+    atlas.region = Rect2(Vector2(sprite.frame_coords) * cell, cell)
+    return atlas
+    
 # Adds (positive) or removes (negative) cargo, limited to 0..capacity.
 # Returns the amount that was actually added or removed.
 func add_cargo_amount(amount: int) -> int:

@@ -57,6 +57,21 @@ func add_wagon(wagon_data: Dictionary) -> GenericWagon:
     wagons.append(wagon)
     return wagon
 
+func remove_wagon(index: int) -> void:
+    if index < 0 or index >= wagons.size():
+        return
+    var wagon := wagons[index]
+    wagons.remove_at(index)
+    wagon.queue_free()
+    _layout_wagons()
+
+# Same layout as add_wagon: each wagon centered on its slot, one behind the other
+func _layout_wagons() -> void:
+    last_wagon_position = Vector2.ZERO
+    for wagon in wagons:
+        var width := float(wagon.wagon_dim.x)
+        wagon.position = last_wagon_position - Vector2(width / 2.0, 0.0)
+        last_wagon_position.x -= width
 
 func _on_wagon_clicked(wagon: GenericWagon) -> void:
     print("HorizontalTrain: wagon clicked: %s" % wagon)

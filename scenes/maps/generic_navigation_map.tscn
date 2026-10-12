@@ -27,14 +27,14 @@ sources/0 = SubResource("TileSetAtlasSource_vi62s")
 [node name="GenericNavigationMap" type="Node2D" unique_id=1195897361]
 
 [node name="Terrain+1" type="TileMapLayer" parent="." unique_id=527008799]
-position = Vector2(0, -16)
+position = Vector2(0, -32)
 tile_set = ExtResource("1_d1vn1")
 
 [node name="Terrain" type="TileMapLayer" parent="." unique_id=831286021]
 tile_set = ExtResource("1_d1vn1")
 
 [node name="Terrain-1" type="TileMapLayer" parent="." unique_id=49720303]
-position = Vector2(0, 16)
+position = Vector2(0, 32)
 tile_set = ExtResource("1_d1vn1")
 
 [node name="Bridges" type="TileMapLayer" parent="." unique_id=12452749]

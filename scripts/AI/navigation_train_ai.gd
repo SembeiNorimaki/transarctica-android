@@ -20,7 +20,7 @@ func _ready() -> void:
         return
     _train.train_tile_changed.connect(_on_train_tile_changed)
     _train.gear_changed.connect(_on_gear_changed)
-    _train.drive()
+    #_train.drive()
 
 
 func _on_train_tile_changed(_navigation_train: NavigationTrain, _old_tile: Vector2i, new_tile: Vector2i) -> void:

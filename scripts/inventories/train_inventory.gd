@@ -16,6 +16,8 @@ class_name TrainInventory
 # Both signals carry the state AFTER the change ("" as resource when the wagon was emptied).
 signal wagon_resource_type_changed(wagon_index: int, resource_name: String)
 signal wagon_resource_amount_changed(wagon_index: int, resource_name: String, qty: int)
+signal wagon_added(wagon_index: int, wagon_type: String)
+signal wagon_removed(wagon_index: int)
 
 var wagons: Array[Dictionary] = []
 
@@ -209,7 +211,32 @@ func remove_resource_amount(resource_name: String, qty: int) -> bool:
     return remaining == 0
 #endregion
 
+# Adds an empty wagon at the rear of the train. Returns its index, or -1 if it can't be added.
+func add_wagon(wagon_type: String) -> int:
+    if not WagonTypes.TYPES.has(wagon_type):
+        push_error("TrainInventory: unknown wagon type '%s'" % wagon_type)
+        return -1
+    # TODO: hp / max_hp when combat needs them
+    var index := GameState.add_wagon_to_player_train({"type": wagon_type, "cargo_name": "", "cargo_qty": 0})
+    if index < 0:
+        return -1
+    _append_wagon(wagon_type, "", 0)
+    if index != wagons.size() - 1:
+        push_error("TrainInventory: wagon indices are out of sync with GameState")
+    wagon_added.emit(index, wagon_type)
+    return index
 
+# Removes a wagon with whatever it carries. The wagons behind it move up one index.
+# Index 0 is the locomotive and can't be removed.
+func remove_wagon(wagon_index: int) -> bool:
+    if wagon_index <= 0 or not has_wagon(wagon_index):
+        return false
+    if not GameState.remove_wagon_from_player_train(wagon_index):
+        return false
+    wagons.remove_at(wagon_index)
+    wagon_removed.emit(wagon_index)
+    return true
+    
 # Writes the wagon to GameState, then announces it. The state is final when the signals fire.
 func _commit(wagon_idx: int, type_changed: bool) -> void:
     var wagon: Dictionary = wagons[wagon_idx]

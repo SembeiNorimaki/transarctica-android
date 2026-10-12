@@ -9,6 +9,7 @@ class_name BuyMenu
 signal buy_requested(resource_name: String, qty: int)
 signal fill_wagon_requested(resource_name: String)
 signal closed
+signal buy_wagon_requested(wagon_type: String)
 
 const UNITS_PER_PRESS := 1
 
@@ -22,7 +23,7 @@ const UNITS_PER_PRESS := 1
 
 
 var current_resource := "" # "" when closed
-
+var current_wagon_type := "" # "" unless the menu is showing a wagon
 
 func _ready() -> void:
     buy1_button.pressed.connect(_on_buy1_pressed)
@@ -35,10 +36,25 @@ func _ready() -> void:
 # Opens the menu for a resource
 func show_resource(resource_name: String, icon: Texture2D, qty: int, buy_price: int) -> void:
     current_resource = resource_name
+    current_wagon_type = ""
+    
     name_label.text = resource_name.capitalize()
     image_rect.texture = icon
     price_label.text = str(buy_price) # what the player pays for 1 unit
     set_qty(qty)
+    fill_wagon_button.visible = true
+    show()
+
+# Opens the menu for a wagon the city sells
+func show_wagon(wagon_type: String, icon: Texture2D, qty: int, buy_price: int) -> void:
+    current_resource = ""
+    current_wagon_type = wagon_type
+    name_label.text = wagon_type.capitalize() # "MerchandiseWagon" -> "Merchandise Wagon"
+    image_rect.texture = icon
+    price_label.text = str(buy_price)
+    set_qty(qty)
+    buy1_button.disabled = false # a stale disabled state from a resource would stay otherwise
+    fill_wagon_button.visible = false # "fill wagon" only makes sense for resources
     show()
 
 
@@ -52,12 +68,15 @@ func set_can_buy(value: bool) -> void:
 
 func close() -> void:
     current_resource = ""
+    current_wagon_type = ""
     hide()
     closed.emit()
 
 
 func _on_buy1_pressed() -> void:
-    if current_resource != "":
+    if current_wagon_type != "":
+        buy_wagon_requested.emit(current_wagon_type)
+    elif current_resource != "":
         buy_requested.emit(current_resource, UNITS_PER_PRESS)
 
 

@@ -1,5 +1,4 @@
-Executive Summary
-Area	ImportanceReplace String orientations with enum/constants	5/5
+Replace String orientations with enum/constants	5/5
 Reduce Dictionary-heavy APIs with typed classes	5/5
 Add save system	5/5
 Train collision system	5/5

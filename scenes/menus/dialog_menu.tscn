@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://b4j11lbqypfcu"]
+
+[ext_resource type="Texture2D" uid="uid://c7ugb2fmesfi3" path="res://assets/resources/comrad_face.png" id="1_mjuyr"]
+
+[node name="DialogMenu" type="Control" unique_id=1994343864]
+custom_minimum_size = Vector2(0, 104)
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1166932476]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.47397572, 0.47397572, 0.47397572, 0.6666667)
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=985183657]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer" unique_id=1205925310]
+layout_mode = 2
+texture = ExtResource("1_mjuyr")
+
+[node name="Label" type="Label" parent="HBoxContainer" unique_id=1890654865]
+layout_mode = 2
+text = "hello my friend                                                                                  "
+
+[node name="Button" type="Button" parent="HBoxContainer" unique_id=1590814583]
+layout_mode = 2
+text = "CLOSE"

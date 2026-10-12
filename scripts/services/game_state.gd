@@ -177,10 +177,15 @@ func get_player_train() -> Dictionary:
 func set_player_train(player_train_data: Dictionary) -> void:
     _player_train_state = player_train_data
 
-# TODO: not implemented yet. The data lives in _player_train_state["wagons"][idx] (cargo_name, cargo_qty, capacity).
-func set_wagon_cargo(_wagon_idx: int, _resource_name: String, _qty: int) -> void:
-    push_warning("GameState.set_wagon_cargo() is not implemented")
+func set_wagon_cargo(wagon_idx: int, resource_name: String, qty: int) -> void:
+    var wagons: Array = _player_train_state.get("wagons", [])
+    if wagon_idx < 0 or wagon_idx >= wagons.size():
+        push_error("GameState: no wagon %d in the player train" % wagon_idx)
+        return
+    wagons[wagon_idx]["cargo_name"] = resource_name
+    wagons[wagon_idx]["cargo_qty"] = qty
 
+# TODO: not implemented yet. The data lives in _player_train_state["wagons"][idx] (cargo_name, cargo_qty, capacity).
 func get_wagon_cargo(_wagon_idx: int) -> Dictionary:
     push_warning("GameState.get_wagon_cargo() is not implemented")
     return {}
@@ -211,6 +216,35 @@ func change_city_goods(city_name: String, resource_name: String, delta: int) -> 
         return false
     var entry: Dictionary = trade_resources[resource_name]
     entry["Quantity"] = maxi(int(entry.get("Quantity", 0)) + delta, 0)
+    return true
+
+# Changes the stock of a wagon type a city sells (delta can be negative).
+func change_city_wagons(city_name: String, wagon_type: String, delta: int) -> bool:
+    var trade_wagons: Dictionary = _cities_state.get(city_name, {}).get("TradeWagons", {})
+    if not trade_wagons.has(wagon_type):
+        push_error("GameState: city '%s' has no wagon '%s'" % [city_name, wagon_type])
+        return false
+    var entry: Dictionary = trade_wagons[wagon_type]
+    entry["Quantity"] = maxi(int(entry.get("Quantity", 0)) + delta, 0)
+    return true
+
+
+# Appends a wagon at the rear of the player train. Returns its index, or -1 on error.
+func add_wagon_to_player_train(wagon_data: Dictionary) -> int:
+    if not _player_train_state.has("wagons"):
+        push_error("GameState: the player train has no wagons list")
+        return -1
+    var wagons: Array = _player_train_state["wagons"]
+    wagons.append(wagon_data)
+    return wagons.size() - 1
+
+# Removes a wagon from the player train's list. The wagons behind it move up one index.
+func remove_wagon_from_player_train(wagon_idx: int) -> bool:
+    var wagons: Array = _player_train_state.get("wagons", [])
+    if wagon_idx < 0 or wagon_idx >= wagons.size():
+        push_error("GameState: no wagon %d in the player train" % wagon_idx)
+        return false
+    wagons.remove_at(wagon_idx)
     return true
 
 func get_money() -> int:

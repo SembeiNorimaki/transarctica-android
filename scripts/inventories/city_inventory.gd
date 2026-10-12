@@ -19,6 +19,7 @@ class_name CityInventory
 # }
 
 signal city_resource_amount_changed(resource_name: String, qty: int)
+signal city_wagon_amount_changed(wagon_type: String, qty: int)
 
 const DEFAULT_MAX_CAPACITY := 999 # used when the city data has no MaxCapacity
 
@@ -151,6 +152,28 @@ func remove_resource_amount(resource_name: String, qty: int) -> bool:
     if qty > get_available_qty(resource_name):
         return false
     _apply_change(resource_name, -qty)
+    return true
+
+# The player sold wagons to the city. Returns false if the city doesn't trade that type.
+func add_wagon_amount(wagon_type: String, qty: int) -> bool:
+    if qty <= 0 or not wagons.has(wagon_type):
+        return false
+    var info: Dictionary = wagons[wagon_type]
+    info["qty"] += qty
+    GameState.change_city_wagons(city_name, wagon_type, qty)
+    city_wagon_amount_changed.emit(wagon_type, info["qty"])
+    return true
+    
+# Takes wagons out of the city's stock. Returns false, changing nothing, if there aren't enough.
+func remove_wagon_amount(wagon_type: String, qty: int) -> bool:
+    if qty <= 0 or not wagons.has(wagon_type):
+        return false
+    if qty > get_wagon_available_qty(wagon_type):
+        return false
+    var info: Dictionary = wagons[wagon_type]
+    info["qty"] -= qty
+    GameState.change_city_wagons(city_name, wagon_type, -qty)
+    city_wagon_amount_changed.emit(wagon_type, info["qty"])
     return true
 
 

@@ -28,7 +28,6 @@ var current_wagon := -1 # index of the wagon being shown, -1 when closed
 func _ready() -> void:
     sell1_button.pressed.connect(_on_sell1_pressed)
     sell_wagon_button.pressed.connect(_on_sell_wagon_pressed)
-    sell_wagon_button.disabled = true # TODO: not implemented yet
     if close_button != null:
         close_button.pressed.connect(close)
     hide()
@@ -37,12 +36,22 @@ func _ready() -> void:
 # Opens the menu for the cargo of one wagon
 func show_wagon(wagon_index: int, resource_name: String, icon: Texture2D, qty: int, sell_price: int) -> void:
     current_wagon = wagon_index
+    sell1_button.visible = true
     name_label.text = resource_name.capitalize()
     image_rect.texture = icon
     price_label.text = str(sell_price) # what the city pays the player for 1 unit
     set_qty(qty)
     show()
 
+# Opens the menu for an empty wagon: only the wagon itself can be sold
+func show_empty_wagon(wagon_index: int, wagon_type: String, icon: Texture2D) -> void:
+    current_wagon = wagon_index
+    name_label.text = wagon_type.capitalize()
+    image_rect.texture = icon
+    qty_label.text = ""
+    price_label.text = ""
+    sell1_button.visible = false
+    show()
 
 # Units of the resource in the wagon
 func set_qty(qty: int) -> void:
@@ -52,6 +61,10 @@ func set_qty(qty: int) -> void:
 func set_can_sell(value: bool) -> void:
     sell1_button.disabled = not value
 
+# Price the city pays for the wagon itself. -1 = it can't be sold here (hides the button).
+func set_wagon_offer(price: int) -> void:
+    sell_wagon_button.visible = price >= 0
+    sell_wagon_button.text = "Sell wagon (%d)" % price
 
 func close() -> void:
     current_wagon = -1

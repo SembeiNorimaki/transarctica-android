@@ -38,6 +38,15 @@ static func max_sellable_from_wagon(city: CityInventory, train: TrainInventory, 
 
 
 #region transactions
+static func can_buy_wagon(city: CityInventory, wagon_type: String) -> bool:
+    return city.get_wagon_available_qty(wagon_type) > 0 \
+            and GameState.get_money() >= city.get_wagon_buy_price(wagon_type)
+
+# The city must list the wagon type (it needs its price). The locomotive (index 0) can't be sold.
+static func can_sell_wagon(city: CityInventory, train: TrainInventory, wagon_index: int) -> bool:
+    return wagon_index > 0 and train.has_wagon(wagon_index) \
+            and city.has_wagon_type(train.get_wagon_type(wagon_index))
+
 static func buy(city: CityInventory, train: TrainInventory, resource_name: String, qty: int) -> Result:
     if qty <= 0 or not city.has_resource(resource_name):
         return Result.INVALID
@@ -90,6 +99,37 @@ static func sell_from_wagon(city: CityInventory, train: TrainInventory, wagon_in
     if not ok:
         push_error("TradeService: sell from wagon %d failed after validation" % wagon_index)
     return Result.OK
+
+static func buy_wagon(city: CityInventory, train: TrainInventory, wagon_type: String) -> Result:
+    if not city.has_wagon_type(wagon_type):
+        return Result.INVALID
+    if city.get_wagon_available_qty(wagon_type) < 1:
+        return Result.NO_STOCK
+    var cost := city.get_wagon_buy_price(wagon_type)
+    if GameState.get_money() < cost:
+        return Result.NO_MONEY
+    # TODO: check the train's maximum number of wagons (it will depend on the locomotive)
+
+    var ok := GameState.add_money(-cost)
+    ok = city.remove_wagon_amount(wagon_type, 1) and ok
+    ok = train.add_wagon(wagon_type) >= 0 and ok
+    if not ok:
+        push_error("TradeService: buying wagon %s failed after validation" % wagon_type)
+    return Result.OK
+
+static func sell_wagon(city: CityInventory, train: TrainInventory, wagon_index: int) -> Result:
+    if not can_sell_wagon(city, train, wagon_index):
+        return Result.INVALID
+    var wagon_type := train.get_wagon_type(wagon_index)
+    var income := city.get_wagon_sell_price(wagon_type)
+
+    var ok := train.remove_wagon(wagon_index)
+    ok = city.add_wagon_amount(wagon_type, 1) and ok
+    ok = GameState.add_money(income) and ok
+    if not ok:
+        push_error("TradeService: selling wagon %d failed after validation" % wagon_index)
+    return Result.OK
+    
 #endregion
 
 

@@ -43,6 +43,10 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain
         _add_ai(train)
     return train
 
+func resume() -> void:
+    _transitioning = false
+    set_process(true)
+    
 func _add_ai(train: NavigationTrain) -> void:
     var ai := NavigationTrainAI.new()
     ai.cities_manager = cities_manager # set before add_child, the AI uses it in _ready
@@ -109,6 +113,7 @@ func _check_city_entry(tile: Vector2i) -> void:
     var city = cities_manager.get_city_by_entry_tile(tile)
     _transitioning = true
     player_train.immediate_stop()
+    player_train.reverse_train()
     set_process(false) # freeze all trains; call clear_trains() or resume() on return
     train_reached_city.emit.call_deferred(city.name)
 #endregion

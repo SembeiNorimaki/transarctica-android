@@ -19,17 +19,17 @@ var wagon_container: Node2D
 var trade_wagons := {} # wagon type -> GenericWagon
 
 var _slots: Array[Vector2] = DEFAULT_SLOTS.duplicate()
-var _next_slot := 0
+var _slot_of := {} # wagon type -> index of its slot (slots are reused when a wagon is removed)
 
 
 #region spawning
 # Call before spawning any wagon.
 func set_slot_positions(positions: Array[Vector2]) -> void:
     _slots = positions.duplicate()
-    _next_slot = 0
+    _slot_of.clear()
 
 
-# Creates an empty wagon of this type in the next free slot. Returns null (with an error) if it can't.
+# Creates an empty wagon of this type in the first free slot. Returns null (with an error) if it can't.
 func spawn_wagon(wagon_type: String) -> GenericWagon:
     if wagon_container == null:
         push_error("TradeWagonManager: wagon_container not injected")
@@ -40,7 +40,8 @@ func spawn_wagon(wagon_type: String) -> GenericWagon:
     if not WagonTypes.TYPES.has(wagon_type):
         push_error("TradeWagonManager: unknown wagon type '%s'" % wagon_type)
         return null
-    if _next_slot >= _slots.size():
+    var slot := _find_free_slot()
+    if slot < 0:
         push_error("TradeWagonManager: no free slot for '%s' (%d slots)" % [wagon_type, _slots.size()])
         return null
 
@@ -54,13 +55,22 @@ func spawn_wagon(wagon_type: String) -> GenericWagon:
 
     # Plain data only, so this is safe before the wagon is in the tree. A wagon for sale is empty.
     wagon.apply_data({"type": wagon_type}, wagon_info)
-    wagon.position = _slots[_next_slot]
-    _next_slot += 1
+    wagon.position = _slots[slot]
     wagon.clicked.connect(_on_wagon_clicked)
 
     wagon_container.add_child(wagon)
     trade_wagons[wagon_type] = wagon
+    _slot_of[wagon_type] = slot
     return wagon
+
+
+# The city has no more wagons of this type: the wagon leaves, and its slot becomes free
+func remove_wagon(wagon_type: String) -> void:
+    var wagon := get_wagon(wagon_type)
+    if wagon != null:
+        wagon.queue_free()
+    trade_wagons.erase(wagon_type)
+    _slot_of.erase(wagon_type)
 
 
 func clear_wagons() -> void:
@@ -68,7 +78,15 @@ func clear_wagons() -> void:
         if is_instance_valid(wagon):
             wagon.queue_free()
     trade_wagons.clear()
-    _next_slot = 0
+    _slot_of.clear()
+
+
+func _find_free_slot() -> int:
+    var used := _slot_of.values()
+    for i in _slots.size():
+        if not used.has(i):
+            return i
+    return -1
 #endregion
 
 
