@@ -6,8 +6,8 @@ class_name TradeResource
 # from the inventories' signals.
 
 signal clicked(resource: TradeResource)
-signal buy_requested(resource_name: String, qty: int)
-signal sell_requested(resource_name: String, qty: int)
+#signal buy_requested(resource_name: String, qty: int)
+#signal sell_requested(resource_name: String, qty: int)
 
 const UNITS_PER_PRESS := 1
 
@@ -15,15 +15,13 @@ const UNITS_PER_PRESS := 1
 @onready var area2d: Area2D = $Area2D
 @onready var qty_label: Label = $QtyLabel
 @onready var price_label: Label = $PriceLabel
-@onready var buy_button: Button = $BuyButton
-@onready var sell_button: Button = $SellButton
 
 var resource_type := ""
 var qty := 0
 var buy_price := 0 # what the player pays for 1 unit
 var sell_price := 0 # what the city pays the player for 1 unit
 
-var _selected := false
+# var _selected := false
 var _can_buy := true
 var _can_sell := true
 var _shown := true
@@ -58,12 +56,6 @@ func set_price(p: int) -> void:
     _refresh()
 
 
-# Selected: the buy and sell buttons are shown. The scene keeps a single resource selected.
-func set_selected(value: bool) -> void:
-    _selected = value
-    _refresh()
-
-
 func set_can_buy(value: bool) -> void:
     _can_buy = value
     _refresh()
@@ -92,11 +84,6 @@ func _refresh() -> void:
         sprite.frame = frame
     sprite.visible = _shown and frame >= 0
     area2d.input_pickable = _shown
-
-    buy_button.visible = _selected
-    sell_button.visible = _selected
-    buy_button.disabled = not _can_buy
-    sell_button.disabled = not _can_sell
 #endregion
 
 
@@ -114,11 +101,4 @@ func _on_area_2d_input_event(_viewport: Node, event: InputEvent, _shape_idx: int
     if InputUtils.is_tap(event):
         clicked.emit(self)
 
-
-func _on_buy_button_pressed() -> void:
-    buy_requested.emit(resource_type, UNITS_PER_PRESS)
-
-
-func _on_sell_button_pressed() -> void:
-    sell_requested.emit(resource_type, UNITS_PER_PRESS)
 #endregion

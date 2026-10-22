@@ -14,7 +14,9 @@ const RESOURCE_SCENE: PackedScene = preload("res://scenes/trade_resources/trade_
 # Where the resources go, in the container's coordinates (one per resource).
 # Replace with set_slot_positions(), e.g. from Marker2D nodes in the scene.
 const DEFAULT_SLOTS: Array[Vector2] = [
-    Vector2(100, 100), Vector2(250, 100), Vector2(400, 100), Vector2(550, 100),
+    Vector2(100, 100), Vector2(250, 100), 
+    Vector2(400, 100), Vector2(550, 100),
+    Vector2(700, 100), Vector2(850, 100)    
 ]
 
 # Injected by TradeScene

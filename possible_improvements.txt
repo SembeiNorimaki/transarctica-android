@@ -1,0 +1,128 @@
+
+
+Replace String orientations with enum/constants	5/5
+Reduce Dictionary-heavy APIs with typed classes	5/5
+Add save system	5/5
+Train collision system	5/5
+Inventory transaction validation	5/5
+Rail pathfinding/reservation system	4/5
+City economy simulation	4/5
+Mobile input improvements	4/5
+Event bus/signals for game events	4/5
+Performance optimization for large maps	3/5
+Undo junction changes	2/5
+Replay/statistics system	1/5
+
+
+
+Suggested changes
+Score 5
+
+1. The navigation train isn’t built from GameState.
+NavigationTrain.initialize creates only a locomotive, from a map placeholder, with constants for speed. The wagons the player buys in a city don’t exist in the navigation view, the train’s position and gear aren’t saved, and fuel isn’t used. Everything on top of this (save and load, fuel, wagons following the locomotive, combat) will otherwise need workarounds. The fix is to pass the player train’s data into initialize, and to keep the map placeholder only for enemy trains and a new game’s start position. Wagons following the locomotive along the rails is a separate feature that needs a short history of the tiles the head has passed.
+
+Score 4
+
+2. Stale files and the references to them.
+Three files are leftovers of replaced code:
+
+navigation_rail_service.gd, the old rail service with the RAIL_TO_ORI table, the lowercase junction_changes, and edges[tile][0]. NavigationScene still has an @onready for it and a node in the scene.
+navigation_locomotive.gd, the old locomotive that moved itself in _process. NavigationWagon replaced it.
+horizontal_train_service.gd, replaced by HorizontalTrainManager.
+
+Delete the files, the @onready navigation_rail_service line, and its node in the scene. It’s cheap, and it removes the chance of editing the wrong file or the wrong node. Commit before you do it.
+
+3. Save and load only cover the data layer.
+game_saving and game_loaded have no listeners. To make a save really restore the game, the navigation manager must write the train’s tile, orientation and gear on game_saving, and rebuild from GameState on game_loaded. Decide what happens to enemy trains (saved with their positions, or regenerated from the map). Add a start flow with Continue and New Game, so a load happens before any scene exists. This depends on item 1.
+
+4. Train stats come from three places.
+NavigationTrain has 300/50/200, HorizontalTrain has 1000/100/300, and the JSON has 100/10/20. Nobody reads the JSON. Pick one source. Since a more powerful locomotive will carry more wagons, the static stats (speed, acceleration, maximum wagons) belong in WagonTypes for each locomotive type. GameState holds only what changes (fuel, upgrades). Each scene can apply its own scale factor.
+
+Score 3
+
+5. Wagons are identified by index.
+The index must stay equal in the GameState list, TrainInventory.wagons and HorizontalTrain.wagons. It works today because removals happen in the same order through signals, but selling from the middle already needed special handling (closing the menu). Giving each wagon a stable id in the data and keying the signals and menus by id is sturdier. Combat will refer to individual wagons (hp, damage), so do this before it.
+
+6. Cities are identified by their display name.
+GameState._cities_state, change_city_goods, SceneService.enter_city and train_reached_city all use the name. A stable string id with Name kept for display is sturdier, and it still reads well in a hand-edited save ("paris"). The cost of changing grows with every JSON and save you create, and the save format is brand new.
+
+7. A second path to change cargo still exists.
+GenericWagon.add_cargo_amount and cargo_changed, and HorizontalTrain.wagon_cargo_changed and its handler, let a script change a wagon’s cargo without touching GameState. They are unused now, but a future call would desync the data silently. Delete them. The inventory should be the only way to change cargo.
+
+8. Dead trade code from the old buttons.
+
+TradeResource still has buy_button, sell_button, their signals, _selected, _can_buy, _can_sell and the matching functions.
+TradeResourceManager still has resource_buy_requested, resource_sell_requested, the two relay handlers, select_resource, and set_resource_can_buy / set_resource_can_sell.
+TradeScene still has _on_sell_requested and the sell branch of _trade.
+TradeService.sell and max_sellable are probably unused.
+_print_inventories is a debug function.
+
+Delete what has no caller. Selling by resource name may come back as “sell all cargo”, so keep TradeService.sell only if you plan that soon.
+
+9. No data validation at startup.
+We found about six data mismatches by accident. A debug-only check at start-up should cover: every resource a city sells exists in ResourceTypes with a sprite and a wagon type, every TradeWagons and player wagon type is in WagonTypes, every city id in the maps exists in the JSON, buy_price >= sell_price, and the Location in the JSON matches the map tile. ResourceTypes.find_problems() is a start, but today it only runs when the trade scene opens.
+
+10. TradeScene is becoming what NavigationScene was.
+It has about 35 functions, and most orchestrate the menus (which one is open, how to refresh it, what each button does). Fill Wagon, Sell All and a message area will add more. Move the menu orchestration into a TradeUIController node, and keep the scene as the composition root.
+
+11. NavigationScene still does too much.
+It loads maps, spawns cities, trains and rails, reads input (drag, tap, junctions), and handles scene transitions. Extract a MapLoader for the map and spawning, and a MapInput node that emits tapped(world_position) and calls camera_service.pan. This also puts all camera input in one place. Today the wheel zoom is in CameraService and the drag is in the scene.
+
+12. A pass for mobile.
+You are exporting to Android, and some basics are missing. Pinch to zoom (CameraService has only the wheel). Minimum touch target sizes for the menu buttons. Menus that cover the wagons and resources. Fixed pixel positions in the trade scene. Check the stretch mode and the safe area once, on the device.
+
+13. A shared Team enum before combat.
+NavigationTrainManager.Team and HorizontalTrainManager.Team are different types with the same values. A combat started from the map has to carry the enemy from one to the other. Move it to one shared script now. It’s a small change that is awkward later.
+
+Score 2
+
+14. BuyMenu and SellMenu are near copies.
+In SellMenu, the Sell1 button node is still named ResourceBuy1 and the sell-wagon button is ResourceFillWagon, which will confuse you. Rename the nodes. When you add Fill Wagon and Sell All, consider a single TradeMenu with a mode, so each feature is built once.
+
+15. Duplicated helpers.
+GenericWagon._is_tap duplicates InputUtils.is_tap. get_icon() exists in both TradeResource and GenericWagon. A third copy is the point to move it to a shared helper.
+
+16. Two slot strategies.
+TradeWagonManager reuses free slots, but TradeResourceManager still uses a counter. Use the same approach in both.
+
+17. HorizontalTrainManager builds wagons in two places.
+spawn_train and setup_train repeat the same validation and loop. Let spawn_train call setup_train.
+
+18. GameState is growing.
+It now holds city data, the train, money, saving and loading, and a debug key handler. The unused state dictionary, the get_wagon_cargo stub and the starting money TODO are still there. When it passes a handful more functions, move persistence into a SaveService.
+
+19. Mixed vocabulary.
+The same idea has several names: cargo_name, cargo_type and resource_name, and type, wagon_type and wagon_name. The JSON also mixes PascalCase (Quantity) and snake_case (cargo_qty). Pick one set of terms, at least for new code.
+
+20. SceneService handles scene state by hand.
+City and combat each have their own variables and suspend/resume calls. A small state (navigation, city, combat) would prevent illegal overlaps, for example entering a city during combat. Check that enter_city has the same guard enter_combat has.
+
+21. RailsOverlay (verify).
+It reads rail_service.edges[tile], which for a junction holds all three possible edges, not just the active one. It also has to redraw on rail_changed. Since junctions can be toggled now, both matter, unless the overlay is only a debug view.
+
+22. No automated checks on the money rules.
+A stub (set_wagon_cargo) already cost us a debugging session. TradeService and the inventories are the right place for a few tests (buy with no money, sell with no space, selling a middle wagon). A debug self-check scene would also do.
+
+23. The conventions aren’t written down.
+Views never change data, the inventory is the only way to change it, managers own placement, and dependencies are injected. A one-page ARCHITECTURE.md makes new code, and new chats, follow the same rules.
+
+Score 1
+
+24. Small cleanups:
+
+_load_map(map_name) shadows the map_name member.
+last_pos in NavigationScene is unused.
+print("tapped tile") is debug output.
+The CityInventory.wagons comment mentions max_capacity, which isn’t there. The variable name also collides with TrainInventory.wagons, so rename it to wagon_stock.
+RailEdge.cost is unused.
+GameState._load_initial_cities has no return type.
+ENEMY_TRAIN_POSITION in TradeScene is an unused TODO constant.
+The NavigationScene button handlers are named after the buttons, not the actions.
+Untyped variables in RailsOverlay.
+Suggested order
+Cleanup commit: items 2, 7, 8 and 24. It’s quick, it removes the dead weight, and it makes the rest easier to read.
+Data decisions (4, 5, 6, 13). They are design choices, not much code, and every later feature builds on them.
+The navigation train from GameState, then the complete save and load (1, 3).
+Validation and tests (9, 22), so the data stays consistent as it grows.
+Extractions (10, 11), when the next features start to add to those scenes.
+The mobile pass (12), before more UI is built.

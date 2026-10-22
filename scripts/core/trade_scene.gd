@@ -34,8 +34,9 @@ const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
 const ENEMY_TRAIN_POSITION := Vector2(900, 100) # TODO: enemy train
 
 # Only used when this scene is run on its own (F6), where SceneService is not calling initialize()
-const DEBUG_CITY_NAME := "Foudry"
+const DEBUG_CITY_NAME := "Foundry"
 # const DEBUG_CITY_NAME := "Paris"
+
 
 static var _problems_reported := false
 
@@ -349,6 +350,7 @@ func _on_exit_button_pressed() -> void:
         print("Running the trade scene on its own: there is no navigation scene to return to")
         return
     SceneService.leave_city()
+
 #endregion
 
 

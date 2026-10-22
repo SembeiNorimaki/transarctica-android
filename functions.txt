@@ -1,6 +1,55 @@
+game_constants.gd
+
 main_scene.gd
 
+navigation_train_ai.gd
+  var cities_manager: CitiesManager
+  var _train: NavigationTrain
+  var _turning := false   # a turn-around is already scheduled
+  func _ready() -> void:
+  func _on_train_tile_changed(_navigation_train: NavigationTrain, _old_tile: Vector2i, new_tile: Vector2i) -> void:
+  func _on_gear_changed(_gear) -> void:
+  func _turn_around() -> void:
+  func _do_turn_around() -> void:
+
+combat_scene.gd
+
 navigation_scene.gd
+  @onready var navigation_train_manager: NavigationTrainManager = $Managers/NavigationTrainManager
+  @onready var cities_manager: CitiesManager = $Managers/CitiesManager
+  @onready var navigation_rail_service: NavigationRailService = $Services/NavigationRailService
+  @onready var grid_service: GridService = $Services/GridService
+  @onready var camera_service: CameraService = $Services/CameraService
+  @onready var rail_service: RailService = $Services/RailService
+  @onready var rails_overlay: RailsOverlay = $Overlays/RailsOverlay
+  @onready var map_root: Node2D = $MapRoot
+  @onready var train_container: Node2D = $TrainContainer
+  @onready var city_labels_container: Node2D = $CityLabelsContainer
+  const MUSIC_TRAVEL: AudioStream = preload("res://assets/audio/Travelling.mp3")
+  const TRAIN_ATLAS_TEAMS := [
+  const TRAIN_ATLAS_ORIENTATIONS: Array[String] = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
+  const TAP_MAX_DRAG := 10.0 # screen pixels; moving more than this is a camera drag, not a tap
+  var dragging := false
+  var _drag_distance := 0.0
+  var last_pos := Vector2.ZERO
+  var map_name: String = "world_1"
+  var initial_player_train_pos = Vector2i(25, 9)
+  var map_path := "res://scenes/maps/%s.tscn" % map_name
+  var existing_map: Node2D = map_root.get_child(0)
+  var new_map: Node2D = load(map_path).instantiate()
+  var terrain: TileMapLayer = new_map.get_node("Terrain")
+  var atlas_coords = cities_ids_tilemap.get_cell_atlas_coords(tile)
+  var city_id = atlas_coords.y * 10 + atlas_coords.x
+  var player_spawned := false
+  var atlas := trains_tilemap.get_cell_atlas_coords(tile)
+  var valid_col := atlas.x >= 0 and atlas.x < TRAIN_ATLAS_ORIENTATIONS.size()
+  var valid_row := atlas.y >= 0 and atlas.y < TRAIN_ATLAS_TEAMS.size()
+  var team: NavigationTrainManager.Team = TRAIN_ATLAS_TEAMS[atlas.y]
+  var atlas_coords = rails_tilemap.get_cell_atlas_coords(tile)
+  var tilemap := rail_service.rails_tilemap
+  var rail_name: String = rail_service.rails[tile]
+  var world_pos := get_canvas_transform().affine_inverse() * screen_pos # undoes the camera's position and zoom
+  var tile := grid_service.world_to_tile(world_pos)
   func _ready() -> void:
   func suspend() -> void:
   func resume() -> void:
@@ -10,23 +59,80 @@ navigation_scene.gd
   func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
   func _spawn_trains_from_map(trains_tilemap: TileMapLayer) -> void:
   func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
+  func end_combat(enemy: NavigationTrain) -> void:
   func _unhandled_input(event: InputEvent) -> void:
   func _on_train_reached_city(city_name: String) -> void:
   func _on_rail_changed(tile: Vector2i) -> void:
+  func _on_trains_collided(_player: NavigationTrain, enemy: NavigationTrain) -> void:
   func _on_button_left_pressed() -> void:
   func _on_button_right_pressed() -> void:
+  func _on_map_tapped(screen_pos: Vector2) -> void:
 
 trade_scene.gd
+  @onready var horizontal_train_manager: HorizontalTrainManager = $Managers/HorizontalTrainManager
+  @onready var trade_resource_manager: TradeResourceManager = $Managers/TradeResourceManager
+  @onready var trade_wagon_manager: TradeWagonManager = $Managers/TradeWagonManager
+  @onready var train_container: Node2D = $TrainContainer
+  @onready var trade_resource_container: Node2D = $ResourceContainer
+  @onready var wagon_container: Node2D = $WagonContainer
+  @onready var city_inventory: CityInventory = $Inventories/CityInventory
+  @onready var train_inventory: TrainInventory = $Inventories/TrainInventory
+  @onready var player_train: HorizontalTrain = $TrainContainer/PlayerTrain
+  @onready var buy_menu: BuyMenu = $CanvasLayer/UI/BuyMenu
+  @onready var sell_menu: SellMenu = $CanvasLayer/UI/SellMenu
+  @onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
+  @onready var exit_button: Button = $CanvasLayer/UI/ExitButton
+  signal trade_failed(message: String) # for the HUD
+  const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
+  const ENEMY_TRAIN_POSITION := Vector2(900, 100) # TODO: enemy train
+  const DEBUG_CITY_NAME := "Paris"
+  var city_name := ""
+  var _initialized := false
+  var markers := get_node_or_null("ResourceSlots")
+  var slots: Array[Vector2] = []
+  var train_data: Dictionary = GameState.get_player_train()
+  var result := TradeService.sell_from_wagon(city_inventory, train_inventory, wagon_index, qty)
+  var node := trade_resource_manager.get_resource(resource_name)
+  var index := player_train.wagons.find(wagon)
+  var wagon_type := train_inventory.get_wagon_type(index)
+  var resource_name := train_inventory.get_wagon_current_resource(index)
+  var sells_cargo := resource_name != "" and city_inventory.has_resource(resource_name)
+  var node := trade_resource_manager.get_resource(resource_name)
+  var wagon := trade_wagon_manager.get_wagon(wagon_type)
+  var result := TradeService.buy_wagon(city_inventory, train_inventory, wagon_type)
+  var result := TradeService.sell_wagon(city_inventory, train_inventory, wagon_index)
+  var wagons_data: Array = GameState.get_player_train().get("wagons", [])
+  var wagon_type := buy_menu.current_wagon_type
+  var resource_name := buy_menu.current_resource
+  var index := sell_menu.current_wagon
+  var wagon_type := train_inventory.get_wagon_type(index)
+  var can_sell_wagon := TradeService.can_sell_wagon(city_inventory, train_inventory, index)
+  var qty := train_inventory.get_wagon_resource_qty(index)
+  var result: TradeService.Result
+  var wagon := player_train.wagons[wagon_index] as MerchandiseWagon
+  var resource_name := train_inventory.get_wagon_current_resource(wagon_index)
+  var price := -1 # -1: the city doesn't buy it
+  var train := player_train
+  var info := city_inventory.get_resource_info(resource_name)
+  var wagon := train_inventory.get_wagon_info(i)
+  var cargo: String = wagon.resource_name if wagon.resource_name != "" else "(empty)"
   func _ready() -> void:
   func _set_resource_slots() -> void:
   func initialize(city_name_: String) -> void:
   func _load_train() -> void:
   func _load_city_resources() -> void:
+  func _load_city_wagons() -> void:
   func _on_buy_requested(resource_name: String, qty: int) -> void:
   func _on_sell_requested(resource_name: String, qty: int) -> void:
   func _on_sell_from_wagon_requested(wagon_index: int, qty: int) -> void:
   func _on_resource_clicked(resource_name: String) -> void:
   func _on_wagon_clicked(wagon: GenericWagon) -> void:
+  func _on_city_wagon_clicked(wagon_type: String) -> void:
+  func _on_buy_wagon_requested(wagon_type: String) -> void:
+  func _on_sell_wagon_requested(wagon_index: int) -> void:
+  func _on_city_wagon_amount_changed(wagon_type: String, qty: int) -> void:
+  func _on_wagon_added(wagon_index: int, _wagon_type: String) -> void:
+  func _on_wagon_removed(wagon_index: int) -> void:
   func _refresh_buy_menu() -> void:
   func _refresh_sell_menu() -> void:
   func _trade(resource_name: String, qty: int, buying: bool) -> void:
@@ -35,11 +141,29 @@ trade_scene.gd
   func _on_city_resource_amount_changed(resource_name: String, qty: int) -> void:
   func _on_wagon_resource_amount_changed(wagon_index: int, resource_name: String, qty: int) -> void:
   func _on_money_changed(money: int) -> void:
+  func _on_exit_button_pressed() -> void:
   func _on_right_button_pressed() -> void:
   func _on_left_button_pressed() -> void:
   func _print_inventories() -> void:
 
 city_inventory.gd
+  signal city_resource_amount_changed(resource_name: String, qty: int)
+  signal city_wagon_amount_changed(wagon_type: String, qty: int)
+  const DEFAULT_MAX_CAPACITY := 999 # used when the city data has no MaxCapacity
+  var city_name := ""
+  var resources := {} # resource_name -> {qty, buy_price, sell_price, max_capacity}
+  var wagons := {} # wagon_name -> {qty, buy_price, sell_price, max_capacity}
+  var city_data: Dictionary = GameState.get_city_by_name(city_name)
+  var trade_resources: Dictionary = city_data.get("TradeResources", {})
+  var data: Dictionary = trade_resources[resource_name]
+  var trade_wagons: Dictionary = city_data.get("TradeWagons", {}) # optional: most cities don't sell wagons
+  var data: Dictionary = trade_wagons[wagon_type]
+  var buy_price := int(data.get("BuyPrice", 0))
+  var sell_price := int(data.get("SellPrice", 0))
+  var info: Dictionary = resources.get(resource_name, {})
+  var info: Dictionary = wagons[wagon_type]
+  var info: Dictionary = wagons[wagon_type]
+  var info: Dictionary = resources[resource_name]
   func _init(city_name_: String = "") -> void:
   func load_from_game_state(city_name_: String) -> bool:
   func initialize_resource(resource_name: String, qty: int, buy_price: int, sell_price: int, max_capacity: int) -> void:
@@ -58,9 +182,36 @@ city_inventory.gd
   func get_wagon_sell_price(wagon_type: String) -> int:
   func add_resource_amount(resource_name: String, qty: int) -> bool:
   func remove_resource_amount(resource_name: String, qty: int) -> bool:
+  func add_wagon_amount(wagon_type: String, qty: int) -> bool:
+  func remove_wagon_amount(wagon_type: String, qty: int) -> bool:
   func _apply_change(resource_name: String, delta: int) -> void:
 
 train_inventory.gd
+  signal wagon_resource_type_changed(wagon_index: int, resource_name: String)
+  signal wagon_resource_amount_changed(wagon_index: int, resource_name: String, qty: int)
+  signal wagon_added(wagon_index: int, wagon_type: String)
+  signal wagon_removed(wagon_index: int)
+  var wagons: Array[Dictionary] = []
+  var train_data: Dictionary = GameState.get_player_train()
+  var wagons_data: Array = train_data.get("wagons", [])
+  var data: Dictionary = wagon_data
+  var capacity := 0
+  var needed_type = ResourceTypes.wagon_type_for(resource_name) # "" if the resource is unknown
+  var wagon: Dictionary = wagons[wagon_idx]
+  var result := []
+  var total := 0
+  var total := 0
+  var wagon: Dictionary = wagons[wagon_idx]
+  var type_changed: bool = wagon.resource_name == ""
+  var wagon: Dictionary = wagons[wagon_idx]
+  var type_changed := false
+  var remaining := qty
+  var amount := mini(remaining, get_wagon_free_space(i))
+  var holding: Array[int] = []
+  var remaining := qty
+  var amount := mini(remaining, wagons[i].qty)
+  var index := GameState.add_wagon_to_player_train({"type": wagon_type, "cargo_name": "", "cargo_qty": 0})
+  var wagon: Dictionary = wagons[wagon_idx]
   func load_from_game_state() -> bool:
   func _append_wagon(wagon_type: String, cargo: String, qty: int) -> void:
   func has_wagon(idx: int) -> bool:
@@ -80,9 +231,27 @@ train_inventory.gd
   func remove_resource_qty_from_wagon(wagon_idx: int, qty: int) -> bool:
   func add_resource_amount(resource_name: String, qty: int) -> bool:
   func remove_resource_amount(resource_name: String, qty: int) -> bool:
+  func add_wagon(wagon_type: String) -> int:
+  func remove_wagon(wagon_index: int) -> bool:
   func _commit(wagon_idx: int, type_changed: bool) -> void:
 
 cities_manager.gd
+  const NO_ENTRY := Vector2i(-999999, -999999) # sentinel: no entry tile found
+  const LABEL_OFFSET := Vector2(0, -128) # world px above the city tile
+  const LABEL_WIDTH := 200.0 # fixed width so the text can be centered
+  const ENTRY_CANDIDATES := [
+  var rail_service: RailService
+  var city_labels_container: Node2D
+  var grid_service: GridService
+  var cities: Dictionary = {}
+  var _labels: Array[Label] = []
+  var city_data = GameState.get_city_by_id(city_id)
+  var city_name: String = city_data.Name
+  var entry_tile := _find_entry_tile(city_tile)
+  var label := Label.new()
+  var matches: Array[Vector2i] = []
+  var candidate: Vector2i = city_tile + pair[0]
+  var outward: Vector2i = city_tile + pair[1]
   func clear() -> void:
   func spawn_city(city_id: int, city_tile: Vector2i) -> void:
   func create_label(city_name: String, city_tile: Vector2i) -> void:
@@ -91,6 +260,13 @@ cities_manager.gd
   func is_entry_tile(tile: Vector2i) -> bool:
 
 horizontal_train_manager.gd
+  const HORIZONTAL_TRAIN_SCENE: PackedScene = preload("res://scenes/trains/horizontal_train.tscn")
+  var train_container: Node2D
+  var player_train: HorizontalTrain = null
+  var enemy_trains: Array[HorizontalTrain] = []
+  var wagons_data: Array = train_data.get("wagons", [])
+  var wagons_data: Array = train_data.get("wagons", [])
+  var train := HORIZONTAL_TRAIN_SCENE.instantiate() as HorizontalTrain
   func setup_train(train: HorizontalTrain, train_data: Dictionary, team: Team) -> bool:
   func spawn_train(initial_pos: Vector2, train_data: Dictionary, team: Team) -> HorizontalTrain:
   func clear_trains() -> void:
@@ -100,7 +276,27 @@ horizontal_train_manager.gd
   func _process(delta: float) -> void:
 
 navigation_train_manager.gd
+  signal train_reached_city(city_name: String)
+  signal trains_collided(player_train: NavigationTrain, enemy_train: NavigationTrain)
+  const TRAIN_SCENE: PackedScene = preload("res://scenes/trains/navigation_train.tscn")
+  const MAX_DELTA := 0.1 # seconds; avoids tile-skipping after hitches
+  var cities_manager: CitiesManager
+  var camera_service: CameraService
+  var grid_service: GridService
+  var rail_service: RailService
+  var train_container: Node2D
+  var player_train: NavigationTrain
+  var enemy_trains: Array[NavigationTrain] = []
+  var camera_lock_to_engine := false
+  var _next_train_id := 0
+  var _transitioning := false
+  var train: NavigationTrain = TRAIN_SCENE.instantiate()
+  var ai := NavigationTrainAI.new()
+  var id := "t%s%d" % ["P" if team == Team.PLAYER else "E", _next_train_id]
+  var city = cities_manager.get_city_by_entry_tile(tile)
   func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain:
+  func resume() -> void:
+  func _add_ai(train: NavigationTrain) -> void:
   func clear_trains() -> void:
   func _make_id(team: Team) -> String:
   func player_train_reverse() -> void:
@@ -109,8 +305,25 @@ navigation_train_manager.gd
   func _process(delta: float) -> void:
   func _on_train_tile_changed(train: NavigationTrain, _old_tile: Vector2i, new_tile: Vector2i) -> void:
   func _check_city_entry(tile: Vector2i) -> void:
+  func _on_train_collided(train: NavigationTrain, other_wagon: NavigationWagon) -> void:
+  func _emit_collision(enemy: NavigationTrain) -> void:
+  func remove_train(train: NavigationTrain) -> void:
 
 trade_resource_manager.gd
+  signal resource_buy_requested(resource_name: String, qty: int)
+  signal resource_sell_requested(resource_name: String, qty: int)
+  signal resource_clicked(resource_name: String)
+  const RESOURCE_SCENE: PackedScene = preload("res://scenes/trade_resources/trade_resource.tscn")
+  const DEFAULT_SLOTS: Array[Vector2] = [
+  var resource_container: Node2D
+  var trade_resources := {} # resource name -> TradeResource
+  var _slots: Array[Vector2] = DEFAULT_SLOTS.duplicate()
+  var _next_slot := 0
+  var node := RESOURCE_SCENE.instantiate() as TradeResource
+  var node := get_resource(resource_name)
+  var node := get_resource(resource_name)
+  var node := get_resource(resource_name)
+  var node: TradeResource = trade_resources[key]
   func set_slot_positions(positions: Array[Vector2]) -> void:
   func spawn_resource(resource_name: String, qty: int, buy_price := 0, sell_price := 0) -> TradeResource:
   func clear_resources() -> void:
@@ -123,9 +336,45 @@ trade_resource_manager.gd
   func _on_buy_requested(resource_name: String, qty: int) -> void:
   func _on_sell_requested(resource_name: String, qty: int) -> void:
 
+trade_wagon_manager.gd
+  signal wagon_clicked(wagon_type: String)
+  const DEFAULT_SLOTS: Array[Vector2] = [
+  var wagon_container: Node2D
+  var trade_wagons := {} # wagon type -> GenericWagon
+  var _slots: Array[Vector2] = DEFAULT_SLOTS.duplicate()
+  var _slot_of := {} # wagon type -> index of its slot (slots are reused when a wagon is removed)
+  var slot := _find_free_slot()
+  var wagon_info: Dictionary = WagonTypes.TYPES[wagon_type]
+  var node: Node = wagon_info.horizontal_scene.instantiate()
+  var wagon := node as GenericWagon
+  var wagon := get_wagon(wagon_type)
+  var used := _slot_of.values()
+  func set_slot_positions(positions: Array[Vector2]) -> void:
+  func spawn_wagon(wagon_type: String) -> GenericWagon:
+  func remove_wagon(wagon_type: String) -> void:
+  func clear_wagons() -> void:
+  func _find_free_slot() -> int:
+  func get_wagon(wagon_type: String) -> GenericWagon:
+  func _on_wagon_clicked(wagon: GenericWagon) -> void:
+
 buy_menu.gd
+  @onready var name_label: Label = $VBoxContainer/ResourceName
+  @onready var image_rect: TextureRect = $VBoxContainer/ResourceImage
+  @onready var qty_label: Label = $VBoxContainer/ResourceQty
+  @onready var price_label: Label = $VBoxContainer/ResourceSellPrice
+  @onready var buy1_button: Button = $VBoxContainer/ResourceBuy1
+  @onready var fill_wagon_button: Button = $VBoxContainer/ResourceFillWagon
+  @onready var close_button: Button = $VBoxContainer/CloseButton
+  signal buy_requested(resource_name: String, qty: int)
+  signal fill_wagon_requested(resource_name: String)
+  signal closed
+  signal buy_wagon_requested(wagon_type: String)
+  const UNITS_PER_PRESS := 1
+  var current_resource := "" # "" when closed
+  var current_wagon_type := "" # "" unless the menu is showing a wagon
   func _ready() -> void:
   func show_resource(resource_name: String, icon: Texture2D, qty: int, buy_price: int) -> void:
+  func show_wagon(wagon_type: String, icon: Texture2D, qty: int, buy_price: int) -> void:
   func set_qty(qty: int) -> void:
   func set_can_buy(value: bool) -> void:
   func close() -> void:
@@ -133,20 +382,64 @@ buy_menu.gd
   func _on_fill_wagon_pressed() -> void:
 
 sell_menu.gd
+  @onready var name_label: Label = $VBoxContainer/ResourceName
+  @onready var image_rect: TextureRect = $VBoxContainer/ResourceImage
+  @onready var qty_label: Label = $VBoxContainer/ResourceQty
+  @onready var price_label: Label = $VBoxContainer/ResourceSellPrice
+  @onready var sell1_button: Button = $VBoxContainer/ResourceBuy1
+  @onready var sell_wagon_button: Button = $VBoxContainer/ResourceFillWagon
+  @onready var close_button: Button = $VBoxContainer/CloseButton
+  signal sell_requested(wagon_index: int, qty: int)
+  signal sell_wagon_requested(wagon_index: int)
+  signal closed
+  const UNITS_PER_PRESS := 1
+  var current_wagon := -1 # index of the wagon being shown, -1 when closed
   func _ready() -> void:
   func show_wagon(wagon_index: int, resource_name: String, icon: Texture2D, qty: int, sell_price: int) -> void:
+  func show_empty_wagon(wagon_index: int, wagon_type: String, icon: Texture2D) -> void:
   func set_qty(qty: int) -> void:
   func set_can_sell(value: bool) -> void:
+  func set_wagon_offer(price: int) -> void:
   func close() -> void:
   func _on_sell1_pressed() -> void:
   func _on_sell_wagon_pressed() -> void:
 
 rails_overlay.gd
+  const OFFSETS = {
+  var grid_service: GridService
+  var rail_service: RailService
+  var edges = rail_service.edges[tile]
+  var a = edge.a
+  var b = edge.b
+  var a_off = OFFSETS[a]
+  var b_off = OFFSETS[b]
+  var world_pos = grid_service.tile_to_world(tile)
+  var a_pos = world_pos + a_off
+  var b_pos = world_pos + b_off
   func _ready():
   func update():
   func _draw():
 
 audio_service.gd
+  const SFX_POOL_SIZE: int = 16
+  const MUSIC_BUS: String = "Music"
+  const SFX_BUS: String = "SFX"
+  const DEFAULT_FADE_TIME: float = 1.0
+  var _music_player_a: AudioStreamPlayer
+  var _music_player_b: AudioStreamPlayer
+  var _active_music: AudioStreamPlayer # whichever of A/B is currently "on"
+  var _sfx_pool: Array[AudioStreamPlayer] = []
+  var _sfx_pool_index: int = 0
+  var _music_tween: Tween
+  var idx: int = AudioServer.bus_count
+  var player := AudioStreamPlayer.new()
+  var outgoing: AudioStreamPlayer = _active_music
+  var incoming: AudioStreamPlayer = _music_player_b if outgoing == _music_player_a else _music_player_a
+  var idx: int = AudioServer.get_bus_index(_resolve_bus(MUSIC_BUS))
+  var player := _next_sfx_player()
+  var player := AudioStreamPlayer2D.new()
+  var idx: int = AudioServer.get_bus_index(_resolve_bus(SFX_BUS))
+  var player := _sfx_pool[_sfx_pool_index]
   func _ready() -> void:
   func _setup_buses() -> void:
   func _setup_music_players() -> void:
@@ -167,6 +460,17 @@ audio_service.gd
   func _set_stream_loop(player: AudioStreamPlayer, loop: bool) -> void:
 
 camera_service.gd
+  @onready var cam: Camera2D = $Camera2D
+  signal camera_moved
+  const ZOOM_STEP := 1.1 # multiplicative, per wheel notch
+  const MIN_ZOOM := 0.25
+  const MAX_ZOOM := 6.0
+  var grid_service: GridService # injected
+  var world_bounds := Rect2() # empty rect = unbounded
+  var zoom: float:
+  var z := clampf(value, MIN_ZOOM, MAX_ZOOM)
+  var old_zoom := zoom
+  var from_center := screen_pos - get_viewport_rect().size * 0.5
   func _ready() -> void:
   func center_at_tile(tile: Vector2i) -> void:
   func set_pos(pos: Vector2) -> void:
@@ -179,13 +483,48 @@ camera_service.gd
   func _move_to(world_pos: Vector2) -> void:
 
 game_state.gd
+  signal money_changed(money: int)
+  signal game_saving # emitted before the state is written: scenes should flush their runtime state into GameState
+  signal game_loaded # emitted after a load: scenes should rebuild themselves from GameState
+  const CITIES_PATH := "res://data/newgame/cities_World2.json"
+  const PLAYER_TRAIN_PATH := "res://data/newgame/player_train.json"
+  const SAVE_PATH := "user://savegame.json"
+  const SAVE_VERSION := 1
+  var _cities_state: Dictionary = {} # city name -> city data
+  var _cities_by_location: Dictionary = {} # Vector2i -> city name
+  var _cities_by_id: Dictionary = {} # int -> city name
+  var _player_train_state: Dictionary = {}
+  var _player_money := 100 # TODO: load the starting value from data
+  var state := {
+  var file := FileAccess.open(path, FileAccess.READ)
+  var data = JSON.parse_string(file.get_as_text())
+  var data = _read_json(path)
+  var city = data[key]
+  var location = city["Location"]
+  var city_name: String = city["Name"]
+  var data = _read_json(path)
+  var wagons: Array = _player_train_state.get("wagons", [])
+  var trade_resources: Dictionary = _cities_state.get(city_name, {}).get("TradeResources", {})
+  var entry: Dictionary = trade_resources[resource_name]
+  var trade_wagons: Dictionary = _cities_state.get(city_name, {}).get("TradeWagons", {})
+  var entry: Dictionary = trade_wagons[wagon_type]
+  var wagons: Array = _player_train_state["wagons"]
+  var wagons: Array = _player_train_state.get("wagons", [])
+  var city_ids := {} # JSON keys must be strings
+  var data := {
+  var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+  var data = _read_json(SAVE_PATH)
+  var problem := _validate_save(data)
+  var location: Array = _cities_state[city_name]["Location"]
+  var city = data["cities"][city_name]
+  var key := event as InputEventKey
   func _ready() -> void:
   func _read_json(path: String) -> Variant:
   func _load_initial_cities(path: String):
   func _load_initial_player_train(path: String) -> void:
   func get_player_train() -> Dictionary:
   func set_player_train(player_train_data: Dictionary) -> void:
-  func set_wagon_cargo(_wagon_idx: int, _resource_name: String, _qty: int) -> void:
+  func set_wagon_cargo(wagon_idx: int, resource_name: String, qty: int) -> void:
   func get_wagon_cargo(_wagon_idx: int) -> Dictionary:
   func get_all_city_names() -> Array:
   func get_city_by_name(city_name: String) -> Dictionary:
@@ -193,10 +532,36 @@ game_state.gd
   func get_city_by_id(id: int) -> Dictionary:
   func set_city(city_name: String, city_data: Dictionary) -> void:
   func change_city_goods(city_name: String, resource_name: String, delta: int) -> bool:
+  func change_city_wagons(city_name: String, wagon_type: String, delta: int) -> bool:
+  func add_wagon_to_player_train(wagon_data: Dictionary) -> int:
+  func remove_wagon_from_player_train(wagon_idx: int) -> bool:
   func get_money() -> int:
   func add_money(delta: int) -> bool: # false if the result would be below 0
+  func has_save() -> bool:
+  func save_game() -> bool:
+  func load_game() -> bool:
+  func _validate_save(data) -> String:
+  func _unhandled_key_input(event: InputEvent) -> void: # TEMPORARY: quick save / load while developing
 
 grid_service.gd
+  const NEIGHBORS_4: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+  const NEIGHBORS_8: Array[Vector2i] = [
+  const ORIENTATIONS: Array[String] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] # clockwise, tile-space
+  var tile_size := Vector2i.ZERO
+  var tile_half_size := Vector2.ZERO
+  var tile_center_offset := Vector2.ZERO # world position of tile (0,0)'s center
+  var map_rect := Rect2i()
+  var map_size: Vector2i:
+  var p := (world_pos - tile_center_offset) / Vector2(tile_size)
+  var i := ORIENTATIONS.find(ori)
+  var a := Vector2(map_rect.position) - Vector2(0.5, 0.5)
+  var b := Vector2(map_rect.end) - Vector2(0.5, 0.5)
+  var corners: Array[Vector2] = [
+  var bounds := Rect2(corners[0], Vector2.ZERO)
+  var result: Array[Vector2i] = []
+  var i := ORIENTATIONS.find(ori)
+  var d := to_tile - from_tile
+  var step := roundi(atan2(d.x, -d.y) / (TAU / 8.0))
   func set_tile_size(size: Vector2i) -> void:
   func set_map_rect(rect: Rect2i) -> void:
   func is_inside_map(tile: Vector2i) -> bool:
@@ -214,11 +579,53 @@ grid_service.gd
   func _cone_key(view_range: int, view_angle: float, orientation: String) -> Vector3i:
 
 horizontal_train_service.gd
+  const HORIZONTAL_TRAIN_SCENE = preload("res://scenes/trains/horizontal_train.tscn")
+  var player_train: HorizontalTrain = null
+  var horizontal_train = HORIZONTAL_TRAIN_SCENE.instantiate()
   func spawn_train(initial_pos: Vector2i, train_data: Dictionary) -> HorizontalTrain:
 
 input_utils.gd
+  var mouse := event as InputEventMouseButton
 
 navigation_rail_service.gd
+  const ATLAS_TO_RAILNAME = {
+  const RAILNAME_TO_ATLAS = {
+  const ATLAS_TO_BRIDGENAME = {
+  const BRIDGENAME_TO_ATLAS = {
+  const DIRS = {
+  const EDGE_POS = {
+  const DELTA_TO_ENTRY_EDGE = {
+  const OPPOSITE_EDGE = {
+  const RAIL_TO_ORI = {
+  const junction_changes = {
+  const orientations = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+  var rails_tilemap: TileMapLayer
+  var rails = {} # tile -> rail_code (e.g. "NS", "EW", "NSe")
+  var edges = {} # tile -> Array[RailEdge]
+  var rail_name = ATLAS_TO_RAILNAME[atlas_coords]
+  var bridge_name = ATLAS_TO_RAILNAME[atlas_coords]
+  var letters = rail_name.split("") # eg: ["N", "S"]
+  var a = letters[0]
+  var b = letters[1]
+  var a = letters[0]
+  var b = letters[1]
+  var c = letters[2]
+  var a = letters[0]
+  var b = letters[1]
+  var c = letters[2]
+  var d = letters[3]
+  var entry_edge = DELTA_TO_ENTRY_EDGE[delta]
+  var exit_edge = null
+  var edge = edges[tile][0]
+  var edge_str = "%s%s" % [entry_edge, exit_edge]
+  var new_ori = RAIL_TO_ORI[edge_str]
+  var rail_name = rails[tile]
+  var new_tilename = junction_changes[rail_name]
+  var letters = new_tilename.split("")
+  var a = letters[0]
+  var b = letters[1]
+  var c = letters[2]
+  var new_atlas_coords = RAILNAME_TO_ATLAS[new_tilename]
   func spawn_rail(tile: Vector2i, atlas_coords: Vector2i) -> void:
   func spawn_bridge(tile: Vector2i, atlas_coords: Vector2i) -> void:
   func _rebuild_edges_for_tile(tile: Vector2i, rail_name: String) -> void:
@@ -229,11 +636,38 @@ navigation_rail_service.gd
   func has_rail(tile: Vector2i) -> bool:
 
 rail_edge.gd
+  var a: String
+  var b: String
+  var cost: float
   func _init(a: String, b: String, cost: float):
   func get_edges() -> Array[String]:
   func get_cost() -> float:
 
 rail_service.gd
+  signal rail_changed(tile: Vector2i)
+  const ATLAS_TO_RAILNAME = {
+  const RAILNAME_TO_ATLAS = {
+  const ATLAS_TO_BRIDGENAME = {
+  const BRIDGENAME_TO_ATLAS = {
+  const DIRS = {
+  const EDGE_POS = {
+  const DELTA_TO_ENTRY_EDGE = {
+  const OPPOSITE_EDGE = {
+  const DELTA_TO_ORI = {
+  const JUNCTION_CHANGES = {
+  var rails_tilemap: TileMapLayer
+  var grid_service: GridService
+  var rails := {} # tile -> rail name (e.g. "NS", "NSW")
+  var edges := {} # tile -> Array[RailEdge]. For junctions, [0] is the ACTIVE route (kept for the overlay)
+  var _routes := {} # tile -> {entry_edge: exit_edge}, active routes only
+  var rail_name: String = ATLAS_TO_RAILNAME.get(atlas_coords, "")
+  var l := rail_name.split("")
+  var list: Array = []
+  var active: Array = list.slice(0, 1) if l.size() == 3 else list
+  var route := {}
+  var entry_edge: String = DELTA_TO_ENTRY_EDGE.get(delta, "")
+  var exit_edge: String = _routes.get(tile, {}).get(entry_edge, "")
+  var next_name: String = JUNCTION_CHANGES.get(rails.get(tile, ""), "")
   func clear() -> void:
   func spawn_rail(tile: Vector2i, atlas_coords: Vector2i) -> void:
   func _rebuild_edges_for_tile(tile: Vector2i, rail_name: String) -> void:
@@ -244,14 +678,58 @@ rail_service.gd
   func has_rail(tile: Vector2i) -> bool:
 
 scene_service.gd
+  const TRADE_SCENE: PackedScene = preload("res://scenes/core/trade_scene.tscn")
+  const COMBAT_SCENE: PackedScene = preload("res://scenes/core/combat_scene.tscn") # adjust the path
+  var navigation_scene: NavigationScene
+  var city_scene: Node
+  var combat_scene: Node
+  var _combat_enemy: NavigationTrain
   func register_navigation_scene(scene: NavigationScene) -> void:
   func is_in_city() -> bool:
   func enter_city(city_name: String) -> void:
   func leave_city() -> void:
+  func enter_combat(enemy_train: NavigationTrain) -> void:
+  func leave_combat() -> void:
 
 trade_service.gd
+  var limit := mini(city.get_available_qty(resource_name), train.get_free_capacity_for(resource_name))
+  var price := city.get_buy_price(resource_name)
+  var resource_name := train.get_wagon_current_resource(wagon_index)
+  var cost := city.get_buy_price(resource_name) * qty
+  var ok := GameState.add_money(-cost)
+  var income := city.get_sell_price(resource_name) * qty
+  var ok := train.remove_resource_amount(resource_name, qty)
+  var resource_name := train.get_wagon_current_resource(wagon_index)
+  var income := city.get_sell_price(resource_name) * qty
+  var ok := train.remove_resource_qty_from_wagon(wagon_index, qty)
+  var cost := city.get_wagon_buy_price(wagon_type)
+  var ok := GameState.add_money(-cost)
+  var wagon_type := train.get_wagon_type(wagon_index)
+  var income := city.get_wagon_sell_price(wagon_type)
+  var ok := train.remove_wagon(wagon_index)
 
 trade_resource.gd
+  @onready var sprite: Sprite2D = $Sprite2D
+  @onready var area2d: Area2D = $Area2D
+  @onready var qty_label: Label = $QtyLabel
+  @onready var price_label: Label = $PriceLabel
+  @onready var buy_button: Button = $BuyButton
+  @onready var sell_button: Button = $SellButton
+  signal clicked(resource: TradeResource)
+  signal buy_requested(resource_name: String, qty: int)
+  signal sell_requested(resource_name: String, qty: int)
+  const UNITS_PER_PRESS := 1
+  var resource_type := ""
+  var qty := 0
+  var buy_price := 0 # what the player pays for 1 unit
+  var sell_price := 0 # what the city pays the player for 1 unit
+  var _selected := false
+  var _can_buy := true
+  var _can_sell := true
+  var _shown := true
+  var frame = ResourceTypes.frame_for(resource_type)
+  var cell := sprite.texture.get_size() / Vector2(sprite.hframes, sprite.vframes)
+  var atlas := AtlasTexture.new()
   func _ready() -> void:
   func set_resource_type(t: String) -> void:
   func set_qty(q: int) -> void:
@@ -268,7 +746,32 @@ trade_resource.gd
   func _on_sell_button_pressed() -> void:
 
 horizontal_train.gd
+  signal wagon_clicked(wagon: GenericWagon)
+  signal wagon_cargo_changed(wagon_index: int, wagon: GenericWagon)
+  var gear := "N" # "D" drive, "R" reverse, "N" neutral (brakes)
+  var speed := 0.0
+  var max_speed := 1000.0
+  var acceleration := 100.0
+  var deceleration := 300.0
+  var wagons: Array[GenericWagon] = []
+  var last_wagon_position := Vector2.ZERO # back end of the last wagon, local to the train
+  var bounds_left := -INF # limit for the tail of the train
+  var bounds_right := INF # limit for the front of the train
+  var train_length: float:
+  var wagon_name: String = wagon_data.get("type", "")
+  var wagon_info: Dictionary = WagonTypes.TYPES[wagon_name]
+  var wagon_width: float = wagon_info.horizontal_size.x
+  var node: Node = wagon_info.horizontal_scene.instantiate()
+  var wagon := node as GenericWagon
+  var wagon := wagons[index]
+  var width := float(wagon.wagon_dim.x)
+  var target := 0.0
+  var rate := deceleration if gear == "N" else acceleration
+  var new_x := position.x + speed * delta
+  var clamped_x := clampf(new_x, bounds_left + train_length, bounds_right)
   func add_wagon(wagon_data: Dictionary) -> GenericWagon:
+  func remove_wagon(index: int) -> void:
+  func _layout_wagons() -> void:
   func _on_wagon_clicked(wagon: GenericWagon) -> void:
   func _on_wagon_cargo_changed(wagon: GenericWagon) -> void:
   func set_bounds(left: float, right: float) -> void:
@@ -278,6 +781,15 @@ horizontal_train.gd
   func update(delta: float) -> void:
 
 navigation_locomotive.gd
+  @onready var sprite = $AnimatedSprite2D
+  @onready var label: Label = $Label
+  signal tile_changed(loco, old_tile: Vector2i, new_tile: Vector2i)
+  var grid_service: GridService
+  var current_tile := Vector2i(-1, -1)
+  var orientation := ""
+  var heading = Vector2(1.0, 0.0)
+  var speed := 0.0
+  var new_tile = grid_service.world_to_tile(position)
   func _ready() -> void:
   func set_pos(new_pos: Vector2):
   func set_orientation(new_ori: String):
@@ -289,36 +801,115 @@ navigation_locomotive.gd
   func _check_tile_change():
 
 navigation_train.gd
+  @onready var wagon_container: Node2D = $WagonContainer
+  signal train_tile_changed(navigation_train: NavigationTrain, old_tile: Vector2i, new_tile: Vector2i)
+  signal gear_changed(gear: Gear)
+  signal train_collided(navigation_train: NavigationTrain, other_wagon: NavigationWagon)
+  const LOCOMOTIVE_SCENE: PackedScene = preload("res://scenes/wagons/navigation_locomotive.tscn")
+  const MAX_SPEED := 300.0
+  const ACCELERATION := 50.0
+  const DECELERATION := 200.0
+  const WAGON_SPACING_TILES := 1 # replaces Vector2(-32, -16); adjust to what you actually want
+  const PLAYER_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_spriteframes.tres")
+  const ENEMY_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_enemy_spriteframes.tres")
+  var grid_service: GridService
+  var rail_service: RailService
+  var id := ""
+  var team: NavigationTrainManager.Team
+  var gear := Gear.NEUTRAL
+  var move_speed := 0.0
+  var wagons: Array[NavigationWagon] = [] # wagons[0] is the head
+  var locomotive := LOCOMOTIVE_SCENE.instantiate() as NavigationWagon
+  var back: Vector2i = grid_service.orientation_to_delta(grid_service.turn_right(ori, 4))
+  var tile := tile_pos + back * i * WAGON_SPACING_TILES
+  var driving := gear == Gear.DRIVE
+  var target := MAX_SPEED if driving else 0.0
+  var rate := ACCELERATION if driving else DECELERATION
+  var n := wagons.size()
+  var positions: Array[Vector2] = []
+  var oris: Array[String] = []
+  var target := wagons[n - i - 1]
+  var delta := new_tile - old_tile
+  var new_ori = rail_service.calculate_new_orientation(new_tile, delta)
   func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vector2i, ori: String) -> void:
   func _place_wagons(tile_pos: Vector2i, ori: String) -> void:
   func _face(wagon: NavigationWagon, ori: String) -> void:
+  func _get_sprite_frames() -> SpriteFrames:
   func update(delta: float) -> void:
   func gear_toggle() -> void:
   func immediate_stop() -> void:
   func reverse_train() -> void:
+  func drive() -> void:
+  func is_driving() -> bool:
   func _set_gear(new_gear: Gear) -> void:
   func _on_wagon_tile_changed(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i) -> void:
   func _follow_rail(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i) -> bool:
+  func _on_wagon_collided(_wagon: NavigationWagon, other_wagon: NavigationWagon) -> void:
 
 generic_wagon.gd
+  @onready var sprite: Sprite2D = $Sprite2D # kept: wagon variants may use it
+  signal clicked(wagon: GenericWagon)
+  signal cargo_changed(wagon: GenericWagon)
+  var wagon_type := ""
+  var wagon_dim := Vector2i.ZERO # size in the horizontal view
+  var stores: Array = [] # cargo categories this wagon accepts
+  var cargo_type := ""
+  var cargo_amount := 0
+  var max_cargo_amount := 0 # capacity
+  var amount := int(wagon_data.get("cargo_qty", 0)) # JSON numbers are floats
+  var cell := sprite.texture.get_size() / Vector2(sprite.hframes, sprite.vframes)
+  var atlas := AtlasTexture.new()
+  var new_amount := clampi(cargo_amount + amount, 0, max_cargo_amount)
+  var changed := new_amount - cargo_amount
+  var mouse := event as InputEventMouseButton
   func _ready() -> void:
   func _refresh_visuals() -> void:
   func apply_data(wagon_data: Dictionary, type_info: Dictionary) -> void:
   func set_wagon_type(t: String) -> void:
   func set_cargo_type(t: String) -> void:
   func set_cargo(resource_name: String, qty: int) -> void:
+  func get_icon() -> Texture2D:
   func add_cargo_amount(amount: int) -> int:
   func get_free_capacity() -> int:
   func _on_area_2d_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
   func _is_tap(event: InputEvent) -> bool:
 
 merchandise_wagon.gd
+  @onready var resource_info: Node2D = $ResourceInfo
+  @onready var resource_sprite: Sprite2D = $ResourceInfo/ResourceSprite
+  @onready var qty_label: Label = $ResourceInfo/ResourceQty
+  @onready var price_label: Label = $ResourceInfo/ResourceSellPrice
+  var sell_price := -1
+  var has_cargo := cargo_type != "" and cargo_amount > 0
+  var frame = ResourceTypes.frame_for(cargo_type)
   func set_sell_price(price: int) -> void:
   func _refresh_visuals() -> void:
 
 navigation_wagon.gd
+  @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+  @onready var hit_area: Area2D = $HitArea
+  signal tile_changed(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i)
+  signal collided(wagon: NavigationWagon, other_wagon: NavigationWagon)
+  const LAYER_PLAYER_TRAIN := 1 # layer numbers, as named in step 1
+  const LAYER_ENEMY_TRAIN := 2
+  var grid_service: GridService # injected
+  var speed := 0.0
+  var orientation := ""
+  var heading := Vector2.RIGHT
+  var current_tile := Vector2i.ZERO
+  var _placed := false # nothing moves or emits before place_at()
+  var remaining := speed * delta
+  var max_step := grid_service.tile_half_size.y * 0.5 # well below a tile's width
+  var step := minf(remaining, max_step)
+  var tile := grid_service.world_to_tile(position)
+  var old := current_tile
+  var other := area.get_parent() as NavigationWagon
+  func _ready() -> void:
+  func setup_collision(is_player: bool) -> void:
   func place_at(tile: Vector2i, ori: String) -> void:
   func set_orientation(ori: String) -> void:
+  func set_sprite_frames(frames: SpriteFrames) -> void:
   func reverse() -> void:
   func advance(delta: float) -> void:
+  func _on_hit_area_entered(area: Area2D) -> void:
 

@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://dxkgsverup06q"]
+
+[ext_resource type="Script" uid="uid://buv1t77wl1mjr" path="res://scripts/UI/quest_ui.gd" id="1_awnib"]
+
+[node name="QuestUI" type="CanvasLayer" unique_id=363591819]
+layer = 10
+script = ExtResource("1_awnib")
+
+[node name="Control" type="Control" parent="." unique_id=2033827934]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -320.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 250.0
+grow_horizontal = 0
+
+[node name="ColorRect" type="ColorRect" parent="Control" unique_id=1778001195]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.09, 0.13, 0.85)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control" unique_id=1515576317]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_top = 12.0
+offset_right = -15.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderLabel" type="Label" parent="Control/VBoxContainer" unique_id=733373804]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.75, 0.2, 1)
+theme_override_font_sizes/font_size = 13
+text = "ACTIVE QUESTS"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Control/VBoxContainer" unique_id=1845776188]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="QuestList" type="VBoxContainer" parent="Control/VBoxContainer/ScrollContainer" unique_id=447243045]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="Notification" type="Control" parent="." unique_id=1045219850]
+layout_mode = 3
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 20.0
+offset_right = 250.0
+offset_bottom = 75.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="NotifPanel" type="ColorRect" parent="Notification" unique_id=325455121]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.45, 0.22, 0.9)
+
+[node name="NotifLabel" type="Label" parent="Notification/NotifPanel" unique_id=2007515732]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "QUEST COMPLETED!"
+horizontal_alignment = 1
+vertical_alignment = 1

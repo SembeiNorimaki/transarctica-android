@@ -45,26 +45,26 @@ const RESOURCES := {
 }
 
 
-static func is_known(resource_name: String) -> bool:
+func is_known(resource_name: String) -> bool:
     return RESOURCES.has(resource_name.to_lower())
 
 
 # Wagon type that carries this resource, or "" if unknown.
-static func wagon_type_for(resource_name: String) -> String:
+func wagon_type_for(resource_name: String) -> String:
     return RESOURCES.get(resource_name.to_lower(), {}).get("wagon_type", "")
 
 
 # Sprite frame of this resource, or -1 if unknown or without sprite.
-static func frame_for(resource_name: String) -> int:
+func frame_for(resource_name: String) -> int:
     return RESOURCES.get(resource_name.to_lower(), {}).get("frame", -1)
 
 
-static func same(a: String, b: String) -> bool:
+func same(a: String, b: String) -> bool:
     return a.to_lower() == b.to_lower()
 
 
 # Incomplete entries: no sprite, no wagon type, or a wagon type that is not in WagonTypes.
-static func find_problems() -> Array[String]:
+func find_problems() -> Array[String]:
     var result: Array[String] = []
     for resource_name in RESOURCES:
         var info: Dictionary = RESOURCES[resource_name]

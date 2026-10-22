@@ -42,9 +42,7 @@ func _init(city_name_: String = "") -> void:
 func load_from_game_state(city_name_: String) -> bool:
     city_name = city_name_
     var city_data: Dictionary = GameState.get_city_by_name(city_name)
-    print("City data: ", city_data)
     place_type = str(city_data.get("Type", "City"))
-    print("place type %s for city: %s" % [place_type, city_name_])
     if city_data.is_empty():
         push_error("CityInventory: city '%`s' not found in GameState" % city_name)
         return false

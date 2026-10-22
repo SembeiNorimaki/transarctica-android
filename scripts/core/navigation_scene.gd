@@ -8,7 +8,6 @@ class_name NavigationScene
 @onready var fuel_manager: FuelManager = $Managers/FuelManager
 
 # Services
-@onready var navigation_rail_service: NavigationRailService = $Services/NavigationRailService
 @onready var grid_service: GridService = $Services/GridService
 @onready var camera_service: CameraService = $Services/CameraService
 @onready var rail_service: RailService = $Services/RailService
@@ -37,12 +36,14 @@ const TRAIN_ATLAS_TEAMS := [
     NavigationTrainManager.Team.ENEMY, # row 1
 ]
 const TRAIN_ATLAS_ORIENTATIONS: Array[String] = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
+const TAP_MAX_DRAG := 10.0 # screen pixels; moving more than this is a camera drag, not a tap
 
 var dragging := false
+var _drag_distance := 0.0
 var last_pos := Vector2.ZERO
 
 # TODO: This values should be loaded from somewhere else
-var map_name: String = "world_1"
+var DEFAULT_MAP_NAME: String = "world_1"
 
 # This should be read from navigationtrainmanager.playerTrain
 var initial_player_train_pos = Vector2i(31, 9)
@@ -54,7 +55,7 @@ func _ready() -> void:
 
     _inject_services()
     _wire_signals()
-    _load_map(map_name)
+    _load_map(DEFAULT_MAP_NAME)
 
 
     camera_service.center_at_tile(initial_player_train_pos)
@@ -193,33 +194,6 @@ func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
         
         rail_service.spawn_rail(tile, atlas_coords)
 
-# func _unhandled_inputOLD(event) -> void:
-#     # --- Touch input (Android) ---
-#     if event is InputEventScreenTouch:
-#         if event.pressed:
-#             dragging = true
-#             last_pos = event.position
-#         else:
-#             dragging = false
-
-#     if dragging and event is InputEventScreenDrag:
-#         var delta = event.position - last_pos
-#         camera_service.cam.global_position -= delta / camera_service.cam.zoom
-#         last_pos = event.position
-
-#     # --- Mouse input (Desktop) ---
-#     if event is InputEventMouseButton:
-#         if event.button_index == MOUSE_BUTTON_LEFT:
-#             if event.pressed:
-#                 dragging = true
-#                 last_pos = event.position
-#             else:
-#                 dragging = false
-
-#     if dragging and event is InputEventMouseMotion:
-#         var delta = event.position - last_pos
-#         camera_service.cam.global_position -= delta / camera_service.cam.zoom
-#         last_pos = event.position
 
 func end_combat(enemy: NavigationTrain) -> void:
     # TODO: depends on the combat result. For now the enemy is removed. Otherwise it would collide
@@ -234,11 +208,17 @@ func _unhandled_input(event: InputEvent) -> void:
         return
         
     if event is InputEventScreenTouch or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
-        dragging = event.pressed
-        #last_pos = event.position
+        if event.pressed:
+            dragging = true
+            _drag_distance = 0.0
+        else:
+            if dragging and _drag_distance < TAP_MAX_DRAG:
+                _on_map_tapped(event.position)
+            dragging = false
+
     elif dragging and (event is InputEventScreenDrag or event is InputEventMouseMotion):
+        _drag_distance += event.relative.length()
         camera_service.pan(event.relative)
-        #last_pos = event.position
 
 func _on_train_reached_city(city_name: String) -> void:
     print("Nav Scene: Train reached city %s" % city_name)
@@ -248,8 +228,10 @@ func _on_train_reached_city(city_name: String) -> void:
     SceneService.enter_city(city_name)
 
 func _on_rail_changed(tile: Vector2i) -> void:
-    map_root.get_child(0).get_node("Rails").set_cell(tile, 0, RailService.RAILNAME_TO_ATLAS[rail_service.rails[tile]])
-
+    var tilemap := rail_service.rails_tilemap
+    var rail_name: String = rail_service.rails[tile]
+    tilemap.set_cell(tile, tilemap.get_cell_source_id(tile), RailService.RAILNAME_TO_ATLAS[rail_name])
+    
 func _on_trains_collided(_player: NavigationTrain, enemy: NavigationTrain) -> void:
     AudioService.stop_music(1.5)
     SceneService.enter_combat(enemy)
@@ -260,6 +242,13 @@ func _on_button_left_pressed() -> void:
 
 func _on_button_right_pressed() -> void:
     navigation_train_manager.player_train_gear_toggle()
+
+func _on_map_tapped(screen_pos: Vector2) -> void:
+    var world_pos := get_canvas_transform().affine_inverse() * screen_pos # undoes the camera's position and zoom
+    var tile := grid_service.world_to_tile(world_pos)
+    print("tapped tile ", tile) # TEMPORARY
+    if rail_service.has_junction(tile):
+        rail_service.change_junction(tile)
 
 
 func _on_fuel_changed(current: int, maximum: int) -> void:

@@ -18,6 +18,7 @@ const FIRST_QUEST := "quest_tutorial_1" # accepted when a new game starts
 var quest_database := {} # quest id -> data from quests.json
 var active_quests := {} # quest id -> Quest
 var completed_quests: Array[String] = []
+var dismissed_quests: Array[String] = [] # completed quests the player cleared from the list (they stay in completed_quests)
 
 var _current_city := "" # the city the player is in right now ("" while navigating)
 
@@ -131,7 +132,12 @@ func complete_quest(quest: Quest) -> void:
         accept_quest.call_deferred(quest.next_quest)
     quests_updated.emit()
 
-
+func dismiss_completed() -> void:
+    for quest_id in completed_quests:
+        if not dismissed_quests.has(quest_id):
+            dismissed_quests.append(quest_id)
+    quests_updated.emit()
+    
 func claim_rewards(quest: Quest) -> void:
     if quest.rewards.has("money"):
         GameState.add_money(int(quest.rewards["money"])) # money_changed updates any open scene
@@ -176,18 +182,23 @@ func _on_game_saving() -> void:
     var active := {}
     for quest_id in active_quests:
         active[quest_id] = active_quests[quest_id].get_progress()
-    GameState.set_quests({"active": active, "completed": completed_quests.duplicate()})
+    GameState.set_quests({"active": active, "completed": completed_quests.duplicate(), "dismissed": dismissed_quests.duplicate()})
 
 
 # Rebuilds the quests from GameState (at start, and after a load)
 func load_from_game_state() -> void:
     active_quests.clear()
     completed_quests.clear()
-
+    dismissed_quests.clear()
+    
     var saved: Dictionary = GameState.get_quests()
+
     for quest_id in saved.get("completed", []):
         completed_quests.append(str(quest_id))
 
+    for quest_id in saved.get("dismissed", []):
+        dismissed_quests.append(str(quest_id))
+    
     var saved_active: Dictionary = saved.get("active", {})
     for quest_id in saved_active:
         var quest := _build_quest(str(quest_id))

@@ -80,6 +80,7 @@ func _load_initial_cities(path: String):
  
     for key in data.keys():
         var city = data[key]
+        # print("load initial cities: %s" % city)
         if not str(key).is_valid_int():
             push_error("GameState: city key '%s' in %s is not an integer id" % [key, path])
             continue

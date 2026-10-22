@@ -56,12 +56,14 @@ func setup(map_name: String, rail_tiles: Array) -> void:
         return
     var fog_size := fog_layer.tile_set.tile_size
     var rail_size := grid_service.tile_size
-    if rail_size.x % fog_size.x != 0 or rail_size.y % fog_size.y != 0 \
-            or rail_size.x / fog_size.x != rail_size.y / fog_size.y:
+    var ratio_x := float(rail_size.x) / fog_size.x
+    var ratio_y := float(rail_size.y) / fog_size.y
+    if rail_size.x % fog_size.x != 0 or rail_size.y % fog_size.y != 0 or not is_equal_approx(ratio_x, ratio_y):
         push_error("ExplorationService: the rails tile size %s must be a whole multiple of the fog tile size %s, the same in x and y" % [rail_size, fog_size])
         return
+        
 
-    _subdivision = rail_size.x / fog_size.x
+    _subdivision = roundi(ratio_x)
     _map_name = map_name
     _rail_tiles = rail_tiles
     _check_alignment()

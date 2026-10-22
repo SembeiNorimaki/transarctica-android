@@ -9,7 +9,7 @@ class_name GenericWagon
 # so a wagon script that reads it can create a cyclic reference.
 
 signal clicked(wagon: GenericWagon)
-signal cargo_changed(wagon: GenericWagon)
+# signal cargo_changed(wagon: GenericWagon)
 
 @onready var sprite: Sprite2D = $Sprite2D # kept: wagon variants may use it
 
@@ -73,16 +73,16 @@ func get_icon() -> Texture2D:
     
 # Adds (positive) or removes (negative) cargo, limited to 0..capacity.
 # Returns the amount that was actually added or removed.
-func add_cargo_amount(amount: int) -> int:
-    var new_amount := clampi(cargo_amount + amount, 0, max_cargo_amount)
-    var changed := new_amount - cargo_amount
-    if changed != 0:
-        cargo_amount = new_amount
-        if cargo_amount == 0:
-            cargo_type = ""
-        _refresh_visuals()
-        cargo_changed.emit(self)
-    return changed
+# func add_cargo_amount(amount: int) -> int:
+#     var new_amount := clampi(cargo_amount + amount, 0, max_cargo_amount)
+#     var changed := new_amount - cargo_amount
+#     if changed != 0:
+#         cargo_amount = new_amount
+#         if cargo_amount == 0:
+#             cargo_type = ""
+#         _refresh_visuals()
+#         cargo_changed.emit(self)
+#     return changed
 
 
 func get_free_capacity() -> int:

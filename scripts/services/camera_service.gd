@@ -71,7 +71,7 @@ func _unhandled_input(event: InputEvent) -> void:
     elif event is InputEventMagnifyGesture:
         zoom_at_screen_pos(event.factor, event.position)
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
     pass
     #var input := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
     #if input != Vector2.ZERO:

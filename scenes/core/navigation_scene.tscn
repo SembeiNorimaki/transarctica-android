@@ -5,7 +5,6 @@
 [ext_resource type="Script" uid="uid://b4tva1gkpsvfi" path="res://scripts/services/camera_service.gd" id="5_bopww"]
 [ext_resource type="Script" uid="uid://1lsfccayubl3" path="res://scripts/services/rail_service.gd" id="5_wk2tj"]
 [ext_resource type="Script" uid="uid://c4j0gdvnpybqr" path="res://scripts/services/exploration_service.gd" id="6_mqu6x"]
-[ext_resource type="Script" uid="uid://ifhp7kyt4fie" path="res://scripts/services/navigation_rail_service.gd" id="6_rn36o"]
 [ext_resource type="Script" uid="uid://jj6wpd6833yn" path="res://scripts/managers/cities_manager.gd" id="7_43f6w"]
 [ext_resource type="Script" uid="uid://d1w4icvk1fuqd" path="res://scripts/services/grid_service.gd" id="7_wk2tj"]
 [ext_resource type="Script" uid="uid://dqpn1aki2nwea" path="res://scripts/managers/navigation_train_manager.gd" id="8_43f6w"]
@@ -42,9 +41,6 @@ position = Vector2(289, -15)
 
 [node name="Services" type="Node" parent="." unique_id=974117156]
 
-[node name="NavigationRailService" type="Node" parent="Services" unique_id=1229779236]
-script = ExtResource("6_rn36o")
-
 [node name="GridService" type="Node" parent="Services" unique_id=321096132]
 script = ExtResource("7_wk2tj")
 
@@ -75,6 +71,7 @@ script = ExtResource("10_rjhdy")
 [node name="CityLabelsContainer" type="Node2D" parent="." unique_id=1893294954]
 
 [node name="FogLayer" type="TileMapLayer" parent="." unique_id=1629482347]
+position = Vector2(96, 0)
 tile_set = SubResource("TileSet_mqu6x")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2112287858]
