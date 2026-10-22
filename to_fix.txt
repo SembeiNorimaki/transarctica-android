@@ -1,0 +1,17 @@
+TO FIX:
+Foundry is not loaded, because get_cities_by_name doesnt return Industries.
+
+
+
+Optionally, don’t let junction taps work on unexplored tiles. Add this line at the start of _on_map_tapped, after you compute tile:
+gdscript
+    if not exploration_service.is_tile_explored(tile):
+        return
+
+
+
+In the save file, the explored tiles are stored compactly per row, 
+for example "explored": {"world_1": {"9": "20..28,31", "10": "19..29"}}. 
+That means row 9 has x from 20 to 28 and 31 explored. 
+You can edit it by hand to reveal or hide parts of the map.
+

@@ -23,6 +23,8 @@ extends Node
 
 const CITIES_PATH := "res://data/newgame/cities_World2.json"
 const PLAYER_TRAIN_PATH := "res://data/newgame/player_train.json"
+const SAVE_PATH := "user://savegame.json"
+const SAVE_VERSION := 1
 
 var _cities_state: Dictionary = {} # city name -> city data
 var _cities_by_location: Dictionary = {} # Vector2i -> city name
@@ -30,6 +32,8 @@ var _cities_by_id: Dictionary = {} # int -> city name
 var _player_train_state: Dictionary = {}
 
 var _player_money := 100 # TODO: load the starting value from data
+var _explored := {} # map name -> explored tiles, encoded by ExplorationService
+var _quests_state := {}
 
 var state := {
     "cities": {},
@@ -37,63 +41,10 @@ var state := {
 
 # Signals
 signal money_changed(money: int)
-
-# # this are examples for showing the structure of the data. They are removed when loading data from JSON files
-# var _cities_state = {
-#     "ËxampleCity": {
-#         "TradeResources": {
-#             "Oil": {
-#                 "Quantity": 3,
-#                 "SellPrice": 4,
-#                 "BuyPrice": 5
-#             },
-#             "Alcohol": {
-#                 "Quantity": 6,
-#                 "SellPrice": 7,
-#                 "BuyPrice": 8
-#             }
-#         }
-#     }
-# }
-
-# var _player_train_state = {
-#     "id": "TP0",
-#     "owner": "Player",
-#     "position": [2, 4, "E"],
-    
-#     "fuel": 40,
-#     "max_fuel": 100,
-#     "max_speed": 100,
-#     "acceleration": 10,
-#     "deceleration": 20,
-
-#     "wagons": [
-#         {
-#             "type": "locomotive",
-#             "hp": 100,
-#             "max_hp": 100,
-#             "capacity": 0,
-#             "cargo_name": "",
-#             "cargo_qty": 0
-#         },
-#         {
-#             "type": "tender",
-#             "hp": 60,
-#             "max_hp": 60,
-#             "capacity": 100,
-#             "cargo_name": "coal",
-#             "cargo_qty": 40
-#         },
-#         {
-#             "type": "merchandise",
-#             "hp": 40,
-#             "max_hp": 40,
-#             "capacity": 20,
-#             "cargo_name": "caviar",
-#             "cargo_qty": 3
-#         }
-#     ]
-# }
+signal player_wagon_added(index: int, wagon_data: Dictionary)
+signal player_cargo_changed
+signal game_saving # emitted before the state is written: scenes should flush their runtime state into GameState
+signal game_loaded # emitted after a load: scenes should rebuild themselves from GameState
 
 
 #region initialization
@@ -184,6 +135,7 @@ func set_wagon_cargo(wagon_idx: int, resource_name: String, qty: int) -> void:
         return
     wagons[wagon_idx]["cargo_name"] = resource_name
     wagons[wagon_idx]["cargo_qty"] = qty
+    player_cargo_changed.emit()
 
 # TODO: not implemented yet. The data lives in _player_train_state["wagons"][idx] (cargo_name, cargo_qty, capacity).
 func get_wagon_cargo(_wagon_idx: int) -> Dictionary:
@@ -236,7 +188,10 @@ func add_wagon_to_player_train(wagon_data: Dictionary) -> int:
         return -1
     var wagons: Array = _player_train_state["wagons"]
     wagons.append(wagon_data)
-    return wagons.size() - 1
+    var index := wagons.size() - 1
+    player_wagon_added.emit(index, wagon_data)
+    player_cargo_changed.emit()
+    return index
 
 # Removes a wagon from the player train's list. The wagons behind it move up one index.
 func remove_wagon_from_player_train(wagon_idx: int) -> bool:
@@ -245,6 +200,7 @@ func remove_wagon_from_player_train(wagon_idx: int) -> bool:
         push_error("GameState: no wagon %d in the player train" % wagon_idx)
         return false
     wagons.remove_at(wagon_idx)
+    player_cargo_changed.emit()
     return true
 
 func get_money() -> int:
@@ -257,8 +213,122 @@ func add_money(delta: int) -> bool: # false if the result would be below 0
     money_changed.emit(_player_money)
     return true
 
-func save_game():
-    pass
+func get_explored(map_name: String) -> Dictionary:
+    return _explored.get(map_name, {})
 
-func load_game():
-    pass
+func set_explored(map_name: String, data: Dictionary) -> void:
+    _explored[map_name] = data
+
+func get_quests() -> Dictionary:
+    return _quests_state
+
+func set_quests(data: Dictionary) -> void:
+    _quests_state = data
+
+# Moves a wagon of the player train. Index 0 is the locomotive and can't move.
+func move_wagon_in_player_train(from_idx: int, to_idx: int) -> bool:
+    var wagons: Array = _player_train_state.get("wagons", [])
+    if from_idx < 1 or to_idx < 1 or from_idx >= wagons.size() or to_idx >= wagons.size() or from_idx == to_idx:
+        push_error("GameState: cannot move wagon %d to %d" % [from_idx, to_idx])
+        return false
+    wagons.insert(to_idx, wagons.pop_at(from_idx))
+    return true
+
+#region save game
+func has_save() -> bool:
+    return FileAccess.file_exists(SAVE_PATH)
+
+
+# Writes the whole state to SAVE_PATH as readable JSON. Returns false (with an error) on failure.
+func save_game() -> bool:
+    game_saving.emit()
+
+    var city_ids := {} # JSON keys must be strings
+    for id in _cities_by_id:
+        city_ids[str(id)] = _cities_by_id[id]
+
+    var data := {
+        "version": SAVE_VERSION,
+        "saved_at": Time.get_datetime_string_from_system(),
+        "money": _player_money,
+        "player_train": _player_train_state,
+        "cities": _cities_state,
+        "city_ids": city_ids,
+        "quests": _quests_state,
+        "explored": _explored
+    }
+    var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+    if file == null:
+        push_error("GameState: cannot write %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()])
+        return false
+    file.store_string(JSON.stringify(data, "\t")) # keys are sorted, so the file is stable and easy to diff
+    file.close()
+    print("GameState: saved to %s" % ProjectSettings.globalize_path(SAVE_PATH))
+    return true
+
+
+# Replaces the current state with the saved one. Returns false, changing nothing, if the file is
+# missing or invalid. Everything is checked before anything is replaced.
+func load_game() -> bool:
+    if not has_save():
+        push_warning("GameState: there is no save at %s" % SAVE_PATH)
+        return false
+    var data = _read_json(SAVE_PATH)
+    var problem := _validate_save(data)
+    if problem != "":
+        push_error("GameState: invalid save: %s" % problem)
+        return false
+
+    _player_money = int(data["money"])
+    _player_train_state = data["player_train"]
+    _cities_state = data["cities"]
+    _quests_state = data.get("quests", {})
+    _explored = data.get("explored", {})
+
+    _cities_by_id = {}
+    for id in data["city_ids"]:
+        _cities_by_id[int(id)] = data["city_ids"][id]
+    _cities_by_location = {}
+    for city_name in _cities_state:
+        var location: Array = _cities_state[city_name]["Location"]
+        _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
+
+    game_loaded.emit()
+    money_changed.emit(_player_money)
+    return true
+
+
+# Returns "" if the data looks like a valid save, or a description of what is wrong.
+func _validate_save(data) -> String:
+    if not (data is Dictionary):
+        return "the file is not a JSON object"
+    if int(data.get("version", 0)) != SAVE_VERSION:
+        return "version %s, expected %d" % [data.get("version"), SAVE_VERSION]
+    for key in ["money", "player_train", "cities", "city_ids"]:
+        if not data.has(key):
+            return "missing '%s'" % key
+    if not (data["player_train"] is Dictionary and data["cities"] is Dictionary and data["city_ids"] is Dictionary):
+        return "'player_train', 'cities' and 'city_ids' must be objects"
+
+    for city_name in data["cities"]:
+        var city = data["cities"][city_name]
+        if not (city is Dictionary) or not (city.get("Location") is Array) or city["Location"].size() < 2:
+            return "city '%s' needs a Location [x, y]" % city_name
+    for id in data["city_ids"]:
+        if not str(id).is_valid_int():
+            return "city id '%s' is not a number" % id
+        if not data["cities"].has(data["city_ids"][id]):
+            return "city id %s points to '%s', which is not in 'cities'" % [id, data["city_ids"][id]]
+    return ""
+
+
+func _unhandled_key_input(event: InputEvent) -> void: # TEMPORARY: quick save / load while developing
+    var key := event as InputEventKey
+    if key == null or not key.pressed or key.echo or not OS.is_debug_build():
+        return
+    match key.keycode:
+        KEY_F5:
+            save_game()
+        KEY_F9:
+            load_game()
+#endregion

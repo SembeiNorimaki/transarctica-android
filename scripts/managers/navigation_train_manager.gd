@@ -3,6 +3,7 @@ class_name NavigationTrainManager
 
 signal train_reached_city(city_name: String)
 signal trains_collided(player_train: NavigationTrain, enemy_train: NavigationTrain)
+# signal player_tile_changed(tile: Vector2i)
 
 enum Team {PLAYER, ENEMY}
 
@@ -14,7 +15,10 @@ var cities_manager: CitiesManager
 var camera_service: CameraService
 var grid_service: GridService
 var rail_service: RailService
+var exploration_service: ExplorationService
 var train_container: Node2D
+var fuel_manager: FuelManager
+
 
 var player_train: NavigationTrain
 var enemy_trains: Array[NavigationTrain] = []
@@ -77,8 +81,12 @@ func player_train_reverse() -> void:
         player_train.reverse_train()
 
 func player_train_gear_toggle() -> void:
-    if is_instance_valid(player_train):
-        player_train.gear_toggle()
+    if not is_instance_valid(player_train):
+        return
+    if not player_train.is_driving() and fuel_manager != null and not fuel_manager.has_fuel():
+        fuel_manager.notify_empty() # the HUD can tell the player
+        return
+    player_train.gear_toggle()
 
 func recenter_player_train() -> void:
     if not is_instance_valid(player_train) or player_train.wagons.is_empty():
@@ -91,21 +99,32 @@ func _process(delta: float) -> void:
     delta = minf(delta, MAX_DELTA)
     if is_instance_valid(player_train):
         player_train.update(delta)
+        _burn_fuel(delta)
     for train in enemy_trains:
         if is_instance_valid(train):
             train.update(delta)
 
     if camera_lock_to_engine and is_instance_valid(player_train) and not player_train.wagons.is_empty():
         camera_service.set_pos(player_train.wagons[0].global_position)
+    _update_exploration()
 
 
+func _burn_fuel(delta: float) -> void:
+    if fuel_manager == null:
+        return
+    fuel_manager.consume_distance(player_train.move_speed * delta)
+    if not fuel_manager.has_fuel() and player_train.is_driving():
+        player_train.coast() # out of coal: the train brakes by itself
+        
 #region tile events
 func _on_train_tile_changed(train: NavigationTrain, _old_tile: Vector2i, new_tile: Vector2i) -> void:
     if _transitioning:
         return
     if train == player_train:
+        # player_tile_changed.emit(new_tile)
         _check_city_entry(new_tile)
-    # TODO: enemy behaviour at cities / contact with the player
+    # else:
+    #     _update_enemy_visibility(train)
 
 func _check_city_entry(tile: Vector2i) -> void:
     if not cities_manager.is_entry_tile(tile):
@@ -136,3 +155,24 @@ func remove_train(train: NavigationTrain) -> void:
     enemy_trains.erase(train)
     train.process_mode = Node.PROCESS_MODE_DISABLED # also disables its collision area right away
     train.queue_free()
+
+# Enemies are only drawn while they are on a visible tile
+# func update_enemy_visibility() -> void:
+#     for train in enemy_trains:
+#         if is_instance_valid(train):
+#             _update_enemy_visibility(train)
+
+# func _update_enemy_visibility(train: NavigationTrain) -> void:
+#     if exploration_service != null and not train.wagons.is_empty():
+#         train.visible = exploration_service.is_tile_visible(train.wagons[0].current_tile)
+
+# Reveals the map around the player, and shows enemies only while they are on a visible tile.
+# Done every frame, because a rail tile is much bigger than a fog tile.
+func _update_exploration() -> void:
+    if exploration_service == null:
+        return
+    if is_instance_valid(player_train) and not player_train.wagons.is_empty():
+        exploration_service.update_position(player_train.wagons[0].global_position)
+    for train in enemy_trains:
+        if is_instance_valid(train) and not train.wagons.is_empty():
+            train.visible = exploration_service.is_visible_at(train.wagons[0].global_position)

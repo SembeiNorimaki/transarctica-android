@@ -1,0 +1,56 @@
+{
+    "quest_tutorial_1": {
+        "title": "First steps",
+        "description": "Drive your train to Paris.",
+        "is_main_quest": true,
+        "next_quest": "quest_tutorial_2",
+        "objectives": [
+            {
+                "id": "reach_paris",
+                "type": "reach_city",
+                "description": "Reach Paris",
+                "target_city": "Paris"
+            }
+        ],
+        "rewards": {
+            "money": 50
+        }
+    },
+    "quest_tutorial_2": {
+        "title": "First purchase",
+        "description": "Buy some alcohol from the market.",
+        "is_main_quest": true,
+        "next_quest": "quest_tutorial_3",
+        "objectives": [
+            {
+                "id": "buy_alcohol",
+                "type": "collect_goods",
+                "description": "Buy alcohol",
+                "target_resource": "alcohol",
+                "target_qty": 2
+            }
+        ],
+        "rewards": {
+            "money": 30
+        }
+    },
+    "quest_tutorial_3": {
+        "title": "Make a delivery",
+        "description": "Sell the alcohol to a city.",
+        "is_main_quest": true,
+        "next_quest": "",
+        "objectives": [
+            {
+                "id": "sell_alcohol",
+                "type": "deliver_goods",
+                "description": "Sell alcohol in Paris",
+                "target_city": "Paris",
+                "target_resource": "alcohol",
+                "target_qty": 2
+            }
+        ],
+        "rewards": {
+            "wagon": "MerchandiseWagon"
+        }
+    }
+}

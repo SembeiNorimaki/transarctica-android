@@ -47,6 +47,7 @@ func leave_city() -> void:
 
     if is_instance_valid(navigation_scene):
         navigation_scene.resume()
+    QuestManager.notify_city_left()
 
 func enter_combat(enemy_train: NavigationTrain) -> void:
     if city_scene != null or combat_scene != null:

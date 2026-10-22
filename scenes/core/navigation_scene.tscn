@@ -4,11 +4,27 @@
 [ext_resource type="PackedScene" uid="uid://cm3taqyltqkqe" path="res://scenes/maps/world_1.tscn" id="2_43f6w"]
 [ext_resource type="Script" uid="uid://b4tva1gkpsvfi" path="res://scripts/services/camera_service.gd" id="5_bopww"]
 [ext_resource type="Script" uid="uid://1lsfccayubl3" path="res://scripts/services/rail_service.gd" id="5_wk2tj"]
+[ext_resource type="Script" uid="uid://c4j0gdvnpybqr" path="res://scripts/services/exploration_service.gd" id="6_mqu6x"]
 [ext_resource type="Script" uid="uid://ifhp7kyt4fie" path="res://scripts/services/navigation_rail_service.gd" id="6_rn36o"]
 [ext_resource type="Script" uid="uid://jj6wpd6833yn" path="res://scripts/managers/cities_manager.gd" id="7_43f6w"]
 [ext_resource type="Script" uid="uid://d1w4icvk1fuqd" path="res://scripts/services/grid_service.gd" id="7_wk2tj"]
 [ext_resource type="Script" uid="uid://dqpn1aki2nwea" path="res://scripts/managers/navigation_train_manager.gd" id="8_43f6w"]
 [ext_resource type="Script" uid="uid://cfh5rluepjuub" path="res://scripts/overlays/rails_overlay.gd" id="9_43f6w"]
+[ext_resource type="Texture2D" uid="uid://d2yrq5w26cej2" path="res://assets/tilesets/imgs/fow64.png" id="10_1aqif"]
+[ext_resource type="Script" uid="uid://rn2y28iu7pn7" path="res://scripts/managers/fuel_manager.gd" id="10_rjhdy"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rjhdy"]
+texture = ExtResource("10_1aqif")
+texture_region_size = Vector2i(64, 32)
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_mqu6x"]
+tile_shape = 1
+tile_layout = 5
+tile_size = Vector2i(64, 32)
+sources/0 = SubResource("TileSetAtlasSource_rjhdy")
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_e8twf"]
 size = Vector2(100, 100)
@@ -22,8 +38,7 @@ script = ExtResource("1_2bgtl")
 [node name="MapRoot" type="Node2D" parent="." unique_id=2144155385]
 
 [node name="World1" parent="MapRoot" unique_id=1301367354 instance=ExtResource("2_43f6w")]
-
-[node name="ExplorationLayer" type="TileMapLayer" parent="MapRoot" unique_id=1816378619]
+position = Vector2(289, -15)
 
 [node name="Services" type="Node" parent="." unique_id=974117156]
 
@@ -35,6 +50,9 @@ script = ExtResource("7_wk2tj")
 
 [node name="RailService" type="Node" parent="Services" unique_id=1937176550]
 script = ExtResource("5_wk2tj")
+
+[node name="ExplorationService" type="Node" parent="Services" unique_id=116014921]
+script = ExtResource("6_mqu6x")
 
 [node name="CameraService" type="Node2D" parent="Services" unique_id=1892645610]
 script = ExtResource("5_bopww")
@@ -49,9 +67,15 @@ script = ExtResource("8_43f6w")
 [node name="CitiesManager" type="Node" parent="Managers" unique_id=1506118795]
 script = ExtResource("7_43f6w")
 
+[node name="FuelManager" type="Node" parent="Managers" unique_id=2115520698]
+script = ExtResource("10_rjhdy")
+
 [node name="TrainContainer" type="Node2D" parent="." unique_id=1572720261]
 
 [node name="CityLabelsContainer" type="Node2D" parent="." unique_id=1893294954]
+
+[node name="FogLayer" type="TileMapLayer" parent="." unique_id=1629482347]
+tile_set = SubResource("TileSet_mqu6x")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2112287858]
 
@@ -70,6 +94,15 @@ offset_top = 940.0
 offset_right = 2366.0
 offset_bottom = 1048.0
 icon = SubResource("PlaceholderTexture2D_a7ohx")
+
+[node name="FuelBar" type="ProgressBar" parent="CanvasLayer" unique_id=998314790]
+offset_right = 290.0
+offset_bottom = 27.0
+
+[node name="FuelLabel" type="Label" parent="CanvasLayer" unique_id=510123270]
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Fuel"
 
 [node name="Overlays" type="Node2D" parent="." unique_id=1417787132]
 

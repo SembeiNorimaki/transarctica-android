@@ -101,6 +101,10 @@ func reverse_train() -> void:
         var target := wagons[n - i - 1]
         _face(target, grid_service.turn_right(oris[i], 4))
 
+# Cuts the power: the train brakes by itself
+func coast() -> void:
+    _set_gear(Gear.NEUTRAL)
+    
 func drive() -> void:
     _set_gear(Gear.DRIVE)
 

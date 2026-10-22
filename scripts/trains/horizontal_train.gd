@@ -8,6 +8,10 @@ signal wagon_clicked(wagon: GenericWagon)
 # wagon_index is the index in the "wagons" array of the train data (valid while no wagon was skipped)
 signal wagon_cargo_changed(wagon_index: int, wagon: GenericWagon)
 
+
+const LAYOUT_TIME := 0.15 # seconds the wagons take to slide into their places
+
+var _layout_tween: Tween
 var gear := "N" # "D" drive, "R" reverse, "N" neutral (brakes)
 var speed := 0.0
 var max_speed := 1000.0
@@ -65,12 +69,39 @@ func remove_wagon(index: int) -> void:
     wagon.queue_free()
     _layout_wagons()
 
-# Same layout as add_wagon: each wagon centered on its slot, one behind the other
-func _layout_wagons() -> void:
+func move_wagon(from_index: int, to_index: int) -> void:
+    if from_index < 0 or to_index < 0 or from_index >= wagons.size() or to_index >= wagons.size() or from_index == to_index:
+        return
+    wagons.insert(to_index, wagons.pop_at(from_index))
+    _layout_wagons(true)
+    
+# Slides the wagons into their places (e.g. after a cancelled drag)
+func relayout() -> void:
+    _layout_wagons(true)
+
+# Local x of the boundary before wagon k. Boundary wagons.size() is the rear end of the train.
+func get_boundary_x(k: int) -> float:
+    var x := 0.0
+    for i in mini(k, wagons.size()):
+        x -= float(wagons[i].wagon_dim.x)
+    return x
+
+func _layout_wagons(animated := false) -> void:
+    if _layout_tween != null and _layout_tween.is_valid():
+        _layout_tween.kill()
+    var tween: Tween = null
+    if animated and not wagons.is_empty():
+        tween = create_tween().set_parallel(true)
+        _layout_tween = tween
+
     last_wagon_position = Vector2.ZERO
     for wagon in wagons:
         var width := float(wagon.wagon_dim.x)
-        wagon.position = last_wagon_position - Vector2(width / 2.0, 0.0)
+        var target := last_wagon_position - Vector2(width / 2.0, 0.0)
+        if tween != null:
+            tween.tween_property(wagon, "position", target, LAYOUT_TIME)
+        else:
+            wagon.position = target
         last_wagon_position.x -= width
 
 func _on_wagon_clicked(wagon: GenericWagon) -> void:

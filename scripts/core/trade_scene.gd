@@ -7,6 +7,7 @@ signal trade_failed(message: String) # for the HUD
 @onready var horizontal_train_manager: HorizontalTrainManager = $Managers/HorizontalTrainManager
 @onready var trade_resource_manager: TradeResourceManager = $Managers/TradeResourceManager
 @onready var trade_wagon_manager: TradeWagonManager = $Managers/TradeWagonManager
+@onready var wagon_reorder_controller: WagonReorderController = $Managers/WagonReorderController
 
 # Containers
 @onready var train_container: Node2D = $TrainContainer
@@ -33,7 +34,8 @@ const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
 const ENEMY_TRAIN_POSITION := Vector2(900, 100) # TODO: enemy train
 
 # Only used when this scene is run on its own (F6), where SceneService is not calling initialize()
-const DEBUG_CITY_NAME := "Paris"
+const DEBUG_CITY_NAME := "Foudry"
+# const DEBUG_CITY_NAME := "Paris"
 
 static var _problems_reported := false
 
@@ -54,6 +56,8 @@ func _ready() -> void:
     trade_wagon_manager.wagon_container = wagon_container
     
     _set_resource_slots()
+    wagon_reorder_controller.setup(player_train)
+
     
     # connect signals
     trade_resource_manager.resource_clicked.connect(_on_resource_clicked)
@@ -69,6 +73,8 @@ func _ready() -> void:
     train_inventory.wagon_added.connect(_on_wagon_added)
     sell_menu.sell_wagon_requested.connect(_on_sell_wagon_requested)
     train_inventory.wagon_removed.connect(_on_wagon_removed)
+    wagon_reorder_controller.wagon_dropped.connect(_on_wagon_dropped)
+    train_inventory.wagon_moved.connect(_on_wagon_moved)
 
     AudioService.play_music(MUSIC_TRADE, 0.0)
 
@@ -158,8 +164,11 @@ func _on_sell_requested(resource_name: String, qty: int) -> void:
     _trade(resource_name, qty, false)
 
 func _on_sell_from_wagon_requested(wagon_index: int, qty: int) -> void:
+    var resource_name := train_inventory.get_wagon_current_resource(wagon_index)
     var result := TradeService.sell_from_wagon(city_inventory, train_inventory, wagon_index, qty)
-    if result != TradeService.Result.OK:
+    if result == TradeService.Result.OK:
+        QuestManager.notify_goods_delivered(city_name, resource_name, qty)
+    else:
         trade_failed.emit(TradeService.result_text(result))
 
 
@@ -178,6 +187,10 @@ func _on_resource_clicked(resource_name: String) -> void:
     _refresh_buy_menu()
 
 func _on_wagon_clicked(wagon: GenericWagon) -> void:
+    if city_inventory.allows_rearranging():
+        wagon_reorder_controller.begin_drag(wagon) # in a depot a press starts a drag, there is no trading
+        return
+        
     var index := player_train.wagons.find(wagon)
     if index < 0:
         return
@@ -289,7 +302,11 @@ func _trade(resource_name: String, qty: int, buying: bool) -> void:
         result = TradeService.buy(city_inventory, train_inventory, resource_name, qty)
     else:
         result = TradeService.sell(city_inventory, train_inventory, resource_name, qty)
-    if result != TradeService.Result.OK:
+    
+    if result == TradeService.Result.OK:
+        if not buying:
+            QuestManager.notify_goods_delivered(city_name, resource_name, qty)
+    else:
         trade_failed.emit(TradeService.result_text(result))
 
 
@@ -344,14 +361,28 @@ func _on_left_button_pressed() -> void:
     horizontal_train_manager.player_train_gear_down()
 #endregion
 
-        
+func _on_wagon_dropped(from_index: int, to_index: int) -> void:
+    train_inventory.move_wagon(from_index, to_index) # the inventory announces it, and the view follows
+
+
+func _on_wagon_moved(from_index: int, to_index: int) -> void:
+    sell_menu.close() # indices changed, so an open menu would point at the wrong wagon
+    player_train.move_wagon(from_index, to_index)
+    
+
 func _print_inventories() -> void:
     print("=== City inventory: %s ===" % city_name)
+    print("  Type: %s" % city_inventory.place_type)
+    print("  Resources:")
     for resource_name in city_inventory.get_resource_names():
         var info := city_inventory.get_resource_info(resource_name)
-        print("  %s: qty %d / max %d, buy %d, sell %d" % [resource_name, info.qty, info.max_capacity, info.buy_price, info.sell_price])
+        print("  %s [%s]: qty %d / max %d, buy %d, sell %d" % [resource_name, info.mode, info.qty, info.max_capacity, info.buy_price, info.sell_price])
+    
+    print("  Recipes:")
+    for recipe in city_inventory.get_recipes():
+        print("  Recipe '%s': %s -> %s" % [recipe.name, recipe.inputs, recipe.outputs])
 
-    print("  Wagons for sale:")
+    print("  Wagons:")
     for wagon_type in city_inventory.get_wagon_types():
         print("    %s: qty %d, buy %d, sell %d" % [wagon_type, city_inventory.get_wagon_available_qty(wagon_type), city_inventory.get_wagon_buy_price(wagon_type), city_inventory.get_wagon_sell_price(wagon_type)])
 

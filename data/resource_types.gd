@@ -38,6 +38,10 @@ const RESOURCES := {
     "copper": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
     "wolfmeat": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
     "iron": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
+    "ironore": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
+    "copperore": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
+    "ironingot": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
+    "copperingot": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
 }
 
 

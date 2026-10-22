@@ -27,7 +27,7 @@ tile_map_data = PackedByteArray("AAAZAAkAAAAAAAAAAAAaAAkAAAAAAAAAAAAXAAkAAAAAAAA
 tile_map_data = PackedByteArray("AAAgAAcAAAAAAAAAAAATAAcAAAAAAAAAAAA=")
 
 [node name="Trains" parent="." index="6" unique_id=142093996]
-tile_map_data = PackedByteArray("AAAXAAkAAAAAAAEAAAAfAAkAAAAAAAAAAAA=")
+tile_map_data = PackedByteArray("AAAfAAkAAAAAAAAAAAA=")
 
 [node name="CitiesIds" parent="." index="7" unique_id=133513815]
 tile_map_data = PackedByteArray("AAAgAAcAAAAAAAAAAAATAAcAAAABAAAAAAA=")

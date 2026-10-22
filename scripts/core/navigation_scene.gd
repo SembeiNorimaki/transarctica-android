@@ -5,22 +5,29 @@ class_name NavigationScene
 # Managers
 @onready var navigation_train_manager: NavigationTrainManager = $Managers/NavigationTrainManager
 @onready var cities_manager: CitiesManager = $Managers/CitiesManager
+@onready var fuel_manager: FuelManager = $Managers/FuelManager
 
 # Services
 @onready var navigation_rail_service: NavigationRailService = $Services/NavigationRailService
 @onready var grid_service: GridService = $Services/GridService
 @onready var camera_service: CameraService = $Services/CameraService
 @onready var rail_service: RailService = $Services/RailService
+@onready var exploration_service: ExplorationService = $Services/ExplorationService
 
 # Overlays
 @onready var rails_overlay: RailsOverlay = $Overlays/RailsOverlay
 
 # Map 
 @onready var map_root: Node2D = $MapRoot
+@onready var fog_layer: TileMapLayer = $FogLayer
 
 # Containers
 @onready var train_container: Node2D = $TrainContainer
 @onready var city_labels_container: Node2D = $CityLabelsContainer
+
+# UI
+@onready var fuel_bar: ProgressBar = $CanvasLayer/FuelBar
+@onready var fuel_label: Label = $CanvasLayer/FuelLabel
 
 # Constants
 const MUSIC_TRAVEL: AudioStream = preload("res://assets/audio/Travelling.mp3")
@@ -38,7 +45,7 @@ var last_pos := Vector2.ZERO
 var map_name: String = "world_1"
 
 # This should be read from navigationtrainmanager.playerTrain
-var initial_player_train_pos = Vector2i(25, 9)
+var initial_player_train_pos = Vector2i(31, 9)
 
 
 #region Lifecycle & Setup
@@ -76,22 +83,31 @@ func _inject_services() -> void:
     navigation_train_manager.grid_service = grid_service
     navigation_train_manager.rail_service = rail_service
     navigation_train_manager.train_container = train_container
-
+    navigation_train_manager.exploration_service = exploration_service
+    navigation_train_manager.fuel_manager = fuel_manager
+    
     cities_manager.rail_service = rail_service
     cities_manager.city_labels_container = city_labels_container
     cities_manager.grid_service = grid_service
-
+    fuel_manager.grid_service = grid_service
+    
     camera_service.grid_service = grid_service
-
+    exploration_service.fog_layer = fog_layer
+    exploration_service.grid_service = grid_service
     rail_service.grid_service = grid_service
 
     rails_overlay.grid_service = grid_service
     rails_overlay.rail_service = rail_service
 
+    
 func _wire_signals() -> void:
     navigation_train_manager.train_reached_city.connect(_on_train_reached_city)
     navigation_train_manager.trains_collided.connect(_on_trains_collided)
+    # navigation_train_manager.player_tile_changed.connect(_on_player_tile_changed)
     rail_service.rail_changed.connect(_on_rail_changed)
+    fuel_manager.fuel_changed.connect(_on_fuel_changed)
+    
+    _on_fuel_changed(fuel_manager.get_fuel(), fuel_manager.get_max_fuel()) # the starting value
     
 #endregion
 
@@ -123,6 +139,9 @@ func _load_map(map_name: String) -> void:
     rail_service.rails_tilemap = new_map.get_node("Rails")
     navigation_train_manager.clear_trains()
     rail_service.clear()
+
+    exploration_service.setup(map_name, terrain.get_used_cells()) # before _spawn_trains_from_map
+
     
     _build_rails_from_map(new_map.get_node("Rails"))
     #_build_bridges_from_map(new_map.get_node("Bridges"))
@@ -130,6 +149,9 @@ func _load_map(map_name: String) -> void:
     
     _spawn_trains_from_map(new_map.get_node("Trains"))
     #_spawn_wagons()
+    # _reveal_around_player()
+    
+    # exploration_service.update_position(grid_service.tile_to_world(Vector2(initial_player_train_pos))) # TEMP
 
 func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
     for tile in cities_ids_tilemap.get_used_cells():
@@ -222,7 +244,7 @@ func _on_train_reached_city(city_name: String) -> void:
     print("Nav Scene: Train reached city %s" % city_name)
     # Fade out travel music before entering the city scene.
     AudioService.stop_music(1.5)
-    #QuestManager.notify_city_reached(city_name)
+    QuestManager.notify_city_reached(city_name)
     SceneService.enter_city(city_name)
 
 func _on_rail_changed(tile: Vector2i) -> void:
@@ -238,3 +260,21 @@ func _on_button_left_pressed() -> void:
 
 func _on_button_right_pressed() -> void:
     navigation_train_manager.player_train_gear_toggle()
+
+
+func _on_fuel_changed(current: int, maximum: int) -> void:
+    fuel_bar.max_value = maxf(maximum, 1.0)
+    fuel_bar.value = current
+    fuel_label.text = "NO COAL" if current <= 0 else "%d / %d" % [current, maximum]
+    fuel_bar.modulate = Color.RED if current * 5 < maximum else Color.WHITE # below 20%
+    
+# func _on_player_tile_changed(tile: Vector2i) -> void:
+#     exploration_service.update_vision(tile)
+#     navigation_train_manager.update_enemy_visibility()
+
+
+# The train appears without a tile change, so reveal the start by hand
+# func _reveal_around_player() -> void:
+#     var train := navigation_train_manager.player_train
+#     if is_instance_valid(train) and not train.wagons.is_empty():
+#         _on_player_tile_changed(train.wagons[0].current_tile)

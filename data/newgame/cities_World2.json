@@ -3,29 +3,33 @@
         "Name": "Paris",
         "Type": "City",
         "Location": [
-            14,
-            6
+            11,
+            -8
         ],
         "TradeResources": {
             "alcohol": {
                 "BuyPrice": 20,
                 "SellPrice": 10,
-                "Quantity": 4
+                "Quantity": 4,
+                "MaxCapacity": 40
             },
             "fishingrods": {
                 "BuyPrice": 2,
                 "SellPrice": 5,
-                "Quantity": 6
+                "Quantity": 6,
+                "MaxCapacity": 40
             },
             "furs": {
                 "BuyPrice": 5,
                 "SellPrice": 10,
-                "Quantity": 12
+                "Quantity": 12,
+                "MaxCapacity": 40
             },
             "mammothdung": {
                 "BuyPrice": 1,
                 "SellPrice": 3,
-                "Quantity": 20
+                "Quantity": 20,
+                "MaxCapacity": 40
             }
         },
         "TradeWagons": {
@@ -37,54 +41,64 @@
         }
     },
     "1": {
-        "Name": "Mont Saint-Michel",
-        "Type": "City",
+        "Name": "Foundry",
+        "Type": "Industry",
+        "Kind": "Foudry",
         "Location": [
-            -11,
-            11
+            11,
+            -8
         ],
         "TradeResources": {
             "alcohol": {
-                "BuyPrice": 6,
-                "SellPrice": 7,
-                "Quantity": 11
+                "Mode": "Both",
+                "BuyPrice": 20,
+                "SellPrice": 10,
+                "Quantity": 4
             },
-            "caviar": {
-                "BuyPrice": 8,
-                "SellPrice": 9,
-                "Quantity": 5
+            "ironore": {
+                "Mode": "Buys",
+                "BuyPrice": 0,
+                "SellPrice": 4,
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "coperore": {
+                "Mode": "Buys",
+                "BuyPrice": 0,
+                "SellPrice": 5,
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "coal": {
+                "Mode": "Buys",
+                "BuyPrice": 0,
+                "SellPrice": 3,
+                "Quantity": 10,
+                "MaxCapacity": 40
+            },
+            "ironingot": {
+                "Mode": "Sells",
+                "BuyPrice": 14,
+                "SellPrice": 0,
+                "Quantity": 6,
+                "MaxCapacity": 40
+            },
+            "copperingot": {
+                "Mode": "Sells",
+                "BuyPrice": 13,
+                "SellPrice": 0,
+                "Quantity": 4,
+                "MaxCapacity": 40
             }
         }
     },
     "2": {
-        "Name": "London",
-        "Type": "City",
+        "Name": "Central Depot",
+        "Type": "Depot",
         "Location": [
-            0,
+            11,
             -8
-        ],
-        "TradeResources": {
-            "plants": {
-                "BuyPrice": 10,
-                "SellPrice": 20,
-                "Quantity": 10
-            },
-            "wolfmeat": {
-                "BuyPrice": 5,
-                "SellPrice": 10,
-                "Quantity": 6
-            },
-            "fish": {
-                "BuyPrice": 3,
-                "SellPrice": 4,
-                "Quantity": 12
-            },
-            "fishingrods": {
-                "BuyPrice": 2,
-                "SellPrice": 5,
-                "Quantity": 12
-            }
-        }
+        ]
     },
     "3": {
         "Name": "Amsterdam",
