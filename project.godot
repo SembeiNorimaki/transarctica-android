@@ -23,7 +23,7 @@ WagonTypes="*uid://cjiarrvnlw4od"
 SceneService="*uid://bhyg46o8k5sww"
 ResourceTypes="*uid://d0gv4mjl5pw63"
 QuestManager="*uid://djr0gywritul5"
-QuestUi="*uid://dxkgsverup06q"
+QuestUI="*uid://dxkgsverup06q"
 
 [display]
 

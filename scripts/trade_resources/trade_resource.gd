@@ -6,8 +6,8 @@ class_name TradeResource
 # from the inventories' signals.
 
 signal clicked(resource: TradeResource)
-#signal buy_requested(resource_name: String, qty: int)
-#signal sell_requested(resource_name: String, qty: int)
+signal buy_requested(resource_name: String, qty: int)
+signal sell_requested(resource_name: String, qty: int)
 
 const UNITS_PER_PRESS := 1
 

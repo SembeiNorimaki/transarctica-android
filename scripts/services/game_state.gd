@@ -23,17 +23,33 @@ extends Node
 
 const CITIES_PATH := "res://data/newgame/cities_World2.json"
 const PLAYER_TRAIN_PATH := "res://data/newgame/player_train.json"
-const SAVE_PATH := "user://savegame.json"
+# const SAVE_PATH := "user://savegame.json"
+const SAVES_DIR := "user://saves"
+const SLOT_COUNT := 4
+const DEBUG_SLOT := 1 # slot used while debugging scenes, until the main menu sets one
+const DEBUG_AUTOLOAD := false # true: every debug run starts from the DEBUG_SLOT save, if it exists
 const SAVE_VERSION := 1
+const INITIAL_MONEY := 100
+
+const FILE_CITIES := "cities.json"
+const FILE_PLAYER := "player.json"
+const FILE_ENEMIES := "enemies.json"
+const FILE_QUESTS := "quests.json"
+const SAVE_FILES := [FILE_CITIES, FILE_PLAYER, FILE_ENEMIES, FILE_QUESTS]
 
 var _cities_state: Dictionary = {} # city name -> city data
 var _cities_by_location: Dictionary = {} # Vector2i -> city name
 var _cities_by_id: Dictionary = {} # int -> city name
 var _player_train_state: Dictionary = {}
+var _enemies_state := {} # enemy trains: the navigation scene will fill it on game_saving
 
-var _player_money := 100 # TODO: load the starting value from data
+
+var _player_money := INITIAL_MONEY # TODO: load the starting value from data
 var _explored := {} # map name -> explored tiles, encoded by ExplorationService
 var _quests_state := {}
+
+var current_slot := DEBUG_SLOT # the main menu will set this
+
 
 var state := {
     "cities": {},
@@ -51,6 +67,8 @@ signal game_loaded # emitted after a load: scenes should rebuild themselves from
 func _ready() -> void:
     _load_initial_cities(CITIES_PATH)
     _load_initial_player_train(PLAYER_TRAIN_PATH)
+    if DEBUG_AUTOLOAD and OS.is_debug_build() and has_save(DEBUG_SLOT):
+        load_game(DEBUG_SLOT)
 
 # Returns the parsed JSON, or null (with an error) if the file is missing or invalid.
 func _read_json(path: String) -> Variant:
@@ -214,6 +232,12 @@ func add_money(delta: int) -> bool: # false if the result would be below 0
     money_changed.emit(_player_money)
     return true
 
+func get_enemies() -> Dictionary:
+    return _enemies_state
+
+func set_enemies(data: Dictionary) -> void:
+    _enemies_state = data
+
 func get_explored(map_name: String) -> Dictionary:
     return _explored.get(map_name, {})
 
@@ -235,82 +259,267 @@ func move_wagon_in_player_train(from_idx: int, to_idx: int) -> bool:
     wagons.insert(to_idx, wagons.pop_at(from_idx))
     return true
 
+
+# The first slot without a save, or 0 if all of them are used
+func find_free_slot() -> int:
+    for slot in range(1, SLOT_COUNT + 1):
+        if not has_save(slot):
+            return slot
+    return 0
+
+# Sets the game to its initial state, from the newgame folder, in the given slot.
+# Nothing is written to disk: the slot only changes when the game is saved.
+func start_new_game(slot: int) -> bool:
+    if slot < 1 or slot > SLOT_COUNT:
+        push_error("GameState: slot %d does not exist (1 to %d)" % [slot, SLOT_COUNT])
+        return false
+    current_slot = slot
+    _player_money = INITIAL_MONEY
+    _explored = {}
+    _quests_state = {} # empty quest state: QuestManager starts the quest line
+    _enemies_state = {}
+    _load_initial_cities(CITIES_PATH)
+    _load_initial_player_train(PLAYER_TRAIN_PATH)
+    game_loaded.emit() # before money_changed, like in load_game
+    money_changed.emit(_player_money)
+    return true
+
+# What the slot menu shows
+func get_slot_info(slot: int) -> Dictionary:
+    if not has_save(slot):
+        return {"exists": false}
+    var data = _read_json("%s/%s" % [get_slot_dir(slot), FILE_PLAYER])
+    if not (data is Dictionary):
+        return {"exists": true, "valid": false}
+    return {"exists": true, "valid": true, "saved_at": str(data.get("saved_at", "")), "money": int(data.get("money", 0))}
+
 #region save game
-func has_save() -> bool:
-    return FileAccess.file_exists(SAVE_PATH)
-
-
-# Writes the whole state to SAVE_PATH as readable JSON. Returns false (with an error) on failure.
-func save_game() -> bool:
+# Writes the slot's four files. Returns false (with an error) if it fails.
+func save_game(slot := -1) -> bool:
+    var target := _resolve_slot(slot)
+    if target < 1 or target > SLOT_COUNT:
+        push_error("GameState: slot %d does not exist (1 to %d)" % [target, SLOT_COUNT])
+        return false
     game_saving.emit()
 
     var city_ids := {} # JSON keys must be strings
     for id in _cities_by_id:
         city_ids[str(id)] = _cities_by_id[id]
 
-    var data := {
-        "version": SAVE_VERSION,
-        "saved_at": Time.get_datetime_string_from_system(),
-        "money": _player_money,
-        "player_train": _player_train_state,
-        "cities": _cities_state,
-        "city_ids": city_ids,
-        "quests": _quests_state,
-        "explored": _explored
+    var files := {
+        FILE_CITIES: {"version": SAVE_VERSION, "cities": _cities_state, "city_ids": city_ids},
+        FILE_PLAYER: {
+            "version": SAVE_VERSION,
+            "saved_at": Time.get_datetime_string_from_system(),
+            "money": _player_money,
+            "train": _player_train_state,
+            "explored": _explored,
+        },
+        FILE_ENEMIES: {"version": SAVE_VERSION, "enemies": _enemies_state},
+        FILE_QUESTS: {"version": SAVE_VERSION, "quests": _quests_state},
     }
-    var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-    if file == null:
-        push_error("GameState: cannot write %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()])
+
+    var dir_path := get_slot_dir(target)
+    var error := DirAccess.make_dir_recursive_absolute(dir_path)
+    if error != OK:
+        push_error("GameState: cannot create %s (error %d)" % [dir_path, error])
         return false
-    file.store_string(JSON.stringify(data, "\t")) # keys are sorted, so the file is stable and easy to diff
-    file.close()
-    print("GameState: saved to %s" % ProjectSettings.globalize_path(SAVE_PATH))
+
+    # Everything goes to temporary files first: if a write fails, the previous save is untouched
+    for file_name in files:
+        if not _write_json("%s/%s.tmp" % [dir_path, file_name], files[file_name]):
+            _remove_temp_files(dir_path)
+            return false
+    for file_name in files:
+        var final_path := "%s/%s" % [dir_path, file_name]
+        if FileAccess.file_exists(final_path):
+            DirAccess.remove_absolute(final_path)
+        error = DirAccess.rename_absolute(final_path + ".tmp", final_path)
+        if error != OK:
+            push_error("GameState: cannot finish saving %s (error %d); the new data is in %s.tmp" % [final_path, error, final_path])
+            return false
+
+    print("GameState: saved slot %d to %s" % [target, ProjectSettings.globalize_path(dir_path)])
     return true
+
+
+func _write_json(path: String, data: Dictionary) -> bool:
+    var file := FileAccess.open(path, FileAccess.WRITE)
+    if file == null:
+        push_error("GameState: cannot write %s (error %d)" % [path, FileAccess.get_open_error()])
+        return false
+    file.store_string(JSON.stringify(data, "\t")) # keys are sorted, so files are stable and easy to diff
+    file.close()
+    return true
+
+
+func _remove_temp_files(dir_path: String) -> void:
+    for file_name in SAVE_FILES:
+        DirAccess.remove_absolute("%s/%s.tmp" % [dir_path, file_name])
+
+
+# func has_save() -> bool:
+#     return FileAccess.file_exists(SAVE_PATH)
+
+
+# Writes the whole state to SAVE_PATH as readable JSON. Returns false (with an error) on failure.
+# func save_game() -> bool:
+#     game_saving.emit()
+
+#     var city_ids := {} # JSON keys must be strings
+#     for id in _cities_by_id:
+#         city_ids[str(id)] = _cities_by_id[id]
+
+#     var data := {
+#         "version": SAVE_VERSION,
+#         "saved_at": Time.get_datetime_string_from_system(),
+#         "money": _player_money,
+#         "player_train": _player_train_state,
+#         "cities": _cities_state,
+#         "city_ids": city_ids,
+#         "quests": _quests_state,
+#         "explored": _explored
+#     }
+#     var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+#     if file == null:
+#         push_error("GameState: cannot write %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()])
+#         return false
+#     file.store_string(JSON.stringify(data, "\t")) # keys are sorted, so the file is stable and easy to diff
+#     file.close()
+#     print("GameState: saved to %s" % ProjectSettings.globalize_path(SAVE_PATH))
+#     return true
 
 
 # Replaces the current state with the saved one. Returns false, changing nothing, if the file is
 # missing or invalid. Everything is checked before anything is replaced.
-func load_game() -> bool:
-    if not has_save():
-        push_warning("GameState: there is no save at %s" % SAVE_PATH)
+# func load_game() -> bool:
+#     if not has_save():
+#         push_warning("GameState: there is no save at %s" % SAVE_PATH)
+#         return false
+#     var data = _read_json(SAVE_PATH)
+#     var problem := _validate_save(data)
+#     if problem != "":
+#         push_error("GameState: invalid save: %s" % problem)
+#         return false
+
+#     _player_money = int(data["money"])
+#     _player_train_state = data["player_train"]
+#     _cities_state = data["cities"]
+#     _quests_state = data.get("quests", {})
+#     _explored = data.get("explored", {})
+
+#     _cities_by_id = {}
+#     for id in data["city_ids"]:
+#         _cities_by_id[int(id)] = data["city_ids"][id]
+#     _cities_by_location = {}
+#     for city_name in _cities_state:
+#         var location: Array = _cities_state[city_name]["Location"]
+#         _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
+
+#     game_loaded.emit()
+#     money_changed.emit(_player_money)
+#     return true
+
+
+# Returns "" if the data looks like a valid save, or a description of what is wrong.
+# func _validate_save(data) -> String:
+#     if not (data is Dictionary):
+#         return "the file is not a JSON object"
+#     if int(data.get("version", 0)) != SAVE_VERSION:
+#         return "version %s, expected %d" % [data.get("version"), SAVE_VERSION]
+#     for key in ["money", "player_train", "cities", "city_ids"]:
+#         if not data.has(key):
+#             return "missing '%s'" % key
+#     if not (data["player_train"] is Dictionary and data["cities"] is Dictionary and data["city_ids"] is Dictionary):
+#         return "'player_train', 'cities' and 'city_ids' must be objects"
+
+#     for city_name in data["cities"]:
+#         var city = data["cities"][city_name]
+#         if not (city is Dictionary) or not (city.get("Location") is Array) or city["Location"].size() < 2:
+#             return "city '%s' needs a Location [x, y]" % city_name
+#     for id in data["city_ids"]:
+#         if not str(id).is_valid_int():
+#             return "city id '%s' is not a number" % id
+#         if not data["cities"].has(data["city_ids"][id]):
+#             return "city id %s points to '%s', which is not in 'cities'" % [id, data["city_ids"][id]]
+#     return ""
+
+#endregion
+
+#region load game
+func load_game(slot := -1) -> bool:
+    var target := _resolve_slot(slot)
+    if not has_save(target):
+        push_warning("GameState: slot %d has no save" % target)
         return false
-    var data = _read_json(SAVE_PATH)
-    var problem := _validate_save(data)
+
+    var dir_path := get_slot_dir(target)
+    var player = _read_slot_file(dir_path, FILE_PLAYER)
+    var cities = _read_slot_file(dir_path, FILE_CITIES)
+    var enemies = _read_slot_file(dir_path, FILE_ENEMIES)
+    var quests = _read_slot_file(dir_path, FILE_QUESTS)
+    if player == null or cities == null or enemies == null or quests == null:
+        return false # a file exists but is invalid: the Debugger says which
+
+    var problem := _validate_player(player)
+    if problem == "" and not cities.is_empty():
+        problem = _validate_cities(cities)
     if problem != "":
-        push_error("GameState: invalid save: %s" % problem)
+        push_error("GameState: invalid save in slot %d: %s" % [target, problem])
         return false
 
-    _player_money = int(data["money"])
-    _player_train_state = data["player_train"]
-    _cities_state = data["cities"]
-    _quests_state = data.get("quests", {})
-    _explored = data.get("explored", {})
+    current_slot = target # saving now goes to the slot you loaded
 
-    _cities_by_id = {}
-    for id in data["city_ids"]:
-        _cities_by_id[int(id)] = data["city_ids"][id]
-    _cities_by_location = {}
-    for city_name in _cities_state:
-        var location: Array = _cities_state[city_name]["Location"]
-        _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
+    _player_money = int(player["money"])
+    _player_train_state = player["train"]
+    _explored = player.get("explored", {})
 
-    game_loaded.emit()
+    if cities.is_empty():
+        _load_initial_cities(CITIES_PATH) # no cities.json: the cities start as in a new game
+    else:
+        _cities_state = cities["cities"]
+        _cities_by_id = {}
+        for id in cities["city_ids"]:
+            _cities_by_id[int(id)] = cities["city_ids"][id]
+        _cities_by_location = {}
+        for city_name in _cities_state:
+            var location: Array = _cities_state[city_name]["Location"]
+            _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
+
+    _enemies_state = enemies.get("enemies", {}) # missing files give {}: no enemies, no quests...
+    _quests_state = quests.get("quests", {}) # ...and an empty quest state starts the quest line
+
+    game_loaded.emit() # before money_changed, so quests are rebuilt before they react to the money
     money_changed.emit(_player_money)
     return true
 
 
-# Returns "" if the data looks like a valid save, or a description of what is wrong.
-func _validate_save(data) -> String:
+# The parsed file, {} if it doesn't exist, or null (with an error) if it is invalid
+func _read_slot_file(dir_path: String, file_name: String) -> Variant:
+    var path := "%s/%s" % [dir_path, file_name]
+    if not FileAccess.file_exists(path):
+        return {}
+    var data = _read_json(path)
     if not (data is Dictionary):
-        return "the file is not a JSON object"
+        push_error("GameState: %s is not a valid JSON object" % path)
+        return null
     if int(data.get("version", 0)) != SAVE_VERSION:
-        return "version %s, expected %d" % [data.get("version"), SAVE_VERSION]
-    for key in ["money", "player_train", "cities", "city_ids"]:
-        if not data.has(key):
-            return "missing '%s'" % key
-    if not (data["player_train"] is Dictionary and data["cities"] is Dictionary and data["city_ids"] is Dictionary):
-        return "'player_train', 'cities' and 'city_ids' must be objects"
+        push_error("GameState: %s has version %s, expected %d" % [path, data.get("version"), SAVE_VERSION])
+        return null
+    return data
 
+
+func _validate_player(data: Dictionary) -> String:
+    if not data.has("money") or not (data.get("train") is Dictionary):
+        return "player.json needs 'money' and a 'train' object"
+    if not (data["train"].get("wagons") is Array):
+        return "'train' needs a 'wagons' list"
+    return ""
+
+
+func _validate_cities(data: Dictionary) -> String:
+    if not (data.get("cities") is Dictionary and data.get("city_ids") is Dictionary):
+        return "cities.json needs 'cities' and 'city_ids' objects"
     for city_name in data["cities"]:
         var city = data["cities"][city_name]
         if not (city is Dictionary) or not (city.get("Location") is Array) or city["Location"].size() < 2:
@@ -321,6 +530,27 @@ func _validate_save(data) -> String:
         if not data["cities"].has(data["city_ids"][id]):
             return "city id %s points to '%s', which is not in 'cities'" % [id, data["city_ids"][id]]
     return ""
+#endregion
+
+#region slots
+func get_slot_dir(slot := -1) -> String:
+    return "%s/slot_%d" % [SAVES_DIR, _resolve_slot(slot)]
+
+
+func has_save(slot := -1) -> bool:
+    return FileAccess.file_exists("%s/%s" % [get_slot_dir(slot), FILE_PLAYER])
+
+
+func delete_slot(slot := -1) -> void:
+    var dir_path := get_slot_dir(slot)
+    for file_name in SAVE_FILES:
+        DirAccess.remove_absolute("%s/%s" % [dir_path, file_name])
+    DirAccess.remove_absolute(dir_path) # only works once it is empty, which it now is
+
+
+func _resolve_slot(slot: int) -> int:
+    return current_slot if slot < 1 else slot
+#endregion
 
 
 func _unhandled_key_input(event: InputEvent) -> void: # TEMPORARY: quick save / load while developing
@@ -332,4 +562,3 @@ func _unhandled_key_input(event: InputEvent) -> void: # TEMPORARY: quick save / 
             save_game()
         KEY_F9:
             load_game()
-#endregion

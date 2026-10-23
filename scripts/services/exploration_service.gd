@@ -169,7 +169,10 @@ func _get_offsets(fog_radius: int) -> Array:
 
 
 func _fog_tile_at(world_pos: Vector2) -> Vector2i:
-    return fog_layer.local_to_map(fog_layer.to_local(world_pos))
+    # Rails run exactly along fog tile boundaries (even subdivision), so float noise would flip
+    # the tile every frame. A fixed nudge of a quarter fog tile puts the point inside one tile.
+    var bias := Vector2(0, fog_layer.tile_set.tile_size.y * 0.25)
+    return fog_layer.local_to_map(fog_layer.to_local(world_pos + bias))
 #endregion
 
 

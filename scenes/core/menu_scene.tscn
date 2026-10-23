@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bu5bwi3yr0ehg" path="res://scripts/core/menu_scene.gd" id="1_b7lrf"]
 [ext_resource type="Texture2D" uid="uid://h0fudlcfi1bm" path="res://assets/Transarctica.jpg" id="1_wv2wf"]
+[ext_resource type="PackedScene" uid="uid://b2bknxxoewqin" path="res://scenes/menus/load_menu.tscn" id="3_ob5dd"]
 
 [node name="MenuScene" type="Control" unique_id=1289971974]
 layout_mode = 3
@@ -37,6 +38,10 @@ text = "New Game"
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "Load Game"
+
+[node name="LoadMenu" parent="." unique_id=515437966 instance=ExtResource("3_ob5dd")]
+visible = false
+layout_mode = 0
 
 [connection signal="pressed" from="VBoxContainer/NewGameButton" to="." method="_on_new_game_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/LoadGameButton" to="." method="_on_load_game_button_pressed"]

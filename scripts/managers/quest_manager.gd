@@ -33,7 +33,7 @@ func _ready() -> void:
     if OS.is_debug_build():
         quest_objective_updated.connect(_print_progress)
         _validate_database.call_deferred() # deferred: GameState must have loaded its data
-    load_from_game_state.call_deferred()
+    _load_when_debugging.call_deferred()
 
 
 #region database
@@ -50,7 +50,13 @@ func load_quest_database() -> void:
     else:
         push_error("QuestManager: %s is not a valid JSON object" % QUESTS_PATH)
 
-
+# Quests load when a game starts, because GameState emits game_loaded from the menu.
+# Running a single scene for debugging (F6) has no menu, so load them here.
+func _load_when_debugging() -> void:
+    var scene := get_tree().current_scene
+    if scene != null and not scene.has_method("show_menu"):
+        load_from_game_state()
+        
 # Builds a quest from its database entry, without any progress. Null if it doesn't exist.
 func _build_quest(quest_id: String) -> Quest:
     var data: Dictionary = quest_database.get(quest_id, {})
