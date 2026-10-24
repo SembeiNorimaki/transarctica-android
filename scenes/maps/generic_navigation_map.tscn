@@ -5,6 +5,7 @@
 [ext_resource type="TileSet" uid="uid://b0iq75h61whcq" path="res://assets/tilesets/navigation_cities.tres" id="3_75oc5"]
 [ext_resource type="TileSet" uid="uid://dkfq0a766sqds" path="res://assets/tilesets/navigation_locomotive.tres" id="4_ivt2f"]
 [ext_resource type="Texture2D" uid="uid://cslwxp113ft1p" path="res://assets/tilesets/imgs/trees.png" id="5_r0yyr"]
+[ext_resource type="TileSet" uid="uid://ba1famefvoql5" path="res://assets/tilesets/city_ids.tres" id="5_vi62s"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vi62s"]
 texture = ExtResource("5_r0yyr")
@@ -49,8 +50,12 @@ tile_set = ExtResource("3_75oc5")
 tile_set = ExtResource("4_ivt2f")
 
 [node name="CitiesIds" type="TileMapLayer" parent="." unique_id=133513815]
+tile_set = ExtResource("5_vi62s")
 
 [node name="Tunnels" type="TileMapLayer" parent="." unique_id=1795313605]
 
 [node name="Trees" type="TileMapLayer" parent="." unique_id=534418288]
 tile_set = SubResource("TileSet_uqwmi")
+
+[node name="Events" type="TileMapLayer" parent="." unique_id=301062603]
+tile_set = ExtResource("5_vi62s")

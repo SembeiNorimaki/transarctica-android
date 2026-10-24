@@ -8,11 +8,13 @@ signal trade_failed(message: String) # for the HUD
 @onready var trade_resource_manager: TradeResourceManager = $Managers/TradeResourceManager
 @onready var trade_wagon_manager: TradeWagonManager = $Managers/TradeWagonManager
 @onready var wagon_reorder_controller: WagonReorderController = $Managers/WagonReorderController
+@onready var trade_unit_manager: TradeUnitManager = $Managers/TradeUnitManager
 
 # Containers
 @onready var train_container: Node2D = $TrainContainer
 @onready var trade_resource_container: Node2D = $ResourceContainer
 @onready var wagon_container: Node2D = $WagonContainer
+@onready var unit_container: Node2D = $UnitContainer
 
 # Inventories
 @onready var city_inventory: CityInventory = $Inventories/CityInventory
@@ -55,6 +57,7 @@ func _ready() -> void:
     horizontal_train_manager.train_container = train_container
     trade_resource_manager.resource_container = trade_resource_container
     trade_wagon_manager.wagon_container = wagon_container
+    trade_unit_manager.unit_container = unit_container
     
     _set_resource_slots()
     wagon_reorder_controller.setup(player_train)
@@ -76,6 +79,10 @@ func _ready() -> void:
     train_inventory.wagon_removed.connect(_on_wagon_removed)
     wagon_reorder_controller.wagon_dropped.connect(_on_wagon_dropped)
     train_inventory.wagon_moved.connect(_on_wagon_moved)
+    trade_unit_manager.unit_clicked.connect(_on_city_unit_clicked)
+    buy_menu.recruit_requested.connect(_on_recruit_requested)
+    city_inventory.city_recruit_amount_changed.connect(_on_city_recruit_amount_changed)
+    train_inventory.unit_added.connect(_on_unit_added)
 
     AudioService.play_music(MUSIC_TRADE, 0.0)
 
@@ -117,6 +124,7 @@ func initialize(city_name_: String) -> void:
     _load_train()
     _load_city_resources()
     _load_city_wagons()
+    _load_city_units()
     _update_all_wagon_prices()
     _print_inventories()
 
@@ -152,7 +160,13 @@ func _load_city_wagons() -> void:
     for wagon_type in city_inventory.get_wagon_types():
         if city_inventory.get_wagon_available_qty(wagon_type) > 0:
             trade_wagon_manager.spawn_wagon(wagon_type) # logs an error if it can't
-            
+
+func _load_city_units() -> void:
+    for unit_type in city_inventory.get_recruit_types():
+        var qty := city_inventory.get_recruit_qty(unit_type)
+        if qty > 0:
+            trade_unit_manager.spawn_unit(unit_type, qty) # logs an error if it can't
+
 #endregion
 
 
@@ -232,6 +246,19 @@ func _on_city_wagon_clicked(wagon_type: String) -> void:
         city_inventory.get_wagon_buy_price(wagon_type))
     _refresh_buy_menu()
 
+func _on_city_unit_clicked(unit_type: String) -> void:
+    if buy_menu.visible and buy_menu.current_unit_type == unit_type:
+        buy_menu.close() # tapping the open soldier again closes it
+        return
+    sell_menu.close() # only one menu at a time
+    var unit := trade_unit_manager.get_unit(unit_type)
+    buy_menu.show_unit(
+        unit_type,
+        unit.get_icon() if unit != null else null,
+        city_inventory.get_recruit_qty(unit_type),
+        city_inventory.get_recruit_price(unit_type))
+    _refresh_buy_menu()
+
 
 func _on_buy_wagon_requested(wagon_type: String) -> void:
     var result := TradeService.buy_wagon(city_inventory, train_inventory, wagon_type)
@@ -244,6 +271,12 @@ func _on_sell_wagon_requested(wagon_index: int) -> void:
     if result != TradeService.Result.OK:
         trade_failed.emit(TradeService.result_text(result))
 
+func _on_recruit_requested(unit_type: String) -> void:
+    var result := TradeService.recruit(city_inventory, train_inventory, unit_type)
+    if result != TradeService.Result.OK:
+        trade_failed.emit(TradeService.result_text(result))
+
+
 func _on_city_wagon_amount_changed(wagon_type: String, qty: int) -> void:
     if qty == 0:
         # The last one was bought: the wagon leaves the city
@@ -255,6 +288,16 @@ func _on_city_wagon_amount_changed(wagon_type: String, qty: int) -> void:
             trade_wagon_manager.spawn_wagon(wagon_type) # the city has this wagon again
         _refresh_buy_menu()
 
+func _on_city_recruit_amount_changed(unit_type: String, qty: int) -> void:
+    if qty == 0:
+        # The last one was hired: the soldier leaves the city
+        if buy_menu.current_unit_type == unit_type:
+            buy_menu.close()
+        trade_unit_manager.remove_unit(unit_type)
+    else:
+        trade_unit_manager.set_unit_qty(unit_type, qty)
+        _refresh_buy_menu()
+
 
 # The data already has the wagon, so the train only has to show it at the rear
 func _on_wagon_added(wagon_index: int, _wagon_type: String) -> void:
@@ -264,9 +307,19 @@ func _on_wagon_added(wagon_index: int, _wagon_type: String) -> void:
 func _on_wagon_removed(wagon_index: int) -> void:
     sell_menu.close() # the indices after this wagon moved, so an open menu would point at the wrong wagon
     player_train.remove_wagon(wagon_index)
-    
+
+# The barracks has one soldier more, and fewer places: the menu's button may have to be disabled
+func _on_unit_added(_wagon_index: int, _unit_id: String) -> void:
+    _refresh_buy_menu()
+
 # Keeps the open menu in sync: stock and whether buying is possible right now
 func _refresh_buy_menu() -> void:
+    if buy_menu.current_unit_type != "":
+        var unit_type := buy_menu.current_unit_type
+        buy_menu.set_qty(city_inventory.get_recruit_qty(unit_type))
+        buy_menu.set_can_buy(TradeService.can_recruit(city_inventory, train_inventory, unit_type))
+        return
+        
     if buy_menu.current_wagon_type != "":
         var wagon_type := buy_menu.current_wagon_type
         buy_menu.set_qty(city_inventory.get_wagon_available_qty(wagon_type))

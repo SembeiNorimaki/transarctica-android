@@ -10,7 +10,9 @@
 [ext_resource type="Script" uid="uid://dqpn1aki2nwea" path="res://scripts/managers/navigation_train_manager.gd" id="8_43f6w"]
 [ext_resource type="Script" uid="uid://cfh5rluepjuub" path="res://scripts/overlays/rails_overlay.gd" id="9_43f6w"]
 [ext_resource type="Texture2D" uid="uid://d2yrq5w26cej2" path="res://assets/tilesets/imgs/fow64.png" id="10_1aqif"]
+[ext_resource type="Script" uid="uid://bmulqwdhpg0rh" path="res://scripts/managers/events_manager.gd" id="10_6eg84"]
 [ext_resource type="Script" uid="uid://rn2y28iu7pn7" path="res://scripts/managers/fuel_manager.gd" id="10_rjhdy"]
+[ext_resource type="Script" uid="uid://d01c6l3glp7jk" path="res://scripts/UI/event_popup.gd" id="12_6eg84"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rjhdy"]
 texture = ExtResource("10_1aqif")
@@ -66,6 +68,9 @@ script = ExtResource("7_43f6w")
 [node name="FuelManager" type="Node" parent="Managers" unique_id=2115520698]
 script = ExtResource("10_rjhdy")
 
+[node name="EventsManager" type="Node" parent="Managers" unique_id=89250090]
+script = ExtResource("10_6eg84")
+
 [node name="TrainContainer" type="Node2D" parent="." unique_id=1572720261]
 
 [node name="CityLabelsContainer" type="Node2D" parent="." unique_id=1893294954]
@@ -100,6 +105,13 @@ offset_bottom = 27.0
 offset_right = 40.0
 offset_bottom = 23.0
 text = "Fuel"
+
+[node name="EventPopup" type="Control" parent="CanvasLayer" unique_id=300236767]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("12_6eg84")
 
 [node name="Overlays" type="Node2D" parent="." unique_id=1417787132]
 

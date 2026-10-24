@@ -1,0 +1,78 @@
+{
+    "_comment": "Enemy trains of a NEW game. The key is the train id. Same structure as player_train.json, but no 'position': the trains start on the enemy tiles of the Trains tilemap, in the order of this file (see NavigationScene). Soldiers in a barracks are listed by id in 'unit_ids' and defined in units.json with owner_id 'Enemy'.",
+    "e0": {
+        "owner": "Enemy",
+        "max_speed": 250,
+        "acceleration": 40,
+        "deceleration": 200,
+        "wagons": [
+            {
+                "type": "LocomotiveWagon",
+                "hp": 80,
+                "max_hp": 80,
+                "capacity": 0,
+                "cargo_name": "",
+                "cargo_qty": 0
+            },
+            {
+                "type": "MerchandiseWagon",
+                "hp": 40,
+                "max_hp": 40,
+                "capacity": 10,
+                "cargo_name": "furs",
+                "cargo_qty": 8
+            },
+            {
+                "type": "BarracksWagon",
+                "hp": 40,
+                "max_hp": 40,
+                "capacity": 6,
+                "unit_ids": [
+                    "u10",
+                    "u11"
+                ]
+            }
+        ]
+    },
+    "e1": {
+        "owner": "Enemy",
+        "max_speed": 300,
+        "acceleration": 50,
+        "deceleration": 200,
+        "wagons": [
+            {
+                "type": "LocomotiveWagon",
+                "hp": 100,
+                "max_hp": 100,
+                "capacity": 0,
+                "cargo_name": "",
+                "cargo_qty": 0
+            },
+            {
+                "type": "MerchandiseWagon",
+                "hp": 40,
+                "max_hp": 40,
+                "capacity": 10,
+                "cargo_name": "alcohol",
+                "cargo_qty": 4
+            },
+            {
+                "type": "MerchandiseWagon",
+                "hp": 40,
+                "max_hp": 40,
+                "capacity": 10,
+                "cargo_name": "",
+                "cargo_qty": 0
+            },
+            {
+                "type": "BarracksWagon",
+                "hp": 40,
+                "max_hp": 40,
+                "capacity": 6,
+                "unit_ids": [
+                    "u12"
+                ]
+            }
+        ]
+    }
+}

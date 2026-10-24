@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bjpt603pdkiux"]
+
+[ext_resource type="Script" uid="uid://tkac4q8m7s78" path="res://scripts/trade_resources/trade_unit.gd" id="1_n51ql"]
+
+[node name="TradeUnit" type="Node2D" unique_id=958736233]
+script = ExtResource("1_n51ql")

@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://b7xt2vmxgj1lt" path="res://scripts/managers/wagon_reorder_controller.gd" id="8_ciyb7"]
 [ext_resource type="Script" uid="uid://83xnpffg07jw" path="res://scripts/inventories/train_inventory.gd" id="8_jdot1"]
 [ext_resource type="PackedScene" uid="uid://swu4wkh6mhyx" path="res://scenes/menus/buy_menu.tscn" id="9_io20h"]
+[ext_resource type="Script" uid="uid://bybumlmye14d" path="res://scripts/managers/trade_unit_manager.gd" id="9_pelun"]
 [ext_resource type="PackedScene" uid="uid://nfn44fiqwyhr" path="res://scenes/menus/sell_menu.tscn" id="10_wiigk"]
 [ext_resource type="PackedScene" uid="uid://b4j11lbqypfcu" path="res://scenes/menus/dialog_menu.tscn" id="12_1x0sx"]
 
@@ -37,6 +38,8 @@ scale = Vector2(2, 2)
 
 [node name="WagonContainer" type="Node2D" parent="." unique_id=1168710875]
 
+[node name="UnitContainer" type="Node2D" parent="." unique_id=1655464461]
+
 [node name="Services" type="Node" parent="." unique_id=1630094170]
 
 [node name="TradeService" type="Node" parent="Services" unique_id=1598723754]
@@ -55,6 +58,9 @@ script = ExtResource("7_2djvw")
 
 [node name="WagonReorderController" type="Node" parent="Managers" unique_id=686041668]
 script = ExtResource("8_ciyb7")
+
+[node name="TradeUnitManager" type="Node" parent="Managers" unique_id=411619303]
+script = ExtResource("9_pelun")
 
 [node name="Inventories" type="Node" parent="." unique_id=1052194190]
 

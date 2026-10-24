@@ -2,7 +2,6 @@
 
 [ext_resource type="PackedScene" uid="uid://dxot3aouof2ut" path="res://scenes/maps/generic_navigation_map.tscn" id="1_0xw6c"]
 [ext_resource type="TileSet" uid="uid://biv4j7vudv2nh" path="res://assets/tilesets/bridges.tres" id="2_ahewx"]
-[ext_resource type="TileSet" uid="uid://ba1famefvoql5" path="res://assets/tilesets/city_ids.tres" id="3_r50x4"]
 [ext_resource type="TileSet" uid="uid://c80ifhw0xnstf" path="res://assets/tilesets/tunnels.tres" id="4_xaykv"]
 
 [node name="World1" unique_id=1301367354 instance=ExtResource("1_0xw6c")]
@@ -31,7 +30,6 @@ tile_map_data = PackedByteArray("AAAfAAkAAAAAAAAAAAA=")
 
 [node name="CitiesIds" parent="." index="7" unique_id=133513815]
 tile_map_data = PackedByteArray("AAAgAAcAAAAAAAAAAAATAAcAAAABAAAAAAA=")
-tile_set = ExtResource("3_r50x4")
 
 [node name="Tunnels" parent="." index="8" unique_id=1795313605]
 tile_map_data = PackedByteArray("AAAPAA0AAAAAAAAAAAARAAwAAAABAAAAAAAOAAsAAAACAAAAAAAPAAoAAAADAAAAAAA=")

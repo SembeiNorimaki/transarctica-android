@@ -20,6 +20,7 @@ class_name CityInventory
 
 signal city_resource_amount_changed(resource_name: String, qty: int)
 signal city_wagon_amount_changed(wagon_type: String, qty: int)
+signal city_recruit_amount_changed(unit_type: String, qty: int)
 
 const DEFAULT_MAX_CAPACITY := 999 # used when the city data has no MaxCapacity
 const MODE_BOTH := "Both" # the place buys and sells it (cities)
@@ -32,6 +33,7 @@ var city_name := ""
 var recipes: Array[Dictionary] = [] # [{name, inputs: {resource: qty}, outputs: {resource: qty}}]
 var resources := {} # resource_name -> {qty, buy_price, sell_price, max_capacity}
 var wagons := {} # wagon_name -> {qty, buy_price, sell_price, max_capacity}
+var recruits := {} # unit_type -> {qty, price}. Soldiers can only be bought: there is no sell price
 
 func _init(city_name_: String = "") -> void:
     city_name = city_name_
@@ -78,6 +80,16 @@ func load_from_game_state(city_name_: String) -> bool:
             push_warning("CityInventory: wagon '%s' in %s has buy_price %d < sell_price %d (infinite money)" % [wagon_type, city_name, buy_price, sell_price])
         wagons[wagon_type] = {"qty": int(data.get("Quantity", 0)), "buy_price": buy_price, "sell_price": sell_price}
     
+    # read recruits (optional): the soldiers the player can hire here
+    recruits.clear()
+    var city_recruits: Dictionary = city_data.get("Recruits", {})
+    for unit_type in city_recruits:
+        if not UnitTypes.exists(unit_type):
+            push_error("CityInventory: '%s' in %s is not a unit type" % [unit_type, city_name])
+            continue
+        var data: Dictionary = city_recruits[unit_type]
+        recruits[unit_type] = {"qty": int(data.get("Quantity", 0)), "price": int(data.get("Price", 0))}
+        
     # read recipes
     recipes.clear()
     for recipe_data in city_data.get("Recipes", []):
@@ -167,6 +179,18 @@ func get_wagon_sell_price(wagon_type: String) -> int:
 
 func get_recipes() -> Array:
     return recipes.duplicate(true)
+
+func has_recruit_type(unit_type: String) -> bool:
+    return recruits.has(unit_type)
+
+func get_recruit_types() -> Array:
+    return recruits.keys()
+
+func get_recruit_qty(unit_type: String) -> int:
+    return recruits.get(unit_type, {}).get("qty", 0)
+
+func get_recruit_price(unit_type: String) -> int:
+    return recruits.get(unit_type, {}).get("price", 0)
 #endregion
 
 
@@ -232,7 +256,18 @@ func remove_wagon_amount(wagon_type: String, qty: int) -> bool:
     city_wagon_amount_changed.emit(wagon_type, info["qty"])
     return true
 
-
+# The player hired soldiers. Returns false, changing nothing, if there aren't enough.
+func remove_recruit_amount(unit_type: String, qty: int) -> bool:
+    if qty <= 0 or not recruits.has(unit_type):
+        return false
+    if qty > get_recruit_qty(unit_type):
+        return false
+    var info: Dictionary = recruits[unit_type]
+    info["qty"] -= qty
+    GameState.change_city_recruits(city_name, unit_type, -qty)
+    city_recruit_amount_changed.emit(unit_type, info["qty"])
+    return true
+    
 func _apply_change(resource_name: String, delta: int) -> void:
     var info: Dictionary = resources[resource_name]
     info["qty"] += delta

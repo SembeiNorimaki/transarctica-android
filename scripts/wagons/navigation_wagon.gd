@@ -17,6 +17,7 @@ const LAYER_ENEMY_TRAIN := 2
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var hit_area: Area2D = $HitArea
+@onready var label: Label = $Label
 
 func _ready() -> void:
     hit_area.area_entered.connect(_on_hit_area_entered)
@@ -47,6 +48,12 @@ func set_orientation(ori: String) -> void:
         orientation = ori
         sprite.play(ori)
 
+# The wagon types have no navigation sprites yet: until they do, a wagon that is not the locomotive
+# is the locomotive sprite, tinted, with the name of its type.
+func set_placeholder(type_name: String) -> void:
+    label.text = type_name
+    sprite.modulate = Color(0.7, 0.8, 1.0)
+    
 func set_sprite_frames(frames: SpriteFrames) -> void:
     sprite.sprite_frames = frames
     if orientation != "":

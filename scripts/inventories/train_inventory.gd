@@ -19,6 +19,7 @@ signal wagon_resource_amount_changed(wagon_index: int, resource_name: String, qt
 signal wagon_added(wagon_index: int, wagon_type: String)
 signal wagon_removed(wagon_index: int)
 signal wagon_moved(from_index: int, to_index: int)
+signal unit_added(wagon_index: int, unit_id: String)
 
 var wagons: Array[Dictionary] = []
 
@@ -41,13 +42,14 @@ func load_from_game_state() -> bool:
         _append_wagon(
             data.get("type", ""),
             data.get("cargo_name", ""),
-            int(data.get("cargo_qty", 0))) # JSON numbers are floats
+            int(data.get("cargo_qty", 0)), # JSON numbers are floats
+            data.get("unit_ids", []))
     return true
 
 
 # Capacity comes from WagonTypes. Every wagon gets an entry, even with an unknown type,
 # so the indices stay aligned with the train data.
-func _append_wagon(wagon_type: String, cargo: String, qty: int) -> void:
+func _append_wagon(wagon_type: String, cargo: String, qty: int, unit_ids: Array = []) -> void:
     var capacity := 0
     if WagonTypes.TYPES.has(wagon_type):
         capacity = int(WagonTypes.TYPES[wagon_type].capacity)
@@ -63,6 +65,7 @@ func _append_wagon(wagon_type: String, cargo: String, qty: int) -> void:
         "max_capacity": capacity,
         "qty": qty,
         "resource_name": cargo if qty > 0 else "", # an empty wagon has no resource
+        "unit_ids": unit_ids.duplicate() # the soldiers in a barracks wagon (ids in GameState)
     })
 #endregion
 
@@ -117,6 +120,26 @@ func get_wagon_capacity_for_resource(wagon_idx: int, resource_name: String) -> i
     return get_wagon_free_space(wagon_idx)
 #endregion
 
+#region unit queries
+# A barracks wagon stores soldiers (its capacity is the number of soldiers it holds)
+func is_barracks(idx: int) -> bool:
+    return has_wagon(idx) and WagonTypes.TYPES.get(wagons[idx].wagon_type, {}).get("stores", []).has("Soldiers")
+
+func get_unit_ids(idx: int) -> Array:
+    return wagons[idx].unit_ids.duplicate() if has_wagon(idx) else []
+
+func get_wagon_unit_free_space(idx: int) -> int:
+    if not is_barracks(idx):
+        return 0
+    return wagons[idx].max_capacity - wagons[idx].unit_ids.size()
+
+# Free places for soldiers in all the barracks wagons
+func get_unit_free_space() -> int:
+    var total := 0
+    for i in wagons.size():
+        total += get_wagon_unit_free_space(i)
+    return total
+#endregion
 
 #region whole-train queries
 # Total units of this resource in all wagons
@@ -248,10 +271,22 @@ func move_wagon(from_index: int, to_index: int) -> bool:
 
 func _on_player_wagon_added(index: int, wagon_data: Dictionary) -> void:
     var wagon_type := str(wagon_data.get("type", ""))
-    _append_wagon(wagon_type, str(wagon_data.get("cargo_name", "")), int(wagon_data.get("cargo_qty", 0)))
+    _append_wagon(wagon_type, str(wagon_data.get("cargo_name", "")), int(wagon_data.get("cargo_qty", 0)), wagon_data.get("unit_ids", []))
     if index != wagons.size() - 1:
         push_error("TrainInventory: wagon indices are out of sync with GameState")
     wagon_added.emit(index, wagon_type)
+
+# Puts a new soldier in the first barracks wagon with room. Returns its id, or "" if there is no room.
+func add_unit(unit_data: Dictionary) -> String:
+    for i in wagons.size():
+        if get_wagon_unit_free_space(i) > 0:
+            var unit_id := GameState.add_unit_to_wagon(i, unit_data)
+            if unit_id.is_empty():
+                return ""
+            wagons[i].unit_ids.append(unit_id)
+            unit_added.emit(i, unit_id)
+            return unit_id
+    return ""
 
 # Writes the wagon to GameState, then announces it. The state is final when the signals fire.
 func _commit(wagon_idx: int, type_changed: bool) -> void:

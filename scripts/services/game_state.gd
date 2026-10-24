@@ -23,6 +23,9 @@ extends Node
 
 const CITIES_PATH := "res://data/newgame/cities_World2.json"
 const PLAYER_TRAIN_PATH := "res://data/newgame/player_train.json"
+const UNITS_PATH := "res://data/newgame/units.json"
+const ENEMY_TRAINS_PATH := "res://data/newgame/enemy_trains.json"
+
 # const SAVE_PATH := "user://savegame.json"
 const SAVES_DIR := "user://saves"
 const SLOT_COUNT := 4
@@ -37,16 +40,19 @@ const FILE_ENEMIES := "enemies.json"
 const FILE_QUESTS := "quests.json"
 const SAVE_FILES := [FILE_CITIES, FILE_PLAYER, FILE_ENEMIES, FILE_QUESTS]
 
+
 var _cities_state: Dictionary = {} # city name -> city data
 var _cities_by_location: Dictionary = {} # Vector2i -> city name
 var _cities_by_id: Dictionary = {} # int -> city name
 var _player_train_state: Dictionary = {}
 var _enemies_state := {} # enemy trains: the navigation scene will fill it on game_saving
-
+var _units_state: Dictionary = {} # unit id -> unit data (see data/newgame/units.json)
 
 var _player_money := INITIAL_MONEY # TODO: load the starting value from data
 var _explored := {} # map name -> explored tiles, encoded by ExplorationService
 var _quests_state := {}
+var _events_state := {} # map name -> {"x,y": true} for the events already done
+var _flags := {} # story flags set by events: name -> true
 
 var current_slot := DEBUG_SLOT # the main menu will set this
 
@@ -67,6 +73,8 @@ signal game_loaded # emitted after a load: scenes should rebuild themselves from
 func _ready() -> void:
     _load_initial_cities(CITIES_PATH)
     _load_initial_player_train(PLAYER_TRAIN_PATH)
+    _load_initial_enemies(ENEMY_TRAINS_PATH)
+    _load_initial_units(UNITS_PATH)
     if DEBUG_AUTOLOAD and OS.is_debug_build() and has_save(DEBUG_SLOT):
         load_game(DEBUG_SLOT)
 
@@ -88,7 +96,7 @@ func _read_json(path: String) -> Variant:
 # Public so a "new game" flow can reload them.
 func _load_initial_cities(path: String):
     _cities_state = {}
-    _cities_by_location = {}
+    # _cities_by_location = {}
     _cities_by_id = {}
 
     var data = _read_json(path)
@@ -98,23 +106,18 @@ func _load_initial_cities(path: String):
  
     for key in data.keys():
         var city = data[key]
-        # print("load initial cities: %s" % city)
         if not str(key).is_valid_int():
             push_error("GameState: city key '%s' in %s is not an integer id" % [key, path])
             continue
-        if not (city is Dictionary) or not city.has("Name") or not city.has("Location"):
-            push_error("GameState: city '%s' in %s needs Name and Location" % [key, path])
-            continue
-        var location = city["Location"]
-        if not (location is Array) or location.size() < 2:
-            push_error("GameState: city '%s' has an invalid Location" % key)
+        if not (city is Dictionary) or not city.has("Name"):
+            push_error("GameState: city '%s' in %s needs Name" % [key, path])
             continue
  
         var city_name: String = city["Name"]
         if _cities_state.has(city_name):
             push_warning("GameState: duplicate city name '%s' (id %s), the later one overwrites the earlier" % [city_name, key])
  
-        _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
+        # _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
         _cities_by_id[int(key)] = city_name
         _cities_state[city_name] = city
 
@@ -136,6 +139,17 @@ func _load_initial_player_train(path: String) -> void:
         push_error("GameState: %s must contain a JSON object" % path)
         return
     _player_train_state = data
+    # A new game takes the start of the train from the map (the Trains tilemap), not from the JSON
+    _player_train_state.erase("position")
+    _player_train_state.erase("reversed")
+
+func _load_initial_units(path: String) -> void:
+    _units_state = {}
+    var data = _read_json(path)
+    if not (data is Dictionary):
+        push_error("GameState: %s must contain a JSON object of units" % path)
+        return
+    _units_state = data
 #endregion
 
 #region publicAPI
@@ -146,6 +160,27 @@ func get_player_train() -> Dictionary:
 
 func set_player_train(player_train_data: Dictionary) -> void:
     _player_train_state = player_train_data
+
+# Where the player train is on the navigation map: the locomotive's tile and orientation, and
+# whether the train is reversed (the locomotive at the rear, pushing). Stored in the train as
+# "position": [x, y, "E"] and "reversed": bool. A new game has none: the scene uses the map's start.
+func has_player_position() -> bool:
+    var position = _player_train_state.get("position", null)
+    return position is Array and position.size() >= 3
+
+func get_player_position() -> Dictionary:
+    var position: Array = _player_train_state.get("position", [])
+    if position.size() < 3:
+        return {}
+    return {
+        "tile": Vector2i(int(position[0]), int(position[1])),
+        "ori": str(position[2]),
+        "reversed": bool(_player_train_state.get("reversed", false)),
+    }
+
+func set_player_position(tile: Vector2i, ori: String, reversed := false) -> void:
+    _player_train_state["position"] = [tile.x, tile.y, ori]
+    _player_train_state["reversed"] = reversed
 
 func set_wagon_cargo(wagon_idx: int, resource_name: String, qty: int) -> void:
     var wagons: Array = _player_train_state.get("wagons", [])
@@ -168,8 +203,8 @@ func get_all_city_names() -> Array:
 func get_city_by_name(city_name: String) -> Dictionary:
     return _cities_state.get(city_name, {})
 
-func get_city_by_location(loc: Vector2i) -> Dictionary:
-    return get_city_by_name(_cities_by_location.get(loc, ""))
+# func get_city_by_location(loc: Vector2i) -> Dictionary:
+#     return get_city_by_name(_cities_by_location.get(loc, ""))
 
 func get_city_by_id(id: int) -> Dictionary:
     return get_city_by_name(_cities_by_id.get(id, ""))
@@ -178,6 +213,50 @@ func set_city(city_name: String, city_data: Dictionary) -> void:
     if not _cities_state.has(city_name):
         push_warning("GameState: set_city() on unknown city '%s' (it has no id or location mapping)" % city_name)
     _cities_state[city_name] = city_data
+#endregion
+
+#region units
+func get_unit(unit_id: String) -> Dictionary:
+    return _units_state.get(unit_id, {})
+
+
+# Creates a unit from `unit_data` (see UnitTypes.make_unit) and puts it in a wagon of the player
+# train. Returns its new id, or "" (changing nothing) if the wagon doesn't exist.
+func add_unit_to_wagon(wagon_idx: int, unit_data: Dictionary) -> String:
+    var wagons: Array = _player_train_state.get("wagons", [])
+    if wagon_idx < 0 or wagon_idx >= wagons.size():
+        push_error("GameState: no wagon %d in the player train" % wagon_idx)
+        return ""
+    var unit_id := _new_unit_id()
+    var unit: Dictionary = unit_data.duplicate(true)
+    unit["id"] = unit_id
+    _units_state[unit_id] = unit
+
+    var wagon: Dictionary = wagons[wagon_idx]
+    if not wagon.has("unit_ids"):
+        wagon["unit_ids"] = []
+    wagon["unit_ids"].append(unit_id)
+    return unit_id
+
+
+func _new_unit_id() -> String:
+    var next := 0
+    for key in _units_state:
+        var text := str(key)
+        if text.begins_with("u") and text.substr(1).is_valid_int():
+            next = maxi(next, int(text.substr(1)) + 1)
+    return "u%d" % next
+
+
+# Changes the stock of a soldier type a city recruits (delta can be negative).
+func change_city_recruits(city_name: String, unit_type: String, delta: int) -> bool:
+    var recruits: Dictionary = _cities_state.get(city_name, {}).get("Recruits", {})
+    if not recruits.has(unit_type):
+        push_error("GameState: city '%s' has no recruits '%s'" % [city_name, unit_type])
+        return false
+    var entry: Dictionary = recruits[unit_type]
+    entry["Quantity"] = maxi(int(entry.get("Quantity", 0)) + delta, 0)
+    return true
 #endregion
 
 func change_city_goods(city_name: String, resource_name: String, delta: int) -> bool:
@@ -277,9 +356,11 @@ func start_new_game(slot: int) -> bool:
     _player_money = INITIAL_MONEY
     _explored = {}
     _quests_state = {} # empty quest state: QuestManager starts the quest line
-    _enemies_state = {}
+    _load_initial_enemies(ENEMY_TRAINS_PATH)
     _load_initial_cities(CITIES_PATH)
     _load_initial_player_train(PLAYER_TRAIN_PATH)
+    _events_state = {}
+    _flags = {}
     game_loaded.emit() # before money_changed, like in load_game
     money_changed.emit(_player_money)
     return true
@@ -292,6 +373,67 @@ func get_slot_info(slot: int) -> Dictionary:
     if not (data is Dictionary):
         return {"exists": true, "valid": false}
     return {"exists": true, "valid": true, "saved_at": str(data.get("saved_at", "")), "money": int(data.get("money", 0))}
+
+#region enemy trains
+# Loads the enemy trains of a new game: id -> train data. The key is the id. The position is not
+# in the file: it comes from the map (the Trains tilemap) and is set by set_enemy_position().
+func _load_initial_enemies(path: String) -> void:
+    _enemies_state = {}
+    var data = _read_json(path)
+    if not (data is Dictionary):
+        push_error("GameState: %s must contain a JSON object of enemy trains" % path)
+        return
+    for key in data:
+        if str(key).begins_with("_"):
+            continue # comments
+        var train = data[key]
+        if not (train is Dictionary) or not (train.get("wagons") is Array):
+            push_error("GameState: enemy train '%s' in %s needs a 'wagons' list" % [key, path])
+            continue
+        train["id"] = str(key)
+        train.erase("position")
+        train.erase("reversed")
+        _enemies_state[str(key)] = train
+
+
+func get_enemy_train(train_id: String) -> Dictionary:
+    return _enemies_state.get(train_id, {})
+
+
+func has_enemy_position(train_id: String) -> bool:
+    var position = _enemies_state.get(train_id, {}).get("position", null)
+    return position is Array and position.size() >= 3
+
+
+func get_enemy_position(train_id: String) -> Dictionary:
+    var train: Dictionary = _enemies_state.get(train_id, {})
+    var position: Array = train.get("position", [])
+    if position.size() < 3:
+        return {}
+    return {
+        "tile": Vector2i(int(position[0]), int(position[1])),
+        "ori": str(position[2]),
+        "reversed": bool(train.get("reversed", false)),
+    }
+
+
+func set_enemy_position(train_id: String, tile: Vector2i, ori: String, reversed := false) -> void:
+    if not _enemies_state.has(train_id):
+        return
+    _enemies_state[train_id]["position"] = [tile.x, tile.y, ori]
+    _enemies_state[train_id]["reversed"] = reversed
+
+
+# The enemy train is gone (destroyed): it, and its soldiers, leave the game state
+func remove_enemy_train(train_id: String) -> bool:
+    if not _enemies_state.has(train_id):
+        return false
+    for wagon in _enemies_state[train_id].get("wagons", []):
+        for unit_id in wagon.get("unit_ids", []):
+            _units_state.erase(unit_id)
+    _enemies_state.erase(train_id)
+    return true
+#endregion
 
 #region save game
 # Writes the slot's four files. Returns false (with an error) if it fails.
@@ -314,6 +456,9 @@ func save_game(slot := -1) -> bool:
             "money": _player_money,
             "train": _player_train_state,
             "explored": _explored,
+            "units": _units_state,
+            "events": _events_state,
+            "flags": _flags,
         },
         FILE_ENEMIES: {"version": SAVE_VERSION, "enemies": _enemies_state},
         FILE_QUESTS: {"version": SAVE_VERSION, "quests": _quests_state},
@@ -357,93 +502,6 @@ func _remove_temp_files(dir_path: String) -> void:
     for file_name in SAVE_FILES:
         DirAccess.remove_absolute("%s/%s.tmp" % [dir_path, file_name])
 
-
-# func has_save() -> bool:
-#     return FileAccess.file_exists(SAVE_PATH)
-
-
-# Writes the whole state to SAVE_PATH as readable JSON. Returns false (with an error) on failure.
-# func save_game() -> bool:
-#     game_saving.emit()
-
-#     var city_ids := {} # JSON keys must be strings
-#     for id in _cities_by_id:
-#         city_ids[str(id)] = _cities_by_id[id]
-
-#     var data := {
-#         "version": SAVE_VERSION,
-#         "saved_at": Time.get_datetime_string_from_system(),
-#         "money": _player_money,
-#         "player_train": _player_train_state,
-#         "cities": _cities_state,
-#         "city_ids": city_ids,
-#         "quests": _quests_state,
-#         "explored": _explored
-#     }
-#     var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-#     if file == null:
-#         push_error("GameState: cannot write %s (error %d)" % [SAVE_PATH, FileAccess.get_open_error()])
-#         return false
-#     file.store_string(JSON.stringify(data, "\t")) # keys are sorted, so the file is stable and easy to diff
-#     file.close()
-#     print("GameState: saved to %s" % ProjectSettings.globalize_path(SAVE_PATH))
-#     return true
-
-
-# Replaces the current state with the saved one. Returns false, changing nothing, if the file is
-# missing or invalid. Everything is checked before anything is replaced.
-# func load_game() -> bool:
-#     if not has_save():
-#         push_warning("GameState: there is no save at %s" % SAVE_PATH)
-#         return false
-#     var data = _read_json(SAVE_PATH)
-#     var problem := _validate_save(data)
-#     if problem != "":
-#         push_error("GameState: invalid save: %s" % problem)
-#         return false
-
-#     _player_money = int(data["money"])
-#     _player_train_state = data["player_train"]
-#     _cities_state = data["cities"]
-#     _quests_state = data.get("quests", {})
-#     _explored = data.get("explored", {})
-
-#     _cities_by_id = {}
-#     for id in data["city_ids"]:
-#         _cities_by_id[int(id)] = data["city_ids"][id]
-#     _cities_by_location = {}
-#     for city_name in _cities_state:
-#         var location: Array = _cities_state[city_name]["Location"]
-#         _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
-
-#     game_loaded.emit()
-#     money_changed.emit(_player_money)
-#     return true
-
-
-# Returns "" if the data looks like a valid save, or a description of what is wrong.
-# func _validate_save(data) -> String:
-#     if not (data is Dictionary):
-#         return "the file is not a JSON object"
-#     if int(data.get("version", 0)) != SAVE_VERSION:
-#         return "version %s, expected %d" % [data.get("version"), SAVE_VERSION]
-#     for key in ["money", "player_train", "cities", "city_ids"]:
-#         if not data.has(key):
-#             return "missing '%s'" % key
-#     if not (data["player_train"] is Dictionary and data["cities"] is Dictionary and data["city_ids"] is Dictionary):
-#         return "'player_train', 'cities' and 'city_ids' must be objects"
-
-#     for city_name in data["cities"]:
-#         var city = data["cities"][city_name]
-#         if not (city is Dictionary) or not (city.get("Location") is Array) or city["Location"].size() < 2:
-#             return "city '%s' needs a Location [x, y]" % city_name
-#     for id in data["city_ids"]:
-#         if not str(id).is_valid_int():
-#             return "city id '%s' is not a number" % id
-#         if not data["cities"].has(data["city_ids"][id]):
-#             return "city id %s points to '%s', which is not in 'cities'" % [id, data["city_ids"][id]]
-#     return ""
-
 #endregion
 
 #region load game
@@ -464,15 +522,25 @@ func load_game(slot := -1) -> bool:
     var problem := _validate_player(player)
     if problem == "" and not cities.is_empty():
         problem = _validate_cities(cities)
+    if problem == "" and not enemies.is_empty():
+        problem = _validate_enemies(enemies)
     if problem != "":
         push_error("GameState: invalid save in slot %d: %s" % [target, problem])
         return false
+    
 
     current_slot = target # saving now goes to the slot you loaded
 
     _player_money = int(player["money"])
     _player_train_state = player["train"]
     _explored = player.get("explored", {})
+    _events_state = player.get("events", {})
+    _flags = player.get("flags", {})
+
+    if player.get("units") is Dictionary:
+        _units_state = player["units"]
+    else:
+        _load_initial_units(UNITS_PATH) # an older save has no units: start with the initial ones
 
     if cities.is_empty():
         _load_initial_cities(CITIES_PATH) # no cities.json: the cities start as in a new game
@@ -481,10 +549,6 @@ func load_game(slot := -1) -> bool:
         _cities_by_id = {}
         for id in cities["city_ids"]:
             _cities_by_id[int(id)] = cities["city_ids"][id]
-        _cities_by_location = {}
-        for city_name in _cities_state:
-            var location: Array = _cities_state[city_name]["Location"]
-            _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
 
     _enemies_state = enemies.get("enemies", {}) # missing files give {}: no enemies, no quests...
     _quests_state = quests.get("quests", {}) # ...and an empty quest state starts the quest line
@@ -520,15 +584,20 @@ func _validate_player(data: Dictionary) -> String:
 func _validate_cities(data: Dictionary) -> String:
     if not (data.get("cities") is Dictionary and data.get("city_ids") is Dictionary):
         return "cities.json needs 'cities' and 'city_ids' objects"
-    for city_name in data["cities"]:
-        var city = data["cities"][city_name]
-        if not (city is Dictionary) or not (city.get("Location") is Array) or city["Location"].size() < 2:
-            return "city '%s' needs a Location [x, y]" % city_name
     for id in data["city_ids"]:
         if not str(id).is_valid_int():
             return "city id '%s' is not a number" % id
         if not data["cities"].has(data["city_ids"][id]):
             return "city id %s points to '%s', which is not in 'cities'" % [id, data["city_ids"][id]]
+    return ""
+
+func _validate_enemies(data: Dictionary) -> String:
+    if not (data.get("enemies") is Dictionary):
+        return "enemies.json needs an 'enemies' object"
+    for train_id in data["enemies"]:
+        var train = data["enemies"][train_id]
+        if not (train is Dictionary) or not (train.get("wagons") is Array):
+            return "enemy train '%s' needs a 'wagons' list" % train_id
     return ""
 #endregion
 
@@ -552,6 +621,28 @@ func _resolve_slot(slot: int) -> int:
     return current_slot if slot < 1 else slot
 #endregion
 
+#region events
+func is_event_done(map_name: String, tile: Vector2i) -> bool:
+    return _events_state.get(map_name, {}).has(_tile_key(tile))
+
+
+func set_event_done(map_name: String, tile: Vector2i) -> void:
+    if not _events_state.has(map_name):
+        _events_state[map_name] = {}
+    _events_state[map_name][_tile_key(tile)] = true
+
+
+func _tile_key(tile: Vector2i) -> String:
+    return "%d,%d" % [tile.x, tile.y]
+
+
+func has_flag(flag: String) -> bool:
+    return bool(_flags.get(flag, false))
+
+
+func set_flag(flag: String, value := true) -> void:
+    _flags[flag] = value
+#endregion
 
 func _unhandled_key_input(event: InputEvent) -> void: # TEMPORARY: quick save / load while developing
     var key := event as InputEventKey

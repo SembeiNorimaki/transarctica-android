@@ -1,0 +1,425 @@
+diff --git a/data/newgame/player_train.json b/data/newgame/player_train.json
+index eb12335..72bc5ad 100644
+--- a/data/newgame/player_train.json
++++ b/data/newgame/player_train.json
+@@ -1,16 +1,11 @@
+ {
+     "id": "TP0",
+     "owner": "Player",
+-    "position": [
+-        2,
+-        4,
+-        "E"
+-    ],
+     "fuel": 40,
+     "max_fuel": 100,
+-    "max_speed": 100,
+-    "acceleration": 10,
+-    "deceleration": 20,
++    "max_speed": 300,
++    "acceleration": 50,
++    "deceleration": 200,
+     "wagons": [
+         {
+             "type": "LocomotiveWagon",
+diff --git a/scripts/core/navigation_scene.gd b/scripts/core/navigation_scene.gd
+index 5f09fc6..f1c8d22 100644
+--- a/scripts/core/navigation_scene.gd
++++ b/scripts/core/navigation_scene.gd
+@@ -58,7 +58,11 @@ func _ready() -> void:
+     _load_map(DEFAULT_MAP_NAME)
+ 
+ 
+-    camera_service.center_at_tile(initial_player_train_pos)
++    var player_train := navigation_train_manager.player_train
++    if is_instance_valid(player_train):
++        camera_service.center_at_tile(player_train.wagons[0].current_tile)
++    else:
++        camera_service.center_at_tile(initial_player_train_pos)
+     camera_service.set_zoom(1.0)
+ 
+     AudioService.play_music(MUSIC_TRAVEL, 0.0)
+@@ -75,6 +79,7 @@ func resume() -> void:
+     show()
+     camera_service.cam.enabled = true
+     navigation_train_manager.resume() # only if you adopted the _transitioning flag
++    navigation_train_manager.rebuild_player_train() # the wagons may have changed in the city or in combat
+     navigation_train_manager.recenter_player_train()
+     AudioService.play_music(MUSIC_TRAVEL, 0.0)
+ 
+@@ -162,6 +167,9 @@ func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
+         cities_manager.spawn_city(city_id, tile)
+ 
+ 
++# The Trains tilemap holds placeholders: they say where a NEW game starts the trains, and which
++# way they face. A loaded game takes the player train's position from GameState instead, so its
++# placeholder is only erased. The wagons and the stats of the player train always come from GameState.
+ func _spawn_trains_from_map(trains_tilemap: TileMapLayer) -> void:
+     var player_spawned := false
+     for tile in trains_tilemap.get_used_cells():
+@@ -175,17 +183,34 @@ func _spawn_trains_from_map(trains_tilemap: TileMapLayer) -> void:
+             continue
+ 
+         var team: NavigationTrainManager.Team = TRAIN_ATLAS_TEAMS[atlas.y]
++        var orientation := TRAIN_ATLAS_ORIENTATIONS[atlas.x]
+         if team == NavigationTrainManager.Team.PLAYER:
+             if player_spawned:
+                 push_warning("Second player train at %s ignored (only one is supported)" % tile)
+                 continue
+             player_spawned = true
++            if not GameState.has_player_position():
++                GameState.set_player_position(tile, orientation) # a new game starts where the map says
++            continue # spawned below, from GameState
+ 
+         if not rail_service.has_rail(tile):
+             push_warning("Train placeholder at %s has no rail under it" % tile)
+-
+         print("Spawning %s train at tile %s" % [team, tile])
+-        navigation_train_manager.spawn_train(tile, TRAIN_ATLAS_ORIENTATIONS[atlas.x], team)
++        navigation_train_manager.spawn_train(tile, orientation, team)
++
++    _spawn_player_train()
++
++
++func _spawn_player_train() -> void:
++    if not GameState.has_player_position():
++        push_error("NavigationScene: there is no player train placeholder on the Trains tilemap, and the game has no saved position")
++        return
++    var saved := GameState.get_player_position()
++    if not rail_service.has_rail(saved["tile"]):
++        push_warning("The player train position %s has no rail under it" % saved["tile"])
++    print("Spawning player train at tile %s" % saved["tile"])
++    navigation_train_manager.spawn_train(saved["tile"], saved["ori"], NavigationTrainManager.Team.PLAYER,
++            GameState.get_player_train(), saved["reversed"])
+ 
+ func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
+     for tile in rails_tilemap.get_used_cells():
+diff --git a/scripts/managers/navigation_train_manager.gd b/scripts/managers/navigation_train_manager.gd
+index cffd7f3..244b94a 100644
+--- a/scripts/managers/navigation_train_manager.gd
++++ b/scripts/managers/navigation_train_manager.gd
+@@ -28,8 +28,14 @@ var _next_train_id := 0
+ var _transitioning := false
+ 
+ 
++func _ready() -> void:
++    GameState.game_saving.connect(save_player_position)
++
++
+ #region train spawning
+-func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain:
++# `tile_pos` and `ori` are the locomotive's. `train_data` has the structure of
++# GameState.get_player_train() (stats and wagons). `is_reversed`: the locomotive pushes from the rear.
++func spawn_train(tile_pos: Vector2i, ori: String, team: Team, train_data := {}, is_reversed := false) -> NavigationTrain:
+     assert(train_container != null, "NavigationTrainManager: train_container not injected")
+     var train: NavigationTrain = TRAIN_SCENE.instantiate()
+     train.grid_service = grid_service
+@@ -38,7 +44,7 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain
+     train.train_collided.connect(_on_train_collided)
+ 
+     train_container.add_child(train) # manager owns placement
+-    train.initialize(_make_id(team), team, tile_pos, ori)
++    train.initialize(_make_id(team), team, tile_pos, ori, train_data, is_reversed)
+ 
+     if team == Team.PLAYER:
+         player_train = train
+@@ -47,6 +53,27 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain
+         _add_ai(train)
+     return train
+ 
++# Writes where the player train is into GameState (it also happens before every save)
++func save_player_position() -> void:
++    if not is_instance_valid(player_train) or player_train.wagons.is_empty():
++        return
++    var locomotive := player_train.wagons[0]
++    GameState.set_player_position(locomotive.current_tile, locomotive.orientation, player_train.reversed)
++
++
++# Builds the player train again from GameState, where it is now. For when the wagons may have
++# changed while the navigation scene was suspended (trade, depot, combat). The train stops.
++func rebuild_player_train() -> void:
++    if not is_instance_valid(player_train) or player_train.wagons.is_empty():
++        return
++    save_player_position()
++    var saved := GameState.get_player_position()
++    player_train.process_mode = Node.PROCESS_MODE_DISABLED # also disables its collision areas right away
++    player_train.queue_free()
++    player_train = null
++    spawn_train(saved["tile"], saved["ori"], Team.PLAYER, GameState.get_player_train(), saved["reversed"])
++
++
+ func resume() -> void:
+     _transitioning = false
+     set_process(true)
+diff --git a/scripts/services/game_state.gd b/scripts/services/game_state.gd
+index 8740fce..13325d3 100644
+--- a/scripts/services/game_state.gd
++++ b/scripts/services/game_state.gd
+@@ -136,6 +136,9 @@ func _load_initial_player_train(path: String) -> void:
+         push_error("GameState: %s must contain a JSON object" % path)
+         return
+     _player_train_state = data
++    # A new game takes the start of the train from the map (the Trains tilemap), not from the JSON
++    _player_train_state.erase("position")
++    _player_train_state.erase("reversed")
+ #endregion
+ 
+ #region publicAPI
+@@ -147,6 +150,27 @@ func get_player_train() -> Dictionary:
+ func set_player_train(player_train_data: Dictionary) -> void:
+     _player_train_state = player_train_data
+ 
++# Where the player train is on the navigation map: the locomotive's tile and orientation, and
++# whether the train is reversed (the locomotive at the rear, pushing). Stored in the train as
++# "position": [x, y, "E"] and "reversed": bool. A new game has none: the scene uses the map's start.
++func has_player_position() -> bool:
++    var position = _player_train_state.get("position", null)
++    return position is Array and position.size() >= 3
++
++func get_player_position() -> Dictionary:
++    var position: Array = _player_train_state.get("position", [])
++    if position.size() < 3:
++        return {}
++    return {
++        "tile": Vector2i(int(position[0]), int(position[1])),
++        "ori": str(position[2]),
++        "reversed": bool(_player_train_state.get("reversed", false)),
++    }
++
++func set_player_position(tile: Vector2i, ori: String, reversed := false) -> void:
++    _player_train_state["position"] = [tile.x, tile.y, ori]
++    _player_train_state["reversed"] = reversed
++
+ func set_wagon_cargo(wagon_idx: int, resource_name: String, qty: int) -> void:
+     var wagons: Array = _player_train_state.get("wagons", [])
+     if wagon_idx < 0 or wagon_idx >= wagons.size():
+diff --git a/scripts/services/rail_service.gd b/scripts/services/rail_service.gd
+index d225924..d239976 100644
+--- a/scripts/services/rail_service.gd
++++ b/scripts/services/rail_service.gd
+@@ -239,6 +239,52 @@ func calculate_new_orientation(tile: Vector2i, delta: Vector2i) -> String:
+         return grid_service.get_orientation(Vector2i.ZERO, delta) # straight
+     return grid_service.get_orientation(Vector2i.ZERO, delta + DIRS[exit_edge]) # curve: diagonal
+ 
++
++# The orientation of a train that enters a tile through `entry_edge` and leaves through `exit_edge`.
++# Same rule as calculate_new_orientation, but starting from edges instead of a move.
++func _orientation_through(entry_edge: String, exit_edge: String) -> String:
++    if not DIRS.has(entry_edge):
++        return ""
++    var delta: Vector2i = -DIRS[entry_edge]
++    if exit_edge == "X" or exit_edge == OPPOSITE_EDGE[entry_edge]:
++        return grid_service.get_orientation(Vector2i.ZERO, delta) # straight
++    return grid_service.get_orientation(Vector2i.ZERO, delta + DIRS[exit_edge]) # curve: diagonal
++
++
++# The edge through which a train with orientation `ori` entered `tile`, or "" if no route fits
++func entry_edge_for(tile: Vector2i, ori: String) -> String:
++    var route: Dictionary = _routes.get(tile, {})
++    for entry_edge: String in route:
++        if _orientation_through(entry_edge, route[entry_edge]) == ori:
++            return entry_edge
++    return ""
++
++
++# Walks the rail BACKWARDS from `tile` (where a train travelling with orientation `ori` is), and
++# returns up to `count` tiles as [{"tile": Vector2i, "ori": String}], nearest first. `ori` of each
++# entry is the orientation a train that follows the first one has on that tile.
++# It stops early at a dead end, or at the inactive side of a junction, so it can return fewer tiles.
++func tiles_behind(tile: Vector2i, ori: String, count: int) -> Array[Dictionary]:
++    var result: Array[Dictionary] = []
++    var current := tile
++    var current_ori := ori
++    for i in count:
++        var entry_edge := entry_edge_for(current, current_ori)
++        if entry_edge.is_empty():
++            break
++        var previous: Vector2i = current + DIRS[entry_edge]
++        var exit_edge: String = OPPOSITE_EDGE[entry_edge] # the previous tile's edge that faces `current`
++        var previous_entry: String = _routes.get(previous, {}).get(exit_edge, "")
++        if previous_entry.is_empty():
++            break
++        var previous_ori := _orientation_through(previous_entry, exit_edge)
++        if previous_ori.is_empty():
++            break
++        result.append({"tile": previous, "ori": previous_ori})
++        current = previous
++        current_ori = previous_ori
++    return result
++
+ #endregion
+ 
+ 
+diff --git a/scripts/trains/navigation_train.gd b/scripts/trains/navigation_train.gd
+index 0a078cd..ae85e4e 100644
+--- a/scripts/trains/navigation_train.gd
++++ b/scripts/trains/navigation_train.gd
+@@ -9,10 +9,10 @@ signal train_collided(navigation_train: NavigationTrain, other_wagon: Navigation
+ 
+ 
+ const LOCOMOTIVE_SCENE: PackedScene = preload("res://scenes/wagons/navigation_locomotive.tscn")
+-const MAX_SPEED := 300.0
+-const ACCELERATION := 50.0
+-const DECELERATION := 200.0
+-const WAGON_SPACING_TILES := 1 # replaces Vector2(-32, -16); adjust to what you actually want
++# Used when the train data has no stats (the enemy trains, for now)
++const DEFAULT_MAX_SPEED := 300.0
++const DEFAULT_ACCELERATION := 50.0
++const DEFAULT_DECELERATION := 200.0
+ 
+ const PLAYER_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_spriteframes.tres")
+ const ENEMY_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_enemy_spriteframes.tres")
+@@ -26,37 +26,82 @@ var id := ""
+ var team: NavigationTrainManager.Team
+ var gear := Gear.NEUTRAL
+ var move_speed := 0.0
+-var wagons: Array[NavigationWagon] = [] # wagons[0] is the head
++var max_speed := DEFAULT_MAX_SPEED # pixels per second
++var acceleration := DEFAULT_ACCELERATION
++var deceleration := DEFAULT_DECELERATION
++var wagons: Array[NavigationWagon] = [] # wagons[0] is the locomotive, in the order of the train data
++var reversed := false # the train goes backwards: the locomotive is at the REAR, pushing
+ 
+ @onready var wagon_container: Node2D = $WagonContainer
+ 
+ 
+ #region initialization
+-func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vector2i, ori: String) -> void:
++# `train_data` has the structure of GameState.get_player_train(): the stats (max_speed, acceleration,
++# deceleration) and a "wagons" list with one entry per wagon, the locomotive first. Without it the
++# train is a lone locomotive with the default stats.
++# `tile_pos` and `ori` are the locomotive's. The other wagons are placed along the rail behind it,
++# or in front of it if `is_reversed`.
++func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vector2i, ori: String,
++        train_data := {}, is_reversed := false) -> void:
+     assert(id.is_empty(), "NavigationTrain: already initialized")
+     id = id_
+     team = team_
+-
+-    var locomotive := LOCOMOTIVE_SCENE.instantiate() as NavigationWagon
+-    locomotive.grid_service = grid_service
+-    wagon_container.add_child(locomotive)
+-    locomotive.set_sprite_frames(_get_sprite_frames())
+-    wagons.append(locomotive)
++    reversed = is_reversed
++
++    max_speed = float(train_data.get("max_speed", DEFAULT_MAX_SPEED))
++    acceleration = float(train_data.get("acceleration", DEFAULT_ACCELERATION))
++    deceleration = float(train_data.get("deceleration", DEFAULT_DECELERATION))
++
++    var wagon_types: Array[String] = []
++    for wagon_data: Dictionary in train_data.get("wagons", []):
++        wagon_types.append(str(wagon_data.get("type", "")))
++    if wagon_types.is_empty():
++        wagon_types.append("LocomotiveWagon")
++
++    for i in wagon_types.size():
++        var wagon := LOCOMOTIVE_SCENE.instantiate() as NavigationWagon
++        wagon.grid_service = grid_service
++        wagon_container.add_child(wagon)
++        wagon.set_sprite_frames(_get_sprite_frames())
++        if i > 0:
++            wagon.set_placeholder(wagon_types[i].trim_suffix("Wagon"))
++        wagons.append(wagon)
+ 
+     _place_wagons(tile_pos, ori)
+     # Connect AFTER placement so the teleport from (0,0) isn't reported as movement.
+-    # (If the locomotive tracks its tile in _process, reset that tracking in set_pos.)
+-    locomotive.tile_changed.connect(_on_wagon_tile_changed)
+-    locomotive.setup_collision(team == NavigationTrainManager.Team.PLAYER)
+-    locomotive.collided.connect(_on_wagon_collided)
++    for wagon in wagons:
++        wagon.tile_changed.connect(_on_wagon_tile_changed)
++        wagon.setup_collision(team == NavigationTrainManager.Team.PLAYER)
++        wagon.collided.connect(_on_wagon_collided)
+ 
++# The locomotive goes on `tile_pos`. The others follow the rail backwards from it. If the rail
++# ends before all the wagons are placed, the rest are piled on the last tile (with a warning).
+ func _place_wagons(tile_pos: Vector2i, ori: String) -> void:
+-    var back: Vector2i = grid_service.orientation_to_delta(grid_service.turn_right(ori, 4))
+-    for i in wagons.size():
+-        # Straight-line placement only. With real wagons, walk the rail backwards via rail_service.
+-        var tile := tile_pos + back * i * WAGON_SPACING_TILES
+-        wagons[i].place_at(tile, ori)
+-        _face(wagons[i], ori)
++    wagons[0].place_at(tile_pos, ori)
++    _face(wagons[0], ori)
++    if wagons.size() == 1:
++        return
++
++    # Reversed: the wagons are in front of the locomotive, so walk back from the opposite direction
++    var walk_ori := grid_service.turn_right(ori, 4) if reversed else ori
++    var trail := rail_service.tiles_behind(tile_pos, walk_ori, wagons.size() - 1)
++    if trail.size() < wagons.size() - 1:
++        push_warning("Train %s: the rail behind %s is too short for %d wagons (found %d tiles)" % [id, tile_pos, wagons.size() - 1, trail.size()])
++
++    var last_tile := tile_pos
++    var last_ori := ori
++    for i in range(1, wagons.size()):
++        if i - 1 < trail.size():
++            last_tile = trail[i - 1]["tile"]
++            var trail_ori: String = trail[i - 1]["ori"]
++            last_ori = grid_service.turn_right(trail_ori, 4) if reversed else trail_ori
++        wagons[i].place_at(last_tile, last_ori)
++        _face(wagons[i], last_ori)
++
++# The wagon at the front: the locomotive, or the last wagon when the train is reversed.
++# City entries and the tile events of the train are about this one.
++func get_lead_wagon() -> NavigationWagon:
++    return wagons.back() if reversed else wagons[0]
+ 
+ func _face(wagon: NavigationWagon, ori: String) -> void:
+     wagon.set_orientation(ori)
+@@ -72,8 +117,8 @@ func _get_sprite_frames() -> SpriteFrames:
+ #region control
+ func update(delta: float) -> void:
+     var driving := gear == Gear.DRIVE
+-    var target := MAX_SPEED if driving else 0.0
+-    var rate := ACCELERATION if driving else DECELERATION
++    var target := max_speed if driving else 0.0
++    var rate := acceleration if driving else deceleration
+     move_speed = move_toward(move_speed, target, rate * delta)
+     for wagon in wagons:
+         wagon.speed = move_speed
+@@ -90,6 +135,7 @@ func immediate_stop() -> void:
+         wagon.speed = 0.0
+ 
+ func reverse_train() -> void:
++    reversed = not reversed
+     # TODO: on a curve tile, derive the reverse direction from the previous tile instead
+     var n := wagons.size()
+     var positions: Array[Vector2] = []
+@@ -125,7 +171,7 @@ func _on_wagon_tile_changed(wagon: NavigationWagon, old_tile: Vector2i, new_tile
+     if not _follow_rail(wagon, old_tile, new_tile):
+         immediate_stop()
+     # Emit AFTER the stop: a city at a dead end must still be seen by the manager.
+-    if wagon == wagons[0]:
++    if wagon == get_lead_wagon():
+         train_tile_changed.emit(self, old_tile, new_tile)
+ 
+ func _follow_rail(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i) -> bool:
+diff --git a/scripts/wagons/navigation_wagon.gd b/scripts/wagons/navigation_wagon.gd
+index 63398f2..14cde4c 100644
+--- a/scripts/wagons/navigation_wagon.gd
++++ b/scripts/wagons/navigation_wagon.gd
+@@ -17,6 +17,7 @@ const LAYER_ENEMY_TRAIN := 2
+ 
+ @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+ @onready var hit_area: Area2D = $HitArea
++@onready var label: Label = $Label
+ 
+ func _ready() -> void:
+     hit_area.area_entered.connect(_on_hit_area_entered)
+@@ -47,6 +48,12 @@ func set_orientation(ori: String) -> void:
+         orientation = ori
+         sprite.play(ori)
+ 
++# The wagon types have no navigation sprites yet: until they do, a wagon that is not the locomotive
++# is the locomotive sprite, tinted, with the name of its type.
++func set_placeholder(type_name: String) -> void:
++    label.text = type_name
++    sprite.modulate = Color(0.7, 0.8, 1.0)
++
+ func set_sprite_frames(frames: SpriteFrames) -> void:
+     sprite.sprite_frames = frames
+     if orientation != "":

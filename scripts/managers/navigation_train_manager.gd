@@ -3,7 +3,7 @@ class_name NavigationTrainManager
 
 signal train_reached_city(city_name: String)
 signal trains_collided(player_train: NavigationTrain, enemy_train: NavigationTrain)
-# signal player_tile_changed(tile: Vector2i)
+signal player_tile_changed(tile: Vector2i)
 
 enum Team {PLAYER, ENEMY}
 
@@ -28,8 +28,15 @@ var _next_train_id := 0
 var _transitioning := false
 
 
+func _ready() -> void:
+    GameState.game_saving.connect(save_player_position)
+    GameState.game_saving.connect(save_enemy_positions)
+
+
 #region train spawning
-func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain:
+# `tile_pos` and `ori` are the locomotive's. `train_data` has the structure of
+# GameState.get_player_train() (stats and wagons). `is_reversed`: the locomotive pushes from the rear.
+func spawn_train(tile_pos: Vector2i, ori: String, team: Team, train_data := {}, is_reversed := false) -> NavigationTrain:
     assert(train_container != null, "NavigationTrainManager: train_container not injected")
     var train: NavigationTrain = TRAIN_SCENE.instantiate()
     train.grid_service = grid_service
@@ -38,7 +45,11 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain
     train.train_collided.connect(_on_train_collided)
 
     train_container.add_child(train) # manager owns placement
-    train.initialize(_make_id(team), team, tile_pos, ori)
+    var train_id := str(train_data.get("id", ""))
+    if train_id.is_empty():
+        train_id = _make_id(team)
+    train.initialize(train_id, team, tile_pos, ori, train_data, is_reversed)
+
 
     if team == Team.PLAYER:
         player_train = train
@@ -46,6 +57,44 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team) -> NavigationTrain
         enemy_trains.append(train)
         _add_ai(train)
     return train
+
+func remove_train(train: NavigationTrain) -> void:
+    if train == player_train:
+        return
+    enemy_trains.erase(train)
+    train.process_mode = Node.PROCESS_MODE_DISABLED # also disables its collision area right away
+    GameState.remove_enemy_train(train.id)
+    train.queue_free()
+
+# Writes where the player train is into GameState (it also happens before every save)
+func save_player_position() -> void:
+    if not is_instance_valid(player_train) or player_train.wagons.is_empty():
+        return
+    var locomotive := player_train.wagons[0]
+    GameState.set_player_position(locomotive.current_tile, locomotive.orientation, player_train.reversed)
+
+# Writes where the enemy trains are into GameState (it also happens before every save)
+func save_enemy_positions() -> void:
+    for train in enemy_trains:
+        if is_instance_valid(train) and not train.wagons.is_empty():
+            var locomotive := train.wagons[0]
+            GameState.set_enemy_position(train.id, locomotive.current_tile, locomotive.orientation, train.reversed)
+
+# Builds the player train again from GameState, where it is now. For when the wagons may have
+# changed while the navigation scene was suspended (trade, depot, combat). The train stops.
+func rebuild_player_train() -> void:
+    if not is_instance_valid(player_train) or player_train.wagons.is_empty():
+        return
+    save_player_position()
+    var saved := GameState.get_player_position()
+    player_train.process_mode = Node.PROCESS_MODE_DISABLED # also disables its collision areas right away
+    player_train.queue_free()
+    player_train = null
+    spawn_train(saved["tile"], saved["ori"], Team.PLAYER, GameState.get_player_train(), saved["reversed"])
+
+# Freezes every train, e.g. while a pop-up is open. resume() unfreezes them.
+func pause() -> void:
+    set_process(false)
 
 func resume() -> void:
     _transitioning = false
@@ -121,7 +170,7 @@ func _on_train_tile_changed(train: NavigationTrain, _old_tile: Vector2i, new_til
     if _transitioning:
         return
     if train == player_train:
-        # player_tile_changed.emit(new_tile)
+        player_tile_changed.emit(new_tile)
         _check_city_entry(new_tile)
     # else:
     #     _update_enemy_visibility(train)
@@ -149,12 +198,6 @@ func _on_train_collided(train: NavigationTrain, other_wagon: NavigationWagon) ->
 func _emit_collision(enemy: NavigationTrain) -> void:
     trains_collided.emit(player_train, enemy)
 
-func remove_train(train: NavigationTrain) -> void:
-    if train == player_train:
-        return
-    enemy_trains.erase(train)
-    train.process_mode = Node.PROCESS_MODE_DISABLED # also disables its collision area right away
-    train.queue_free()
 
 # Enemies are only drawn while they are on a visible tile
 # func update_enemy_visibility() -> void:

@@ -1,0 +1,90 @@
+{
+    "_comment": "Event id -> info. The id is the atlas position in the Events tileset: id = atlas_y * 10 + atlas_x (like the city ids). Keys that start with _ are ignored. The tiles below are examples: use your own.",
+    "0": {
+        "Type": "bridge",
+        "Name": "Broken bridge",
+        "Text": "The bridge over the gorge has collapsed. Rebuild it to reach the other side?",
+        "Cost": 300,
+        "Tiles": [
+            {
+                "Tile": [
+                    12,
+                    4
+                ],
+                "Rail": "WE"
+            },
+            {
+                "Tile": [
+                    13,
+                    4
+                ],
+                "Rail": "WE",
+                "Overlay": [
+                    0,
+                    0
+                ]
+            },
+            {
+                "Tile": [
+                    14,
+                    4
+                ],
+                "Rail": "WE",
+                "Overlay": [
+                    0,
+                    0
+                ]
+            },
+            {
+                "Tile": [
+                    15,
+                    4
+                ],
+                "Rail": "WE"
+            }
+        ]
+    },
+    "1": {
+        "Type": "tunnel",
+        "Name": "Blocked tunnel",
+        "Text": "A rockfall blocks the mountain tunnel. Clear it?",
+        "Cost": 500,
+        "Tiles": [
+            {
+                "Tile": [
+                    20,
+                    9
+                ],
+                "Rail": "NS"
+            },
+            {
+                "Tile": [
+                    20,
+                    10
+                ],
+                "Rail": "NS",
+                "Overlay": [
+                    1,
+                    0
+                ]
+            },
+            {
+                "Tile": [
+                    20,
+                    11
+                ],
+                "Rail": "NS"
+            }
+        ]
+    },
+    "2": {
+        "Type": "progress",
+        "Name": "The old station",
+        "Text": "A survivor waves from the abandoned station. He has a job for you.",
+        "Effects": {
+            "AcceptQuest": "quest_tutorial_1",
+            "SetFlag": "met_survivor",
+            "Money": 50
+        }
+    }
+}

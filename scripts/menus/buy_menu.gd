@@ -10,6 +10,7 @@ signal buy_requested(resource_name: String, qty: int)
 signal fill_wagon_requested(resource_name: String)
 signal closed
 signal buy_wagon_requested(wagon_type: String)
+signal recruit_requested(unit_type: String)
 
 const UNITS_PER_PRESS := 1
 
@@ -24,6 +25,7 @@ const UNITS_PER_PRESS := 1
 
 var current_resource := "" # "" when closed
 var current_wagon_type := "" # "" unless the menu is showing a wagon
+var current_unit_type := "" # "" unless the menu is showing a soldier
 
 func _ready() -> void:
     buy1_button.pressed.connect(_on_buy1_pressed)
@@ -37,7 +39,8 @@ func _ready() -> void:
 func show_resource(resource_name: String, icon: Texture2D, qty: int, buy_price: int) -> void:
     current_resource = resource_name
     current_wagon_type = ""
-    
+    current_unit_type = ""
+
     name_label.text = resource_name.capitalize()
     image_rect.texture = icon
     price_label.text = str(buy_price) # what the player pays for 1 unit
@@ -57,6 +60,18 @@ func show_wagon(wagon_type: String, icon: Texture2D, qty: int, buy_price: int) -
     fill_wagon_button.visible = false # "fill wagon" only makes sense for resources
     show()
 
+# Opens the menu for a soldier the city recruits
+func show_unit(unit_type: String, icon: Texture2D, qty: int, price: int) -> void:
+    current_resource = ""
+    current_wagon_type = ""
+    current_unit_type = unit_type
+    name_label.text = unit_type.capitalize()
+    image_rect.texture = icon
+    price_label.text = str(price)
+    set_qty(qty)
+    buy1_button.disabled = false
+    fill_wagon_button.visible = false
+    show()
 
 func set_qty(qty: int) -> void:
     qty_label.text = str(qty)
@@ -69,12 +84,15 @@ func set_can_buy(value: bool) -> void:
 func close() -> void:
     current_resource = ""
     current_wagon_type = ""
+    current_unit_type = ""
     hide()
     closed.emit()
 
 
 func _on_buy1_pressed() -> void:
-    if current_wagon_type != "":
+    if current_unit_type != "":
+        recruit_requested.emit(current_unit_type)
+    elif current_wagon_type != "":
         buy_wagon_requested.emit(current_wagon_type)
     elif current_resource != "":
         buy_requested.emit(current_resource, UNITS_PER_PRESS)

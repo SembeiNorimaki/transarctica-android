@@ -8,7 +8,7 @@ enum Orientation {
 }
 
 enum Gear {
-    STOP,
-    FORWARD,
-    REVERSE
+    NEUTRAL, # no power: the train brakes
+    DRIVE, # forward
+    REVERSE # backwards (only the horizontal trains use it)
 }

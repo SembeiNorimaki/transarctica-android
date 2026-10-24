@@ -6,8 +6,7 @@ class_name TradeService
 #
 # Assumption: a city only trades the resources it lists (it needs their prices).
 
-enum Result {OK, INVALID, NO_STOCK, NO_MONEY, NO_TRAIN_SPACE, NOT_IN_TRAIN, NO_CITY_SPACE}
-
+enum Result {OK, INVALID, NO_STOCK, NO_MONEY, NO_TRAIN_SPACE, NOT_IN_TRAIN, NO_CITY_SPACE, NO_BARRACKS_SPACE}
 
 #region limits (for the UI: enable buttons, "buy max")
 # Most units the player can buy right now: limited by city stock, money and train space.
@@ -42,10 +41,10 @@ static func can_buy_wagon(city: CityInventory, wagon_type: String) -> bool:
     return city.get_wagon_available_qty(wagon_type) > 0 \
             and GameState.get_money() >= city.get_wagon_buy_price(wagon_type)
 
-# The city must list the wagon type (it needs its price). The locomotive (index 0) can't be sold.
 static func can_sell_wagon(city: CityInventory, train: TrainInventory, wagon_index: int) -> bool:
     return wagon_index > 0 and train.has_wagon(wagon_index) \
-            and city.has_wagon_type(train.get_wagon_type(wagon_index))
+            and city.has_wagon_type(train.get_wagon_type(wagon_index)) \
+            and train.get_unit_ids(wagon_index).is_empty()
 
 static func buy(city: CityInventory, train: TrainInventory, resource_name: String, qty: int) -> Result:
     if qty <= 0 or not city.has_resource(resource_name):
@@ -129,6 +128,30 @@ static func sell_wagon(city: CityInventory, train: TrainInventory, wagon_index: 
     if not ok:
         push_error("TradeService: selling wagon %d failed after validation" % wagon_index)
     return Result.OK
+
+static func can_recruit(city: CityInventory, train: TrainInventory, unit_type: String) -> bool:
+    return city.get_recruit_qty(unit_type) > 0 \
+            and train.get_unit_free_space() > 0 \
+            and GameState.get_money() >= city.get_recruit_price(unit_type)
+
+
+static func recruit(city: CityInventory, train: TrainInventory, unit_type: String) -> Result:
+    if not city.has_recruit_type(unit_type):
+        return Result.INVALID
+    if city.get_recruit_qty(unit_type) < 1:
+        return Result.NO_STOCK
+    var cost := city.get_recruit_price(unit_type)
+    if GameState.get_money() < cost:
+        return Result.NO_MONEY
+    if train.get_unit_free_space() < 1:
+        return Result.NO_BARRACKS_SPACE
+
+    var ok := GameState.add_money(-cost)
+    ok = city.remove_recruit_amount(unit_type, 1) and ok
+    ok = train.add_unit(UnitTypes.make_unit(unit_type)) != "" and ok
+    if not ok:
+        push_error("TradeService: recruiting %s failed after validation" % unit_type)
+    return Result.OK
     
 #endregion
 
@@ -146,6 +169,8 @@ static func result_text(result: Result) -> String:
             return "The train doesn't carry that."
         Result.NO_CITY_SPACE:
             return "The city can't store more."
+        Result.NO_BARRACKS_SPACE:
+            return "No room in the barracks."
         Result.INVALID:
             return "That can't be traded."
     return ""

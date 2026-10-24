@@ -239,6 +239,52 @@ func calculate_new_orientation(tile: Vector2i, delta: Vector2i) -> String:
         return grid_service.get_orientation(Vector2i.ZERO, delta) # straight
     return grid_service.get_orientation(Vector2i.ZERO, delta + DIRS[exit_edge]) # curve: diagonal
 
+
+# The orientation of a train that enters a tile through `entry_edge` and leaves through `exit_edge`.
+# Same rule as calculate_new_orientation, but starting from edges instead of a move.
+func _orientation_through(entry_edge: String, exit_edge: String) -> String:
+    if not DIRS.has(entry_edge):
+        return ""
+    var delta: Vector2i = - DIRS[entry_edge]
+    if exit_edge == "X" or exit_edge == OPPOSITE_EDGE[entry_edge]:
+        return grid_service.get_orientation(Vector2i.ZERO, delta) # straight
+    return grid_service.get_orientation(Vector2i.ZERO, delta + DIRS[exit_edge]) # curve: diagonal
+
+
+# The edge through which a train with orientation `ori` entered `tile`, or "" if no route fits
+func entry_edge_for(tile: Vector2i, ori: String) -> String:
+    var route: Dictionary = _routes.get(tile, {})
+    for entry_edge: String in route:
+        if _orientation_through(entry_edge, route[entry_edge]) == ori:
+            return entry_edge
+    return ""
+
+
+# Walks the rail BACKWARDS from `tile` (where a train travelling with orientation `ori` is), and
+# returns up to `count` tiles as [{"tile": Vector2i, "ori": String}], nearest first. `ori` of each
+# entry is the orientation a train that follows the first one has on that tile.
+# It stops early at a dead end, or at the inactive side of a junction, so it can return fewer tiles.
+func tiles_behind(tile: Vector2i, ori: String, count: int) -> Array[Dictionary]:
+    var result: Array[Dictionary] = []
+    var current := tile
+    var current_ori := ori
+    for i in count:
+        var entry_edge := entry_edge_for(current, current_ori)
+        if entry_edge.is_empty():
+            break
+        var previous: Vector2i = current + DIRS[entry_edge]
+        var exit_edge: String = OPPOSITE_EDGE[entry_edge] # the previous tile's edge that faces `current`
+        var previous_entry: String = _routes.get(previous, {}).get(exit_edge, "")
+        if previous_entry.is_empty():
+            break
+        var previous_ori := _orientation_through(previous_entry, exit_edge)
+        if previous_ori.is_empty():
+            break
+        result.append({"tile": previous, "ori": previous_ori})
+        current = previous
+        current_ori = previous_ori
+    return result
+
 #endregion
 
 

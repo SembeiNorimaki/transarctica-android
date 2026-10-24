@@ -18,6 +18,16 @@ class_name TerrainLoader
 const VALUE_BLACK := 0
 const VALUE_GRAY := 1
 const VALUE_WHITE := 2
+# Neighbor bits
+const N := 1
+const W := 2
+const E := 4
+const S := 8
+# Diagonal bits, in reading order like N, W, E, S
+const NW := 1
+const NE := 2
+const SW := 4
+const SE := 8
 
 @onready var terrain_low: TileMapLayer = $terrain_low
 @onready var terrain_mid: TileMapLayer = $terrain_mid
@@ -39,6 +49,10 @@ const TOLERANCE := 0.2
 @export var atlas_coords := Vector2i(0, 0) # the tile that is painted
 @export var clear_first := true # empty the three layers before painting (it removes what they had)
 
+@export_group("Neighbors")
+@export var outside_counts_as_neighbor := false # a cell beyond the map edge counts as "same" (no border at the map edge)
+@export var print_neighbors := true
+
 @export_group("Buttons")
 @export var load_now := false:
     set(value):
@@ -56,6 +70,8 @@ var width := 0
 var height := 0
 var counts := [0, 0, 0] # how many pixels have each value
 
+var cardinal: Array[PackedByteArray] = [] # cardinal[y][x]: N=1 W=2 E=4 S=8. Only filled for cells with value 1
+var diagonal: Array[PackedByteArray] = [] # diagonal[y][x]: NW=1 NE=2 SW=4 SE=8. Only filled for cells with value 1
 
 func _ready() -> void:
     if not Engine.is_editor_hint() and image_path != "":
@@ -114,6 +130,7 @@ func load_terrain(path := "") -> bool:
     print("TerrainLoader: %s is %d x %d. black (0): %d, gray (1): %d, white (2): %d" % [path.get_file(), width, height, counts[0], counts[1], counts[2]])
     if print_preview:
         print_matrix()
+    compute_neighbors()
     return true
 
 
@@ -184,4 +201,67 @@ func _mark_scene_unsaved() -> void:
         var editor := Engine.get_singleton("EditorInterface")
         if editor.has_method("mark_scene_as_unsaved"):
             editor.call("mark_scene_as_unsaved")
+#endregion
+
+
+#region step 3: neighbors of the gray cells (terrain_mid)
+# For every cell with value 1, which of its 8 neighbors also have value 1 (a neighbor with value 0
+# or 2 counts as different). All 4 cardinals = 15, all 4 diagonals = 15.
+func compute_neighbors() -> bool:
+    if matrix.is_empty():
+        push_error("TerrainLoader: there is no matrix yet. Load the terrain first.")
+        return false
+    cardinal = []
+    diagonal = []
+    for y in height:
+        var c_row := PackedByteArray()
+        var d_row := PackedByteArray()
+        c_row.resize(width)
+        d_row.resize(width)
+        for x in width:
+            if matrix[y][x] == VALUE_GRAY:
+                c_row[x] = (N if _same(x, y - 1) else 0) \
+                        | (W if _same(x - 1, y) else 0) \
+                        | (E if _same(x + 1, y) else 0) \
+                        | (S if _same(x, y + 1) else 0)
+                d_row[x] = (NW if _same(x - 1, y - 1) else 0) \
+                        | (NE if _same(x + 1, y - 1) else 0) \
+                        | (SW if _same(x - 1, y + 1) else 0) \
+                        | (SE if _same(x + 1, y + 1) else 0)
+        cardinal.append(c_row)
+        diagonal.append(d_row)
+    if print_neighbors:
+        _print_masks()
+    return true
+
+
+func _same(x: int, y: int) -> bool:
+    var value := get_value(x, y)
+    if value == -1:
+        return outside_counts_as_neighbor
+    return value == VALUE_GRAY
+
+
+# -1 if the cell is not a value 1 cell (or is outside the map)
+func get_cardinal(x: int, y: int) -> int:
+    if get_value(x, y) != VALUE_GRAY:
+        return -1
+    return cardinal[y][x]
+
+
+func get_diagonal(x: int, y: int) -> int:
+    if get_value(x, y) != VALUE_GRAY:
+        return -1
+    return diagonal[y][x]
+
+
+# One hex digit per cell ("." where the value is not 1): cardinal masks first, then diagonal masks
+func _print_masks(max_cols := 80, max_rows := 40) -> void:
+    for pair in [["cardinal", cardinal], ["diagonal", diagonal]]:
+        print("TerrainLoader: %s masks" % pair[0])
+        for y in mini(height, max_rows):
+            var line := ""
+            for x in mini(width, max_cols):
+                line += "%X" % pair[1][y][x] if matrix[y][x] == VALUE_GRAY else "."
+            print(line)
 #endregion
