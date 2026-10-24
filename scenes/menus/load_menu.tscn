@@ -16,12 +16,16 @@ offset_bottom = 40.0
 
 [node name="Slot1Button" type="Button" parent="VBoxContainer" unique_id=588242105]
 layout_mode = 2
+text = "1"
 
 [node name="Slot2Button" type="Button" parent="VBoxContainer" unique_id=1651166010]
 layout_mode = 2
+text = "2"
 
 [node name="Slot3Button" type="Button" parent="VBoxContainer" unique_id=1659769632]
 layout_mode = 2
+text = "3"
 
 [node name="Slot4Button" type="Button" parent="VBoxContainer" unique_id=531994214]
 layout_mode = 2
+text = "4"

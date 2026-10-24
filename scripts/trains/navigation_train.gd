@@ -17,6 +17,9 @@ const DEFAULT_DECELERATION := 200.0
 const PLAYER_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_spriteframes.tres")
 const ENEMY_SPRITE_FRAMES: SpriteFrames = preload("res://assets/tilesets/navigation_locomotive_enemy_spriteframes.tres")
 
+# false: the map shows only the locomotive, as a marker of where the train is.
+# true: it also shows the other wagons, following the rail behind it.
+const SHOW_WAGONS := false
 
 # Injected (train_manager removed: it was never used here)
 var grid_service: GridService
@@ -57,6 +60,8 @@ func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vecto
         wagon_types.append(str(wagon_data.get("type", "")))
     if wagon_types.is_empty():
         wagon_types.append("LocomotiveWagon")
+    if not SHOW_WAGONS:
+        wagon_types.resize(1) # only the locomotive
 
     for i in wagon_types.size():
         var wagon := LOCOMOTIVE_SCENE.instantiate() as NavigationWagon

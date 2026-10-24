@@ -2,5 +2,21 @@
 
 [ext_resource type="Script" uid="uid://tkac4q8m7s78" path="res://scripts/trade_resources/trade_unit.gd" id="1_n51ql"]
 
+[sub_resource type="SpriteFrames" id="SpriteFrames_2na53"]
+animations = [{
+"frames": [],
+"loop": true,
+"name": &"S",
+"speed": 5.0
+}]
+
 [node name="TradeUnit" type="Node2D" unique_id=958736233]
 script = ExtResource("1_n51ql")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=20770862]
+sprite_frames = SubResource("SpriteFrames_2na53")
+animation = &"S"
+
+[node name="QtyLabel" type="Label" parent="." unique_id=1700997404]
+offset_right = 40.0
+offset_bottom = 23.0

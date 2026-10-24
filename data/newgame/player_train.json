@@ -1,8 +1,6 @@
 {
     "id": "TP0",
     "owner": "Player",
-    "fuel": 40,
-    "max_fuel": 100,
     "max_speed": 300,
     "acceleration": 50,
     "deceleration": 200,
@@ -21,7 +19,7 @@
             "max_hp": 60,
             "capacity": 100,
             "cargo_name": "coal",
-            "cargo_qty": 40
+            "cargo_qty": 100
         },
         {
             "type": "BarracksWagon",
@@ -49,6 +47,17 @@
             "capacity": 20,
             "cargo_name": "",
             "cargo_qty": 0
+        },
+        {
+            "type": "BarracksWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 6,
+            "unit_ids": [
+                "u0",
+                "u1",
+                "u2"
+            ]
         }
     ]
 }

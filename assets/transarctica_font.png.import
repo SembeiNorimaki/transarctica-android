@@ -1,0 +1,25 @@
+[remap]
+
+importer="font_data_image"
+type="FontFile"
+uid="uid://bmsj6yk05nhfv"
+path="res://.godot/imported/transarctica_font.png-5af983f93e876748ab52d39e682aca2a.fontdata"
+
+[deps]
+
+source_file="res://assets/transarctica_font.png"
+dest_files=["res://.godot/imported/transarctica_font.png-5af983f93e876748ab52d39e682aca2a.fontdata"]
+
+[params]
+
+character_ranges=PackedStringArray("\'a\'-\'z\'")
+kerning_pairs=PackedStringArray()
+columns=26
+rows=1
+image_margin=Rect2i(0, 0, 0, 0)
+character_margin=Rect2i(0, 0, 0, 0)
+ascent=0
+descent=0
+fallbacks=[]
+compress=true
+scaling_mode=2

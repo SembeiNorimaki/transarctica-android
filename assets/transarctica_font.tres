@@ -1,0 +1,7 @@
+[gd_resource type="Theme" format=3 uid="uid://buoaq2dou2jvd"]
+
+[ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="1_de5xf"]
+
+[resource]
+default_font = ExtResource("1_de5xf")
+default_font_size = 20

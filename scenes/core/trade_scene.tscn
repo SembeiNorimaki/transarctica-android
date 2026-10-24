@@ -31,7 +31,7 @@ tile_set = ExtResource("2_io20h")
 [node name="TrainContainer" type="Node2D" parent="." unique_id=1849739645]
 
 [node name="PlayerTrain" parent="TrainContainer" unique_id=1459319408 instance=ExtResource("3_jdot1")]
-position = Vector2(1500, 1002)
+position = Vector2(2243, 992)
 scale = Vector2(2, 2)
 
 [node name="ResourceContainer" type="Node2D" parent="." unique_id=1897419785]
