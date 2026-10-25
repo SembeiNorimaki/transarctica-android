@@ -26,6 +26,8 @@ const COLOR_COMPLETED_TEXT := Color(0.5, 0.5, 0.5)
 const COLOR_NOTIF_DONE := Color(0.12, 0.45, 0.22, 0.9) # green: completed
 const COLOR_NOTIF_NEW := Color(0.75, 0.55, 0.1, 0.9) # gold: accepted
 
+const DIALOG_SCENE: PackedScene = preload("res://scenes/menus/dialog_menu.tscn")
+
 @onready var quest_list: Control = $Control/VBoxContainer/ScrollContainer/QuestList
 @onready var notif_panel: ColorRect = $Notification/NotifPanel
 @onready var notif_label: Label = $Notification/NotifPanel/NotifLabel
@@ -33,16 +35,34 @@ const COLOR_NOTIF_NEW := Color(0.75, 0.55, 0.1, 0.9) # gold: accepted
 var _refresh_pending := false
 var _notifications: Array[Dictionary] = [] # waiting to be shown: {message, is_completion}
 var _showing := false
-
+var _dialog: DialogMenu
+var _dialog_queue: Array[Dictionary] = [] # {quest, is_intro}
+var _dialog_running := false
 
 func _ready() -> void:
     notif_panel.visible = false
     # quests_updated follows every change (accept, progress, complete), so it is the only refresh trigger
+    process_mode = Node.PROCESS_MODE_ALWAYS # the dialogs and notifications keep working while the game is paused
+    _dialog = DIALOG_SCENE.instantiate() as DialogMenu
+    add_child(_dialog)
+    _dialog.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 24)
+    _dialog.grow_vertical = Control.GROW_DIRECTION_BEGIN # a taller dialog grows upward, not below the screen
+    #_dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT) # TEST: covers the whole screen
+    QuestManager.quest_offered.connect(func(quest: Quest) -> void: _enqueue_dialog(quest, true))
+    QuestManager.quest_outro_requested.connect(func(quest: Quest) -> void: _enqueue_dialog(quest, false))
     QuestManager.quests_updated.connect(_request_refresh)
     QuestManager.quest_accepted.connect(_on_quest_accepted)
     QuestManager.quest_completed.connect(_on_quest_completed)
+    
     refresh_ui()
 
+func _input(event: InputEvent) -> void:
+    if event is InputEventMouseButton and event.pressed:
+        print("paused=", get_tree().paused, "  hovered=", get_viewport().gui_get_hovered_control())
+
+func _debug_dialog() -> void:
+    print("DIALOG visible=", _dialog.visible, " script=", _dialog.get_script().resource_path)
+    _dialog.print_tree_pretty()
 
 #region list
 # Several signals can arrive in the same frame, so the list is rebuilt once
@@ -188,4 +208,53 @@ func _show_next_notification() -> void:
 func _on_notification_finished() -> void:
     notif_panel.visible = false
     _show_next_notification()
+#endregion
+
+#region quest dialogs
+# They are shown one after another, and the game is paused while they are open
+func _enqueue_dialog(quest: Quest, is_intro: bool) -> void:
+    _dialog_queue.append({"quest": quest, "is_intro": is_intro})
+    if not _dialog_running:
+        _run_dialogs()
+
+
+func _run_dialogs() -> void:
+    _dialog_running = true
+    while not _dialog_queue.is_empty():
+        while not visible: # the main menu hides this layer: wait until the game shows it
+            await visibility_changed
+        var item: Dictionary = _dialog_queue.pop_front()
+        var quest: Quest = item["quest"]
+        get_tree().paused = true
+        if item["is_intro"]:
+            await _show_intro(quest)
+        else:
+            await _show_outro(quest)
+
+    get_tree().paused = false
+    _dialog_running = false
+
+
+func _show_intro(quest: Quest) -> void:
+    _debug_dialog.call_deferred()
+    if not QuestManager.offered_quests.has(quest.id):
+        return # it was accepted or completed while it was waiting
+    var choices := _choices_of(quest.intro)
+    var chosen: String = await _dialog.ask(
+            str(quest.intro.get("text", "")), choices, Characters.portrait(str(quest.intro.get("character", ""))))
+    for choice in choices:
+        if str(choice.get("id", choice.get("text", ""))) == chosen and bool(choice.get("accept", false)):
+            QuestManager.accept_quest(quest.id)
+            return
+
+
+func _show_outro(quest: Quest) -> void:
+    await _dialog.ask(
+            str(quest.outro.get("text", "")), _choices_of(quest.outro), Characters.portrait(str(quest.outro.get("character", ""))))
+
+
+# The choices of the data, or a single OK button if it has none
+func _choices_of(dialog: Dictionary) -> Array:
+    var choices: Array = dialog.get("choices", [])
+    return choices if not choices.is_empty() else [ {"id": "ok", "text": "OK", "accept": true}]
 #endregion

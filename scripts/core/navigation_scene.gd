@@ -317,6 +317,7 @@ func _on_button_left_pressed() -> void:
 
 
 func _on_button_right_pressed() -> void:
+    print("Button right pressed")
     navigation_train_manager.player_train_gear_toggle()
 
 func _on_map_tapped(screen_pos: Vector2) -> void:

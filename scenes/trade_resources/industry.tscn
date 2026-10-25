@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://bm20b6vb7qcvn"]
+
+[ext_resource type="Script" uid="uid://kucfmbd1jwf8" path="res://scripts/trade_resources/industry.gd" id="1_hhoyq"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_1jkj3"]
+size = Vector2(200, 200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1jkj3"]
+size = Vector2(188, 187)
+
+[node name="Industry" type="Node2D" unique_id=1357398211]
+script = ExtResource("1_hhoyq")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1138030671]
+texture = SubResource("PlaceholderTexture2D_1jkj3")
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1186590072]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=136517770]
+position = Vector2(1, 0.5)
+shape = SubResource("RectangleShape2D_1jkj3")
+
+[node name="NameLabel" type="Label" parent="." unique_id=503419802]
+offset_right = 40.0
+offset_bottom = 23.0

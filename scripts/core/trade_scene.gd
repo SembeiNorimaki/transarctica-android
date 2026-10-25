@@ -29,12 +29,15 @@ signal trade_failed(message: String) # for the HUD
 @onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
 @onready var exit_button: Button = $CanvasLayer/UI/ExitButton
 
+@onready var industry_slot: Marker2D = $IndustrySlot
+
 
 const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
+const INDUSTRY_SCENE: PackedScene = preload("res://scenes/trade_resources/industry.tscn")
 
 # Only used when this scene is run on its own (F6), where SceneService is not calling initialize()
-# const DEBUG_CITY_NAME := "Foundry"
-const DEBUG_CITY_NAME := "Paris"
+const DEBUG_CITY_NAME := "Foundry"
+# const DEBUG_CITY_NAME := "Paris"
 
 
 static var _problems_reported := false
@@ -47,6 +50,7 @@ var city_name := ""
 #         return horizontal_train_manager.player_train
 
 var _initialized := false
+var industry: Industry # only exists when the city has an industry
 
 
 func _ready() -> void:
@@ -122,6 +126,7 @@ func initialize(city_name_: String) -> void:
     _load_city_resources()
     _load_city_wagons()
     _load_city_units()
+    _load_city_industry()
     _update_all_wagon_prices()
     _print_inventories()
 
@@ -163,6 +168,16 @@ func _load_city_units() -> void:
         var qty := city_inventory.get_recruit_qty(unit_type)
         if qty > 0:
             trade_unit_manager.spawn_unit(unit_type, qty) # logs an error if it can't
+
+# Only a city with recipes has an industry to show
+func _load_city_industry() -> void:
+    if not city_inventory.has_industry():
+        return
+    industry = INDUSTRY_SCENE.instantiate() as Industry
+    industry.position = industry_slot.position
+    industry.set_title(city_name) # safe before the node is in the tree
+    industry.clicked.connect(_on_industry_clicked)
+    add_child(industry)
 
 #endregion
 
@@ -256,6 +271,13 @@ func _on_city_unit_clicked(unit_type: String) -> void:
         city_inventory.get_recruit_price(unit_type))
     _refresh_buy_menu()
 
+func _on_industry_clicked(_clicked_industry: Industry) -> void:
+    buy_menu.close() # only one menu at a time
+    sell_menu.close()
+    # TODO: open the manufacturing menu. For now, only prove that the click arrives.
+    print("Industry of %s clicked. Recipes:" % city_name)
+    for recipe in city_inventory.get_recipes():
+        print("  %s: %s -> %s" % [recipe.name, recipe.inputs, recipe.outputs])
 
 func _on_buy_wagon_requested(wagon_type: String) -> void:
     var result := TradeService.buy_wagon(city_inventory, train_inventory, wagon_type)

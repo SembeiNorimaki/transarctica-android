@@ -2,6 +2,31 @@
     "quest_tutorial_1": {
         "title": "First steps",
         "description": "Drive your train to Paris.",
+        "intro": {
+            "character": "comrad",
+            "text": "Comrade, the line to Paris is open. Take the train there and we will talk.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "comrad",
+            "text": "You made it! Here is something for the trouble.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
         "is_main_quest": true,
         "next_quest": "quest_tutorial_2",
         "objectives": [

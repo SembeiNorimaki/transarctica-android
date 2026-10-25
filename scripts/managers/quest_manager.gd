@@ -11,6 +11,8 @@ signal quest_accepted(quest: Quest)
 signal quest_objective_updated(quest: Quest, objective: QuestObjective)
 signal quest_completed(quest: Quest)
 signal quests_updated
+signal quest_offered(quest: Quest) # its intro dialog should be shown
+signal quest_outro_requested(quest: Quest) # its outro dialog should be shown
 
 const QUESTS_PATH := "res://data/quests.json"
 const FIRST_QUEST := "quest_tutorial_1" # accepted when a new game starts
@@ -19,9 +21,9 @@ var quest_database := {} # quest id -> data from quests.json
 var active_quests := {} # quest id -> Quest
 var completed_quests: Array[String] = []
 var dismissed_quests: Array[String] = [] # completed quests the player cleared from the list (they stay in completed_quests)
+var offered_quests: Array[String] = [] # offered, not accepted yet (the player has not said yes)
 
 var _current_city := "" # the city the player is in right now ("" while navigating)
-
 
 func _ready() -> void:
     load_quest_database()
@@ -70,6 +72,8 @@ func _build_quest(quest_id: String) -> Quest:
     quest.is_main_quest = bool(data.get("is_main_quest", false))
     quest.next_quest = str(data.get("next_quest", ""))
     quest.rewards = data.get("rewards", {})
+    quest.intro = data.get("intro", {})
+    quest.outro = data.get("outro", {})
 
     for objective_data in data.get("objectives", []):
         var objective := QuestObjective.new()
@@ -85,6 +89,22 @@ func _build_quest(quest_id: String) -> Quest:
 
 
 #region quest flow
+# Offers a quest to the player. With an intro dialog, the player decides (a choice with
+# "accept": true starts it). Without one, it starts right away.
+func offer_quest(quest_id: String) -> void:
+    if active_quests.has(quest_id) or completed_quests.has(quest_id):
+        return
+    var quest := _build_quest(quest_id)
+    if quest == null:
+        push_error("QuestManager: quest '%s' is not in the database" % quest_id)
+        return
+    if quest.intro.is_empty():
+        accept_quest(quest_id)
+        return
+    if not offered_quests.has(quest_id):
+        offered_quests.append(quest_id)
+    quest_offered.emit(quest)
+
 func accept_quest(quest_id: String) -> void:
     if active_quests.has(quest_id) or completed_quests.has(quest_id):
         return
@@ -94,6 +114,7 @@ func accept_quest(quest_id: String) -> void:
         return
 
     active_quests[quest_id] = quest
+    offered_quests.erase(quest_id)
     quest_accepted.emit(quest)
     quests_updated.emit()
     _refresh_collect_objectives()
@@ -133,9 +154,11 @@ func complete_quest(quest: Quest) -> void:
 
     claim_rewards(quest)
 
+    if not quest.outro.is_empty():
+        quest_outro_requested.emit(quest)
     if quest.next_quest != "":
         # Deferred, so the UI can react to the completion before the next quest appears
-        accept_quest.call_deferred(quest.next_quest)
+        offer_quest.call_deferred(quest.next_quest)
     quests_updated.emit()
 
 func dismiss_completed() -> void:
@@ -188,22 +211,23 @@ func _on_game_saving() -> void:
     var active := {}
     for quest_id in active_quests:
         active[quest_id] = active_quests[quest_id].get_progress()
-    GameState.set_quests({"active": active, "completed": completed_quests.duplicate(), "dismissed": dismissed_quests.duplicate()})
-
+    GameState.set_quests({"active": active, "completed": completed_quests.duplicate(), "dismissed": dismissed_quests.duplicate(), "offered": offered_quests.duplicate()})
 
 # Rebuilds the quests from GameState (at start, and after a load)
 func load_from_game_state() -> void:
     active_quests.clear()
     completed_quests.clear()
     dismissed_quests.clear()
-    
+    offered_quests.clear()
+
     var saved: Dictionary = GameState.get_quests()
 
     for quest_id in saved.get("completed", []):
         completed_quests.append(str(quest_id))
-
     for quest_id in saved.get("dismissed", []):
         dismissed_quests.append(str(quest_id))
+    for quest_id in saved.get("offered", []):
+        offered_quests.append(str(quest_id))
     
     var saved_active: Dictionary = saved.get("active", {})
     for quest_id in saved_active:
@@ -214,9 +238,12 @@ func load_from_game_state() -> void:
         quest.apply_progress(saved_active[quest_id])
         active_quests[str(quest_id)] = quest
 
-    # A new game: start the first quest
-    if active_quests.is_empty() and completed_quests.is_empty():
-        accept_quest(FIRST_QUEST)
+    # A new game: offer the first quest. Otherwise offer again what was offered but not accepted.
+    if active_quests.is_empty() and completed_quests.is_empty() and offered_quests.is_empty():
+        offer_quest(FIRST_QUEST)
+    else:
+        for quest_id in offered_quests.duplicate():
+            offer_quest.call_deferred(quest_id)
     quests_updated.emit()
     _refresh_collect_objectives()
 #endregion
@@ -278,6 +305,23 @@ func find_database_problems() -> Array[String]:
             problems.append("'%s' rewards the unknown wagon '%s'" % [quest_id, rewards["wagon"]])
         if rewards.has("money") and int(rewards["money"]) <= 0:
             problems.append("'%s' has a money reward of %s" % [quest_id, rewards["money"]])
+
+        for part in ["intro", "outro"]:
+            var dialog: Dictionary = data.get(part, {})
+            if dialog.is_empty():
+                continue
+            if not Characters.has(str(dialog.get("character", ""))):
+                problems.append("'%s' %s has the unknown character '%s'" % [quest_id, part, dialog.get("character", "")])
+            if str(dialog.get("text", "")).is_empty():
+                problems.append("'%s' %s has no text" % [quest_id, part])
+            var choices: Array = dialog.get("choices", [])
+            if part == "intro" and not choices.is_empty():
+                var can_accept := false
+                for choice in choices:
+                    can_accept = can_accept or bool(choice.get("accept", false))
+                if not can_accept:
+                    problems.append("'%s' intro has choices but none has \"accept\": true, so it can't be accepted" % quest_id)
+        
     return problems
 
 

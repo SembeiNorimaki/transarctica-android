@@ -76,6 +76,7 @@ script = ExtResource("10_6eg84")
 [node name="CityLabelsContainer" type="Node2D" parent="." unique_id=1893294954]
 
 [node name="FogLayer" type="TileMapLayer" parent="." unique_id=1629482347]
+visible = false
 position = Vector2(96, 0)
 tile_set = SubResource("TileSet_mqu6x")
 

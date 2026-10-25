@@ -190,7 +190,7 @@ func accept(tile: Vector2i) -> String:
 # What an event gives, besides what its type does. All keys are optional.
 func _apply_effects(effects: Dictionary) -> void:
     if effects.has("AcceptQuest"):
-        QuestManager.accept_quest(str(effects["AcceptQuest"]))
+        QuestManager.offer_quest(str(effects["AcceptQuest"]))
     if effects.has("SetFlag"):
         GameState.set_flag(str(effects["SetFlag"]))
     if effects.has("Money"):

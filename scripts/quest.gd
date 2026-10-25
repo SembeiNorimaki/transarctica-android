@@ -10,6 +10,8 @@ var next_quest := ""
 var rewards := {} # {"money": int, "wagon": wagon type}
 var status := "active"
 var objectives: Array[QuestObjective] = []
+var intro := {} # dialog shown when the quest is offered: {character, text, choices}. Empty: none
+var outro := {} # dialog shown when it is completed
 
 
 func is_completed() -> bool:

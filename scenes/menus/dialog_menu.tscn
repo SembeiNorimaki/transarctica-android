@@ -1,15 +1,17 @@
 [gd_scene format=3 uid="uid://b4j11lbqypfcu"]
 
+[ext_resource type="Script" uid="uid://dwres8yocmwcw" path="res://scripts/menus/dialog_menu.gd" id="1_l6k5x"]
 [ext_resource type="Texture2D" uid="uid://c7ugb2fmesfi3" path="res://assets/resources/comrad_face.png" id="1_mjuyr"]
 
 [node name="DialogMenu" type="Control" unique_id=1994343864]
-custom_minimum_size = Vector2(0, 104)
+custom_minimum_size = Vector2(0, 160)
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
 grow_horizontal = 2
+script = ExtResource("1_l6k5x")
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=1166932476]
+[node name="Background" type="ColorRect" parent="." unique_id=1166932476]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,19 +20,25 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.47397572, 0.47397572, 0.47397572, 0.6666667)
 
-[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=985183657]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=533681084]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="TextureRect" type="TextureRect" parent="HBoxContainer" unique_id=1205925310]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=985183657]
+layout_mode = 2
+
+[node name="Portrait" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=1205925310]
 layout_mode = 2
 texture = ExtResource("1_mjuyr")
 
-[node name="Label" type="Label" parent="HBoxContainer" unique_id=1890654865]
+[node name="Text" type="RichTextLabel" parent="MarginContainer/HBoxContainer" unique_id=817439514]
 layout_mode = 2
-text = "hello my friend                                                                                  "
+text = "hello123
+vgyhytr"
 
-[node name="Button" type="Button" parent="HBoxContainer" unique_id=1590814583]
+[node name="Buttons" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=2120371068]
 layout_mode = 2
-text = "CLOSE"
