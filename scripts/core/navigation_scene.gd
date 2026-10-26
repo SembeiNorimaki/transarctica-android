@@ -169,8 +169,8 @@ func _load_map(map_name: String) -> void:
     # exploration_service.update_position(grid_service.tile_to_world(Vector2(initial_player_train_pos))) # TEMP
 
 func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
+    # the id tiles sit on the ENTRANCE of each city/industry/depot
     for tile in cities_ids_tilemap.get_used_cells():
-        #print("Spawn city on tile %s" % tile)
         var atlas_coords = cities_ids_tilemap.get_cell_atlas_coords(tile)
         var city_id = atlas_coords.y * 10 + atlas_coords.x
         cities_manager.spawn_city(city_id, tile)

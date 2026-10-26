@@ -41,8 +41,8 @@ texture = ExtResource("1_mjuyr")
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_fonts/normal_font = ExtResource("3_b7g82")
-text = "hello123
-vgyhytr"
+theme_override_font_sizes/normal_font_size = 58
+text = "hello comrad"
 
 [node name="Buttons" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=2120371068]
 layout_mode = 2

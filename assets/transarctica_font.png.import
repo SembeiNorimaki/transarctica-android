@@ -12,9 +12,9 @@ dest_files=["res://.godot/imported/transarctica_font.png-5af983f93e876748ab52d39
 
 [params]
 
-character_ranges=PackedStringArray("\'a\'-\'z\'", "\'0\'-\'9\'")
+character_ranges=PackedStringArray("\'a\'-\'z\'", "\'0\'-\'9\'", "\' \'", "\',\'", "\'.\'", "\'!\'", "\'?\'")
 kerning_pairs=PackedStringArray()
-columns=36
+columns=46
 rows=1
 image_margin=Rect2i(0, 0, 0, 0)
 character_margin=Rect2i(0, 0, 0, 0)
