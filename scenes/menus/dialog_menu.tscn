@@ -5,7 +5,7 @@
 [ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="3_b7g82"]
 
 [node name="DialogMenu" type="Control" unique_id=1994343864]
-custom_minimum_size = Vector2(0, 160)
+custom_minimum_size = Vector2(0, 104)
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
@@ -35,6 +35,7 @@ layout_mode = 2
 [node name="Portrait" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=1205925310]
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 texture = ExtResource("1_mjuyr")
 
 [node name="Text" type="RichTextLabel" parent="MarginContainer/HBoxContainer" unique_id=817439514]
@@ -47,3 +48,11 @@ text = "hello comrad"
 [node name="Buttons" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=2120371068]
 layout_mode = 2
 size_flags_horizontal = 4
+
+[node name="Button" type="Button" parent="MarginContainer/HBoxContainer/Buttons" unique_id=168039250]
+layout_mode = 2
+text = "Accept"
+
+[node name="Button2" type="Button" parent="MarginContainer/HBoxContainer/Buttons" unique_id=1953675238]
+layout_mode = 2
+text = "Decline"

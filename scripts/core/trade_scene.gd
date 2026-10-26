@@ -37,13 +37,13 @@ const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
 
 
 # Only used when this scene is run on its own (F6), where SceneService is not calling initialize()
-# const DEBUG_CITY_NAME := "Paris"
+const DEBUG_CITY_NAME := "Paris"
 # const DEBUG_CITY_NAME := "Foundry"
 # const DEBUG_CITY_NAME := "Central Depot"
 # const DEBUG_CITY_NAME := "Forest"
 # const DEBUG_CITY_NAME := "Iron Mine"
 # const DEBUG_CITY_NAME := "Coal Mine"
-const DEBUG_CITY_NAME := "Sawmill"
+# const DEBUG_CITY_NAME := "Sawmill"
 # const DEBUG_CITY_NAME := "Workshop"
 
 

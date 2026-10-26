@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://cmxr1tn24hlb2"]
 
+[ext_resource type="PackedScene" uid="uid://bv3w2hsg1tbeh" path="res://scenes/UI/border.tscn" id="1_lvpha"]
+
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_io20h"]
 size = Vector2(100, 100)
 
@@ -34,25 +36,33 @@ text = " X "
 [node name="ResourceName" type="Label" parent="VBoxContainer" unique_id=1629789578]
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Resource name
-"
+text = "Resource name"
 
 [node name="ResourceImage" type="TextureRect" parent="VBoxContainer" unique_id=1119404772]
 layout_mode = 2
+size_flags_horizontal = 4
 texture = SubResource("PlaceholderTexture2D_io20h")
 stretch_mode = 2
 
-[node name="ResourceQty" type="Label" parent="VBoxContainer" unique_id=534224442]
+[node name="GridContainer" type="GridContainer" parent="VBoxContainer" unique_id=2108032931]
+layout_mode = 2
+columns = 2
+
+[node name="LabelQty" type="Label" parent="VBoxContainer/GridContainer" unique_id=534224442]
 layout_mode = 2
 text = "Qty:"
 
-[node name="ResourceSellPrice" type="Label" parent="VBoxContainer" unique_id=308611999]
+[node name="ResourceQty" type="Label" parent="VBoxContainer/GridContainer" unique_id=620542392]
+layout_mode = 2
+text = "1"
+
+[node name="LabelPrice" type="Label" parent="VBoxContainer/GridContainer" unique_id=308611999]
 layout_mode = 2
 text = "Sell Price"
 
-[node name="Label4" type="Label" parent="VBoxContainer" unique_id=292538735]
+[node name="ResourcePrice" type="Label" parent="VBoxContainer/GridContainer" unique_id=292538735]
 layout_mode = 2
-text = "Button 4"
+text = "2"
 
 [node name="ResourceBuy1" type="Button" parent="VBoxContainer" unique_id=1064227244]
 layout_mode = 2
@@ -61,3 +71,6 @@ text = "Buy 1"
 [node name="ResourceFillWagon" type="Button" parent="VBoxContainer" unique_id=1012785838]
 layout_mode = 2
 text = "Fill Wagon"
+
+[node name="NinePatchRect" parent="." unique_id=1605977615 instance=ExtResource("1_lvpha")]
+layout_mode = 1

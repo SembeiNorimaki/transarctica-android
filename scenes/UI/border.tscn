@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://bv3w2hsg1tbeh"]
+
+[ext_resource type="Texture2D" uid="uid://cpjo1v03s8m7w" path="res://assets/borders/borders.png" id="1_xow6b"]
+
+[node name="NinePatchRect" type="NinePatchRect" unique_id=1605977615]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_xow6b")
+region_rect = Rect2(-0.04473114, -0.12638855, 244.04474, 172.12639)
+patch_margin_left = 58
+patch_margin_top = 22
+patch_margin_right = 58
+patch_margin_bottom = 22
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2

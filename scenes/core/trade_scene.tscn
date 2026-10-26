@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" uid="uid://nfn44fiqwyhr" path="res://scenes/menus/sell_menu.tscn" id="10_wiigk"]
 [ext_resource type="PackedScene" uid="uid://b4j11lbqypfcu" path="res://scenes/menus/dialog_menu.tscn" id="12_1x0sx"]
 [ext_resource type="PackedScene" uid="uid://dppit6a6oo1ok" path="res://scenes/menus/production_menu.tscn" id="15_jgirw"]
+[ext_resource type="PackedScene" uid="uid://cke7jrixhqf0x" path="res://scenes/trade_resources/crate_resource.tscn" id="17_xmr62"]
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_8c8m6"]
 size = Vector2(100, 100)
@@ -137,6 +138,10 @@ offset_top = 860.0
 offset_right = 1187.0
 offset_bottom = 964.0
 grow_horizontal = 1
+scale = Vector2(2, 2)
+
+[node name="CrateResource" parent="." unique_id=2111847387 instance=ExtResource("17_xmr62")]
+position = Vector2(540, 221)
 scale = Vector2(2, 2)
 
 [connection signal="pressed" from="CanvasLayer/UI/LeftButton" to="." method="_on_left_button_pressed"]

@@ -41,7 +41,7 @@ func _init(city_name_: String = "") -> void:
 
 
 #region setup
-# Builds the stock from GameState. TradeResources: { name: { Quantity, BuyPrice, SellPrice, MaxCapacity? } }
+# Builds the stock from GameState. TradeResources: { name: { Quantity, BuyFactor, SellFactor, MaxCapacity? } }
 func load_from_game_state(city_name_: String) -> bool:
     city_name = city_name_
     var city_data: Dictionary = GameState.get_city_by_name(city_name)
@@ -60,12 +60,23 @@ func load_from_game_state(city_name_: String) -> bool:
         if not [MODE_BOTH, MODE_BUYS, MODE_SELLS].has(mode):
             push_error("CityInventory: '%s' in %s has Mode '%s' (use Both, Buys or Sells)" % [resource_name, city_name, mode])
             mode = MODE_BOTH
-        # JSON numbers are floats, so everything goes through int()
+        
+        var buy_factor := float(data.get("BuyFactor", 1.0))
+        var sell_factor := float(data.get("SellFactor", 1.0))
+        var nominal_buy = ResourceTypes.nominal_buy_price(resource_name)
+        var nominal_sell = ResourceTypes.nominal_sell_price(resource_name)
+        if nominal_buy < 0:
+            push_error("CityInventory: '%s' in %s has no nominal price in ResourceTypes" % [resource_name, city_name])
+            nominal_buy = 0
+            nominal_sell = 0
+        # a side the place doesn't offer has price 0 (Buys: the player can't buy; Sells: can't sell)
+        var buy_price := 0 if mode == MODE_BUYS else roundi(nominal_buy * buy_factor)
+        var sell_price := 0 if mode == MODE_SELLS else roundi(nominal_sell * sell_factor)
         initialize_resource(
             resource_name,
             int(data.get("Quantity", 0)),
-            int(data.get("BuyPrice", 0)),
-            int(data.get("SellPrice", 0)),
+            buy_price,
+            sell_price,
             int(data.get("MaxCapacity", DEFAULT_MAX_CAPACITY)),
             mode)
     

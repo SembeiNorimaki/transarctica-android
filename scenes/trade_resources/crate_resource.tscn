@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://cke7jrixhqf0x"]
+
+[ext_resource type="Texture2D" uid="uid://cyvkogxfehwbw" path="res://assets/resources/crate.png" id="1_jh1tm"]
+
+[node name="CrateResource" type="Node2D" unique_id=2111847387]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1825805140]
+position = Vector2(0, -7)
+texture = ExtResource("1_jh1tm")

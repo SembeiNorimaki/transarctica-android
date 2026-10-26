@@ -1,32 +1,14 @@
 [gd_scene format=3 uid="uid://cx08pa4svcgkg"]
 
 [ext_resource type="Script" uid="uid://d08bj75a06fii" path="res://scripts/core/main_scene.gd" id="1_w2twt"]
-[ext_resource type="Texture2D" uid="uid://cpjo1v03s8m7w" path="res://assets/borders/borders.png" id="2_2siva"]
+[ext_resource type="PackedScene" uid="uid://bv3w2hsg1tbeh" path="res://scenes/UI/border.tscn" id="2_v13ds"]
 [ext_resource type="PackedScene" uid="uid://bwfey11vudgxe" path="res://scenes/menus/game_menu.tscn" id="3_v13ds"]
 
 [node name="MainScene" type="Node2D" unique_id=1503502841]
 script = ExtResource("1_w2twt")
 
 [node name="BorderLayer" type="CanvasLayer" parent="." unique_id=1722751245]
-visible = false
 
-[node name="NinePatchRect" type="NinePatchRect" parent="BorderLayer" unique_id=1070268048]
-visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = -1600.0
-offset_bottom = -720.0
-grow_horizontal = 2
-grow_vertical = 2
-scale = Vector2(3, 3)
-texture = ExtResource("2_2siva")
-region_rect = Rect2(-0.04473114, -0.12638855, 244.04474, 172.12639)
-patch_margin_left = 58
-patch_margin_top = 22
-patch_margin_right = 58
-patch_margin_bottom = 22
-axis_stretch_horizontal = 2
-axis_stretch_vertical = 2
+[node name="NinePatchRect" parent="BorderLayer" unique_id=1605977615 instance=ExtResource("2_v13ds")]
 
 [node name="GameMenu" parent="." unique_id=305956146 instance=ExtResource("3_v13ds")]

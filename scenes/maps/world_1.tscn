@@ -32,6 +32,3 @@ tile_set = ExtResource("4_xaykv")
 
 [node name="Trees" parent="." index="9" unique_id=534418288]
 tile_map_data = PackedByteArray("AAAAAAQAAAAAAAAAAAAAAAUAAAAAAAAAAAD//wcAAAAAAAAAAAD//wUAAAAAAAAAAAAAAAYAAAAAAAAAAAABAAcAAAACAAIAAAABAAgAAAACAAIAAAABAAkAAAACAAIAAAACAAgAAAACAAIAAAAAAAkAAAACAAIAAAA=")
-
-[node name="Events" parent="." index="10" unique_id=301062603]
-tile_map_data = PackedByteArray("AAAZAAkAAAAAAAAAAAA=")
