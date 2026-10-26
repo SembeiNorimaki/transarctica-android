@@ -42,6 +42,7 @@ const RESOURCES := {
     "copperore": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
     "ironingot": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
     "copperingot": {"frame": - 1, "wagon_type": "MerchandiseWagon"},
+    "woodplanks": {"frame": - 1, "wagon_type": "MerchandiseWagon"}
 }
 
 

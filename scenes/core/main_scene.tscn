@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://d08bj75a06fii" path="res://scripts/core/main_scene.gd" id="1_w2twt"]
 [ext_resource type="Texture2D" uid="uid://cpjo1v03s8m7w" path="res://assets/borders/borders.png" id="2_2siva"]
+[ext_resource type="PackedScene" uid="uid://bwfey11vudgxe" path="res://scenes/menus/game_menu.tscn" id="3_v13ds"]
 
 [node name="MainScene" type="Node2D" unique_id=1503502841]
 script = ExtResource("1_w2twt")
@@ -27,3 +28,5 @@ patch_margin_right = 58
 patch_margin_bottom = 22
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
+
+[node name="GameMenu" parent="." unique_id=305956146 instance=ExtResource("3_v13ds")]

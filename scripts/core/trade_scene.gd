@@ -26,18 +26,25 @@ signal trade_failed(message: String) # for the HUD
 # UI
 @onready var buy_menu: BuyMenu = $CanvasLayer/UI/BuyMenu
 @onready var sell_menu: SellMenu = $CanvasLayer/UI/SellMenu
+@onready var production_menu: ProductionMenu = $CanvasLayer/UI/ProductionMenu
 @onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
 @onready var exit_button: Button = $CanvasLayer/UI/ExitButton
 
-@onready var industry_slot: Marker2D = $IndustrySlot
 
+@onready var place: TradePlace = $Place
 
 const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
-const INDUSTRY_SCENE: PackedScene = preload("res://scenes/trade_resources/industry.tscn")
+
 
 # Only used when this scene is run on its own (F6), where SceneService is not calling initialize()
-const DEBUG_CITY_NAME := "Foundry"
 # const DEBUG_CITY_NAME := "Paris"
+# const DEBUG_CITY_NAME := "Foundry"
+# const DEBUG_CITY_NAME := "Central Depot"
+# const DEBUG_CITY_NAME := "Forest"
+# const DEBUG_CITY_NAME := "Iron Mine"
+# const DEBUG_CITY_NAME := "Coal Mine"
+const DEBUG_CITY_NAME := "Sawmill"
+# const DEBUG_CITY_NAME := "Workshop"
 
 
 static var _problems_reported := false
@@ -50,7 +57,6 @@ var city_name := ""
 #         return horizontal_train_manager.player_train
 
 var _initialized := false
-var industry: Industry # only exists when the city has an industry
 
 
 func _ready() -> void:
@@ -84,6 +90,8 @@ func _ready() -> void:
     buy_menu.recruit_requested.connect(_on_recruit_requested)
     city_inventory.city_recruit_amount_changed.connect(_on_city_recruit_amount_changed)
     train_inventory.unit_added.connect(_on_unit_added)
+    place.clicked.connect(_on_place_clicked)
+    production_menu.produce_requested.connect(_on_produce_requested)
 
     AudioService.play_music(MUSIC_TRADE, 0.0)
 
@@ -92,6 +100,8 @@ func _ready() -> void:
         _problems_reported = true
         for problem in ResourceTypes.find_problems():
             push_warning("ResourceTypes: %s" % problem)
+        for problem in IndustryTypes.find_problems():
+            push_warning("IndustryTypes: %s" % problem)
 
     if get_tree().current_scene == self:
         initialize(DEBUG_CITY_NAME)
@@ -126,7 +136,7 @@ func initialize(city_name_: String) -> void:
     _load_city_resources()
     _load_city_wagons()
     _load_city_units()
-    _load_city_industry()
+    _load_place()
     _update_all_wagon_prices()
     _print_inventories()
 
@@ -169,15 +179,10 @@ func _load_city_units() -> void:
         if qty > 0:
             trade_unit_manager.spawn_unit(unit_type, qty) # logs an error if it can't
 
-# Only a city with recipes has an industry to show
-func _load_city_industry() -> void:
-    if not city_inventory.has_industry():
-        return
-    industry = INDUSTRY_SCENE.instantiate() as Industry
-    industry.position = industry_slot.position
-    industry.set_title(city_name) # safe before the node is in the tree
-    industry.clicked.connect(_on_industry_clicked)
-    add_child(industry)
+# Shows the building of this place. It is only clickable when there is something to open: for now,
+# an industry.
+func _load_place() -> void:
+    place.setup(city_name, IndustryTypes.get_trade_image(city_inventory.kind), city_inventory.has_industry())
 
 #endregion
 
@@ -200,6 +205,7 @@ func _on_sell_from_wagon_requested(wagon_index: int, qty: int) -> void:
 
 
 func _on_resource_clicked(resource_name: String) -> void:
+    production_menu.close()
     if buy_menu.visible and buy_menu.current_resource == resource_name:
         buy_menu.close() # tapping the open resource again closes it
         return
@@ -214,6 +220,7 @@ func _on_resource_clicked(resource_name: String) -> void:
     _refresh_buy_menu()
 
 func _on_wagon_clicked(wagon: GenericWagon) -> void:
+    production_menu.close()
     if city_inventory.allows_rearranging():
         wagon_reorder_controller.begin_drag(wagon) # in a depot a press starts a drag, there is no trading
         return
@@ -246,6 +253,7 @@ func _on_wagon_clicked(wagon: GenericWagon) -> void:
     _refresh_sell_menu()
 
 func _on_city_wagon_clicked(wagon_type: String) -> void:
+    production_menu.close()
     if buy_menu.visible and buy_menu.current_wagon_type == wagon_type:
         buy_menu.close() # tapping the open wagon again closes it
         return
@@ -259,6 +267,7 @@ func _on_city_wagon_clicked(wagon_type: String) -> void:
     _refresh_buy_menu()
 
 func _on_city_unit_clicked(unit_type: String) -> void:
+    production_menu.close()
     if buy_menu.visible and buy_menu.current_unit_type == unit_type:
         buy_menu.close() # tapping the open soldier again closes it
         return
@@ -271,13 +280,13 @@ func _on_city_unit_clicked(unit_type: String) -> void:
         city_inventory.get_recruit_price(unit_type))
     _refresh_buy_menu()
 
-func _on_industry_clicked(_clicked_industry: Industry) -> void:
+func _on_place_clicked(_clicked_place: TradePlace) -> void:
+    if production_menu.visible:
+        production_menu.close() # tapping the open industry again closes it
+        return
     buy_menu.close() # only one menu at a time
     sell_menu.close()
-    # TODO: open the manufacturing menu. For now, only prove that the click arrives.
-    print("Industry of %s clicked. Recipes:" % city_name)
-    for recipe in city_inventory.get_recipes():
-        print("  %s: %s -> %s" % [recipe.name, recipe.inputs, recipe.outputs])
+    _show_production_menu()
 
 func _on_buy_wagon_requested(wagon_type: String) -> void:
     var result := TradeService.buy_wagon(city_inventory, train_inventory, wagon_type)
@@ -369,6 +378,28 @@ func _refresh_sell_menu() -> void:
     else:
         sell_menu.close()
 
+func _show_production_menu() -> void:
+    production_menu.show_recipes(city_name, city_inventory.get_recipes(), _recipe_batches())
+
+
+# What each recipe can do right now, in the order of the recipes
+func _recipe_batches() -> Array[int]:
+    var result: Array[int] = []
+    for i in city_inventory.get_recipes().size():
+        result.append(city_inventory.get_max_batches(i))
+    return result
+
+
+# Keeps the open menu in sync: the stock changed, so what can be produced changed
+func _refresh_production_menu() -> void:
+    if production_menu.visible:
+        production_menu.set_batches(_recipe_batches())
+
+
+func _on_produce_requested(recipe_index: int, times: int) -> void:
+    if not city_inventory.produce(recipe_index, times):
+        trade_failed.emit("The industry can't produce that now.")
+
 func _trade(resource_name: String, qty: int, buying: bool) -> void:
     var result: TradeService.Result
     if buying:
@@ -402,6 +433,7 @@ func _on_city_resource_amount_changed(resource_name: String, qty: int) -> void:
     trade_resource_manager.set_resource_qty(resource_name, qty)
     _refresh_buy_menu()
     _refresh_sell_menu()
+    _refresh_production_menu()
 
 
 func _on_wagon_resource_amount_changed(wagon_index: int, resource_name: String, qty: int) -> void:

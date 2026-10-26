@@ -484,6 +484,7 @@ func save_game(slot := -1) -> bool:
             push_error("GameState: cannot finish saving %s (error %d); the new data is in %s.tmp" % [final_path, error, final_path])
             return false
 
+    current_slot = target # F5 and the next saves go to the slot you chose
     print("GameState: saved slot %d to %s" % [target, ProjectSettings.globalize_path(dir_path)])
     return true
 

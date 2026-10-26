@@ -1,0 +1,340 @@
+TRANSARCTICA - CODE REVIEW: BUGS, REFACTORS AND ORDERING
+=========================================================
+
+Based on : your list of nodes, variables, constants, signals and functions per script,
+           plus checks against the repo (commit afbb665, which is older than your latest
+           local commits). Items marked [VERIFY] come from the list or the older repo and
+           may already be different in your version.
+Not run  : nothing here was executed in Godot.
+
+SCORE (importance, 1 to 10)
+  9-10  fix now: loses data, blocks the player, or breaks a game rule
+  7-8   fix soon: it will hurt the next features you add
+  5-6   worth doing when you touch that area
+  3-4   tidy-up, low risk
+  1-2   optional
+
+EFFORT   S = under an hour   M = a few hours   L = a day or more
+
+
+-------------------------------------------------------------------------------
+1. SUMMARY, ORDERED BY SCORE
+-------------------------------------------------------------------------------
+
+ ID    Score  Effort  Type      Title
+ ----  -----  ------  --------  ------------------------------------------------
+ FIXED  B1     9     S       BUG       The game can only be saved with the F5 key (no save on phone)
+ B2     8     S       BUG       Resource "Mode" (Buys / Sells) is never enforced in trading
+ B3     8     S       BUG       Trade failures are silent (trade_failed has no listener)
+ R1     8     L       REFACTOR  GameState does too much (save IO, cities, train, units, events...)
+ R2     8     M       REFACTOR  Inventories live in the trade scene, so other code bypasses them
+ B4     7     S       BUG       Two different pause systems (tree pause and train-manager pause)
+ R3     7     M       REFACTOR  Three copies of the slot manager, one already behaves differently
+ R4     7     M       REFACTOR  TradeScene and the buy/sell menus: mode flags as three strings
+ B5     6     S       BUG       Two Gear enums, and the horizontal train still uses strings
+ B6     6     M       RISK      Save version never changes although the format did
+ R5     6     M       REFACTOR  CityInventory and GameState repeat the same code three times
+ R6     6     M       REFACTOR  NavigationScene mixes map loading, input, HUD and events
+ R7     6     M       REFACTOR  Three different popup systems and two DialogMenu instances
+ O1     5     S       ORDER     13 temporary .tmp scene files are committed
+ B7     5     S       CLEANUP   Debug code left in (QuestUI, GameState, scenes)
+ B8     5     S       RISK      Quest dialog: the game stays paused forever if the dialog fails
+ R8     5     S       REFACTOR  The same "spritesheet frame to icon" code in five places
+ R9     5     S       REFACTOR  _is_tap is copied in GenericWagon (InputUtils already has it)
+ R10    5     M       REFACTOR  Services are injected by hand, and a missing one fails late
+ U1     5     M       UX        No way back to the main menu
+ U2     5     M       DATA      Only quests have a data validator
+ U3     5     S       UX        Quest UI font sizes (10-13) are tiny on a 2400x1080 canvas [VERIFY]
+ B9     4     S       CLEANUP   Dead code (unused functions, signals, variables)
+ O2     4     S       ORDER     Scripts folder layout
+ B10    3     S       STYLE     Untyped variables and functions
+ O3     3     S       ORDER     Order of declarations inside scripts is not consistent
+ U4     3     S       FUTURE    Texts are hard-coded in English (no tr())
+ R11    3     S       REFACTOR  Scenes built in code vs. in the editor, no clear rule
+ B11    2     S       STYLE     NO_ENTRY sentinel vector in CitiesManager
+
+
+-------------------------------------------------------------------------------
+2. BUGS AND RISKS
+-------------------------------------------------------------------------------
+
+B1  [9] [S]  The game can only be saved with the F5 key
+    Where : game_state.gd (_unhandled_key_input is the only caller of save_game)
+    Why   : A phone has no F5. On Android there is no way to save, and no autosave when
+            the app goes to the background (where Android may kill it without warning).
+    Fix   : - Call save_game() from a Save button (a small pause/options menu).
+            - Autosave when entering a city, completing a quest, and on app pause:
+              in an autoload, handle NOTIFICATION_APPLICATION_PAUSED and
+              NOTIFICATION_WM_GO_BACK_REQUEST, and call GameState.save_game().
+            - Keep F5/F9 only inside "if OS.is_debug_build()".
+
+B2  [8] [S]  Resource "Mode" (Both / Buys / Sells) has no effect
+    Where : city_inventory.gd (can_player_buy, can_player_sell)
+    Why   : Both functions exist, but nothing calls them. TradeService and the buy menu
+            never check them, so the player can buy something a place only buys, and
+            sell something a place only sells. It affects every industry.
+    Fix   : Call city.can_player_buy(resource) in TradeService.max_buyable / buy, and
+            can_player_sell in the sell functions. Return a Result such as NOT_FOR_SALE
+            and show it (see B3). Also hide or grey out the buy button in the menu.
+
+B3  [8] [S]  A refused trade gives no feedback
+    Where : trade_scene.gd (signal trade_failed is emitted 7 times, never connected)
+    Why   : On a phone the player taps and nothing happens, with no reason shown.
+            Your own next_steps.txt already lists this.
+    Fix   : Add a message Label (or a toast service with a short fade) to the trade scene
+            and connect trade_failed to it. The same service can later show "Not enough
+            coal" in the navigation scene (FuelManager.out_of_fuel exists already).
+
+B4  [7] [S]  Two pause systems
+    Where : navigation_train_manager.gd (pause / resume, immediate_stop) used by events;
+            quest_ui.gd (get_tree().paused) used by quest dialogs
+    Why   : When an event pop-up and a quest dialog open together (accepting an event can
+            offer a quest), each one unpauses what the other paused. The order of the
+            calls decides what happens.
+    Fix   : One place owns "modal UI is open": a counter (open_modal / close_modal) that
+            sets get_tree().paused only when the count goes 0 -> 1 and back. Everything
+            that blocks the game uses it: event pop-up, quest dialogs, later the menus.
+            Set process_mode = ALWAYS only on the UI nodes.
+
+B5  [6] [S]  Gear enums [VERIFY]
+    Where : navigation_train.gd (enum Gear {NEUTRAL, DRIVE}), game_constants.gd
+            (enum Gear {NEUTRAL, DRIVE, REVERSE}), horizontal_train.gd (gear := "N",
+            compared with "D", "R", "N")
+    Why   : There are two Gear enums with the same name, and the horizontal train still
+            uses strings, which is what you asked to replace.
+    Fix   : Delete the enum inside NavigationTrain and use GameConstants.Gear in both
+            trains. In HorizontalTrain change gear to a Gear and replace the string
+            comparisons. Check anything that connects to gear_changed.
+
+B6  [6] [M]  Save version
+    Where : game_state.gd (SAVE_VERSION := 1)
+    Why   : The format changed several times (train position and reversed flag, units,
+            events, flags, enemies, offered quests, city Location removed). Old saves load
+            only because every read uses .get() with a default. A change that the
+            defaults can't cover will corrupt a save silently.
+    Fix   : Bump SAVE_VERSION when the format changes, and add _migrate(data, from_version)
+            with one step per version. Tell the player when a save is too new or too old
+            (the main menu already shows "valid: false" for bad files).
+
+B7  [5] [S]  Debug code left in
+    Where : quest_ui.gd (_input, _debug_dialog), game_state.gd (F5/F9 for all builds),
+            main_scene.gd (show_menu prints the sizes), trade_scene.gd (_print_inventories),
+            navigation_scene.gd (print on spawn), navigation_scene.gd (hard-coded
+            initial_player_train_pos := Vector2i(31, 9) fallback)
+    Fix   : Remove, or put behind "if OS.is_debug_build()". _input in QuestUI also runs
+            every click for no reason.
+
+B8  [5] [S]  Quest dialogs can leave the game paused
+    Where : quest_ui.gd (_run_dialogs sets get_tree().paused = true)
+    Why   : We saw it: a failing dialog never emits closed, and the game stays paused.
+    Fix   : Check "is_instance_valid(_dialog)" before ask(). Add a timeout or a Skip
+            (Escape/back button) that calls _dialog.dismiss(). Use B4's modal counter so
+            the pause always has an owner.
+
+B9  [4] [S]  Dead code (each shows one reference: its own definition) [VERIFY]
+    - GameState.get_wagon_cargo(_wagon_idx)       a stub with an unused parameter
+    - GameState._cities_by_location                kept after the Location code was removed
+    - BuyMenu.fill_wagon_requested                 emitted, never connected
+    - TradeResourceManager: resource_buy_requested, resource_sell_requested, select_resource,
+      set_resource_can_buy, set_resource_can_sell
+    - NavigationTrainManager.camera_lock_to_engine
+    - DialogMenu.is_open
+    - CityInventory.get_all_info, has_wagon_type  (can_player_buy/sell: see B2, do not delete)
+    - TradeResource.set_price, set_visibility
+    Fix   : Delete what you do not plan to use soon. Anything you keep "for later" gets a
+            TODO line, so you can tell why it is there.
+
+B10 [3] [S]  Untyped code
+    Where : rails_overlay.gd (func _ready(), var a = ..., var b = ...), rail_service.gd
+            (constants without types), game_state.gd (var data = ..., _load_initial_cities
+            has no return type), several "var frame = ...".
+    Fix   : Project Settings > Debug > GDScript > Untyped Declaration = Warn, then fix the
+            list it shows.
+
+B11 [2] [S]  CitiesManager.NO_ENTRY sentinel (Vector2i(-999999, -999999))
+    Fix   : return a Dictionary / bool from a "has_entry_tile()" instead of a magic value.
+
+
+-------------------------------------------------------------------------------
+3. REFACTORS
+-------------------------------------------------------------------------------
+
+R1  [8] [L]  GameState does too much (655 lines, about 70 functions)
+    It holds: cities, the player train, units, enemies, money, quests, events, flags,
+    exploration, save slots, JSON reading, validation and the F5/F9 shortcuts.
+    Proposal (do it in steps, the public API can stay the same at first):
+      - SaveService (autoload or plain class): slots, write/read JSON, temp files,
+        validation, versions (see B6). GameState only asks it to save and load.
+      - Split the data into small state classes owned by GameState:
+        CitiesState, TrainState (player train + units), EnemiesState, StoryState
+        (events, flags, quests). Each has its own get/set and its own validation.
+      - Keep game_saving / game_loaded in GameState.
+    Gain  : each piece becomes readable and testable on its own. It is also where most of
+            your future changes land, so the file keeps growing otherwise.
+
+R2  [8] [M]  Inventories are Nodes inside the trade scene
+    Where : train_inventory.gd, city_inventory.gd (both under $Inventories in TradeScene)
+    Why   : Your rule is "no second path to change cargo". But the trade scene is the only
+            place that has a TrainInventory, so FuelManager writes cargo directly with
+            GameState.set_wagon_cargo, and QuestManager.claim_rewards calls
+            add_wagon_to_player_train directly. There are already three ways to change
+            the train. The industry production you are adding is the 4th.
+    Fix   : Make TrainInventory a plain class (extends RefCounted), created once and owned
+            by GameState (GameState.train_inventory). FuelManager, rewards, combat loot
+            and the industry production all use it. Do the same for CityInventory.new(...)
+            (its header comment already says it can be created in code).
+    Note  : do this before the manufacturing menu, so production is written once.
+
+R3  [7] [M]  Three copies of the same slot manager
+    Where : trade_resource_manager.gd, trade_wagon_manager.gd, trade_unit_manager.gd
+    Why   : DEFAULT_SLOTS, _slots, set_slot_positions, spawn, remove, clear and
+            _find_free_slot are the same code. They have already drifted:
+            TradeResourceManager uses _next_slot and never frees a slot, the other two
+            use _slot_of and reuse them. A resource removed from a city leaves a hole.
+    Fix   : A base class SlotManager (slots, _slot_of, claim_slot, release_slot). The three
+            managers extend it and only add what is specific (the scene they spawn, the
+            signals they relay). The industry can use it too.
+
+R4  [7] [M]  TradeScene (445 lines) and the buy/sell menus
+    Where : trade_scene.gd, buy_menu.gd, sell_menu.gd
+    Why   : - BuyMenu stores what it shows in three strings (current_resource,
+              current_wagon_type, current_unit_type), and _refresh_buy_menu branches on
+              which one is empty. A fourth kind (industry) means a fourth string.
+            - SellMenu uses nodes called ResourceBuy1 / ResourceFillWagon for its sell
+              buttons: a copy of BuyMenu with the names left behind.
+            - UNITS_PER_PRESS is defined in three files.
+            - TradeScene has about 45 functions: UI wiring, initialization and trade rules.
+    Fix   : - enum Kind { RESOURCE, WAGON, UNIT } and a single current_id in the menu.
+            - One TradeMenu scene/script (buy and sell are two modes), or a base class.
+            - Move the _on_* handlers that only forward to TradeService into a small
+              TradeController, so TradeScene is the wiring only.
+
+R5  [6] [M]  Resources, wagons and recruits repeat the same code
+    Where : city_inventory.gd (get_x / add_x / remove_x for each of the three),
+            game_state.gd (change_city_goods, change_city_wagons, change_city_recruits)
+    Fix   : One generic "stock" with a category: change_city_stock(city, category, item,
+            delta). Categories "TradeResources", "TradeWagons", "Recruits". The three
+            copies in each file become one function plus thin wrappers.
+
+R6  [6] [M]  NavigationScene (372 lines) does too many jobs
+    Where : navigation_scene.gd
+    Why   : - map loading and spawning (_load_map, _spawn_*, _build_rails_from_map)
+            - touch input: dragging, last_pos, _drag_distance, _unhandled_input,
+              _on_map_tapped. CameraService also has its own _unhandled_input for pan
+              and zoom, so dragging is handled in two places.
+            - the fuel HUD
+            - events and their pop-up
+            - DEFAULT_MAP_NAME hard-coded
+    Fix   : Extract MapLoader (map, rails, cities, trains), move the tap/drag logic to one
+            place (camera or a NavigationInput node), and keep the HUD in its own scene.
+            Store the current map name in GameState, so a second map works and saves.
+
+R7  [6] [M]  Popups
+    Where : event_popup.gd (UI built in code), dialog_menu.gd (a scene), quest_ui.gd
+            (hosts a DialogMenu), trade_scene.tscn (has its own DialogMenu instance)
+    Why   : Four ways to show "a text and some buttons", and two DialogMenu instances.
+    Fix   : One DialogService autoload that owns a single DialogMenu and offers say / ask.
+            Move the dialog code out of QuestUI (QuestUI should only show the quest list
+            and notifications). Replace EventPopup with dialog.ask(...) using choices
+            "accept" / "decline", and remove the extra instance from the trade scene.
+
+R8  [5] [S]  Spritesheet frame to icon is copied five times
+    Where : trade_resource.gd, generic_wagon.gd, merchandise_wagon.gd,
+            train_info_panel.gd (twice). All compute texture_size / (hframes, vframes)
+            and build an AtlasTexture.
+    Fix   : ResourceTypes.get_icon(resource_name) and WagonTypes.get_icon(type), cached.
+            Callers just ask for the icon.
+
+R9  [5] [S]  Tap detection copied
+    Where : generic_wagon.gd (_is_tap) vs input_utils.gd (is_tap)
+    Why   : Same logic today, but two places to keep in sync (the touch-emulation rule
+            especially). TradeUnit, TradeResource and Industry already use InputUtils.
+    Fix   : Delete _is_tap in GenericWagon and call InputUtils.is_tap(event).
+
+R10 [5] [S]  Dependency injection
+    Where : navigation_scene.gd (_inject_services, about 15 assignments), trade_scene.gd
+    Why   : A forgotten line leaves a null variable that fails later, far from the cause.
+    Fix   : Give each manager a setup(...) with typed arguments, or call a
+            _validate_dependencies() at the start of the scene that asserts the injected
+            variables are not null (debug builds only).
+
+R11 [3] [S]  Scene vs code
+    Where : _create_event_nodes, EventPopup, QuestUI rows
+    Fix   : A simple rule: fixed layout goes in the .tscn, only lists that change at
+            runtime are built in code. Move EventsManager into the scene tree.
+
+
+-------------------------------------------------------------------------------
+4. ORDER AND ORGANIZATION
+-------------------------------------------------------------------------------
+
+O1  [5] [S]  Temporary files in the repo
+    13 files named *.tmp are tracked by git (scenes/core/*.tscn*.tmp and
+    scenes/utils/terrain_loader.tscn*.tmp). Godot writes them while saving a scene.
+    Fix   : git rm them, and add "*.tmp" to .gitignore (it currently has only .godot/ and
+            /android/).
+
+O2  [4] [S]  Folder layout
+    Today                                  Suggested
+    -------------------------------------  ----------------------------------------
+    scripts/ (loose: quest.gd,             scripts/data/    quest.gd, quest_objective.gd,
+      quest_objective.gd, game_constants,                   characters.gd, game_constants.gd
+      characters.gd, next_steps.txt)       docs/            next_steps.txt
+    scripts/menus + scripts/UI             scripts/ui/      one folder for every menu,
+      (two UI folders)                                      popup and panel
+    scripts/trade_resources/ (holds        scripts/trade/   trade_resource, trade_unit,
+      trade_unit and industry)                              industry, trade_service
+    scripts/services/ (mix of nodes        scripts/services/  nodes with state (audio, camera,
+      and static helpers)                   rail...) and scripts/utils/ for input_utils,
+                                            trade_service-like static helpers
+    Move files inside the Godot FileSystem dock (it updates every reference), never
+    in the file explorer.
+
+O3  [3] [S]  Order inside a script
+    Godot's style guide order: class_name / extends, signals, enums, constants, @export,
+    public vars, private vars, @onready, functions (_init, _ready, then public, then
+    private). Right now several scripts (menu_scene, buy_menu, sell_menu, camera_service,
+    navigation_wagon, trade_scene) put @onready before the signals or constants, and
+    others do not. Choose one order and apply it when you touch a file.
+
+
+-------------------------------------------------------------------------------
+5. GAME AND DATA
+-------------------------------------------------------------------------------
+
+U1  [5] [M]  No way back to the main menu
+    main_scene.gd has a TODO for it. You also need it for "Save and quit" (see B1).
+    Fix   : free the navigation scene, the city scene and the combat scene, then
+            show_menu(). Also handle the Android Back button.
+
+U2  [5] [M]  Data validation
+    QuestManager.find_database_problems and ResourceTypes.find_problems are the right
+    idea. Cities (recipes, recruits, wagons, modes), enemy_trains.json, events.json,
+    characters.json and units.json have none.
+    Fix   : One DataValidator that runs all of them at startup in debug builds and prints
+            a single list. It catches typos in JSON before you meet them in the game.
+
+U3  [5] [S]  Quest UI font sizes [VERIFY on a phone]
+    quest_ui.gd uses sizes 10 to 13 on a 2400x1080 canvas. After stretching, text this
+    small is hard to read on a phone.
+    Fix   : Check on the device. If it is small, define sizes in a Theme and use them.
+            This ties in with the custom font and theme work you started.
+
+U4  [3] [S]  Localization
+    All texts are English strings in the code (TradeService.result_text, buttons,
+    notifications). If you may ever want a second language, use tr("KEY") now: adding it
+    later means touching every file.
+
+
+-------------------------------------------------------------------------------
+6. SUGGESTED ORDER OF WORK
+-------------------------------------------------------------------------------
+
+ Step 1  (one evening, no risk)   B1, B2, B3, O1, B7, R9, B8
+ Step 2  (before the industry menu) R2 (inventories out of the scene), then R3, R4
+ Step 3  (clean the base)         B4 (modal counter) with R7 (one DialogService), B5, B6
+ Step 4  (when GameState hurts)   R1, R5
+ Step 5  (when you touch them)    R6, R8, R10, U1, U2, O2, O3
+
+ What to leave alone: the state machine, ExplorationService, GridService, RailService,
+ AudioService and TradeService. They are small, typed and have a clear job.

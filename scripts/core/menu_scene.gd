@@ -1,7 +1,7 @@
 extends Control
 class_name MainMenu
 # The first screen. It only asks the player what to do and emits it: MainScene decides what
-# happens next. The LoadMenu is a child of this scene (hidden until it is opened).
+# happens next. The SlotsMenu is a child of this scene (hidden until it is opened).
 #
 # The child nodes are found by unique name ("Access as Unique Name", the % icon).
 
@@ -10,7 +10,7 @@ signal load_game_requested(slot: int)
 
 @onready var new_game_button: Button = $VBoxContainer/NewGameButton
 @onready var load_game_button: Button = $VBoxContainer/LoadGameButton
-@onready var load_menu: LoadMenu = $LoadMenu
+@onready var slots_menu: SlotsMenu = $SlotsMenu
 # Optional: a Label named MessageLabel, for errors
 @onready var message_label: Label = get_node_or_null("%MessageLabel")
 
@@ -18,8 +18,8 @@ signal load_game_requested(slot: int)
 func _ready() -> void:
     new_game_button.pressed.connect(_on_new_game_pressed)
     load_game_button.pressed.connect(_on_load_game_pressed)
-    load_menu.slot_chosen.connect(_on_slot_chosen)
-    load_menu.closed.connect(_refresh)
+    slots_menu.slot_chosen.connect(_on_slot_chosen)
+    slots_menu.closed.connect(_refresh)
     if message_label != null:
         message_label.text = ""
     _refresh()
@@ -43,20 +43,20 @@ func show_message(text: String) -> void:
 # A new game goes into the first empty slot. If all of them are used, the player picks one to overwrite.
 # (The old save stays on disk until the new game is saved over it.)
 func _on_new_game_pressed() -> void:
-    load_menu.open(LoadMenu.Mode.NEW_GAME)
+    slots_menu.open(SlotsMenu.Mode.NEW_GAME)
     # var slot = GameState.find_free_slot()
     # if slot > 0:
     #     new_game_requested.emit(slot)
     # else:
-    #     load_menu.open(LoadMenu.Mode.NEW_GAME)
+    #     slots_menu.open(SlotsMenu.Mode.NEW_GAME)
 
 
 func _on_load_game_pressed() -> void:
-    load_menu.open(LoadMenu.Mode.LOAD)
+    slots_menu.open(SlotsMenu.Mode.LOAD)
 
 
 func _on_slot_chosen(slot: int) -> void:
-    if load_menu.mode == LoadMenu.Mode.NEW_GAME:
+    if slots_menu.mode == SlotsMenu.Mode.NEW_GAME:
         new_game_requested.emit(slot)
     else:
         load_game_requested.emit(slot)

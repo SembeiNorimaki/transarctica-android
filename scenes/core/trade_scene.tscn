@@ -4,6 +4,7 @@
 [ext_resource type="TileSet" uid="uid://d2uvx33jrelml" path="res://assets/tilesets/navigation_terrain.tres" id="2_io20h"]
 [ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="3_jdot1"]
 [ext_resource type="Script" uid="uid://brgr2wy32ruvh" path="res://scripts/services/trade_service.gd" id="4_05ctg"]
+[ext_resource type="PackedScene" uid="uid://bm20b6vb7qcvn" path="res://scenes/trade_resources/trade_place.tscn" id="4_keppn"]
 [ext_resource type="Script" uid="uid://bkns6sat14dwr" path="res://scripts/managers/horizontal_train_manager.gd" id="5_05ctg"]
 [ext_resource type="Script" uid="uid://jvn6ykj3gndt" path="res://scripts/managers/trade_resource_manager.gd" id="6_e4mxe"]
 [ext_resource type="Script" uid="uid://brpr1wiygu1w" path="res://scripts/managers/trade_wagon_manager.gd" id="7_2djvw"]
@@ -14,6 +15,7 @@
 [ext_resource type="Script" uid="uid://bybumlmye14d" path="res://scripts/managers/trade_unit_manager.gd" id="9_pelun"]
 [ext_resource type="PackedScene" uid="uid://nfn44fiqwyhr" path="res://scenes/menus/sell_menu.tscn" id="10_wiigk"]
 [ext_resource type="PackedScene" uid="uid://b4j11lbqypfcu" path="res://scenes/menus/dialog_menu.tscn" id="12_1x0sx"]
+[ext_resource type="PackedScene" uid="uid://dppit6a6oo1ok" path="res://scenes/menus/production_menu.tscn" id="15_jgirw"]
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_8c8m6"]
 size = Vector2(100, 100)
@@ -39,6 +41,9 @@ scale = Vector2(2, 2)
 [node name="WagonContainer" type="Node2D" parent="." unique_id=1168710875]
 
 [node name="UnitContainer" type="Node2D" parent="." unique_id=1655464461]
+
+[node name="Place" parent="." unique_id=1357398211 instance=ExtResource("4_keppn")]
+position = Vector2(1175, 691)
 
 [node name="Services" type="Node" parent="." unique_id=1630094170]
 
@@ -86,6 +91,11 @@ layout_mode = 0
 visible = false
 layout_mode = 0
 
+[node name="ProductionMenu" parent="CanvasLayer/UI" unique_id=880084716 instance=ExtResource("15_jgirw")]
+layout_mode = 0
+offset_right = 50.0
+offset_bottom = 62.0
+
 [node name="PlayerMoney" type="Label" parent="CanvasLayer/UI" unique_id=1849574525]
 layout_mode = 0
 offset_right = 40.0
@@ -128,9 +138,6 @@ offset_right = 1187.0
 offset_bottom = 964.0
 grow_horizontal = 1
 scale = Vector2(2, 2)
-
-[node name="IndustrySlot" type="Marker2D" parent="." unique_id=1816466956]
-position = Vector2(1000, 500)
 
 [connection signal="pressed" from="CanvasLayer/UI/LeftButton" to="." method="_on_left_button_pressed"]
 [connection signal="pressed" from="CanvasLayer/UI/RightButton" to="." method="_on_right_button_pressed"]

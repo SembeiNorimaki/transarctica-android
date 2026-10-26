@@ -69,3 +69,13 @@ func leave_combat() -> void:
     if is_instance_valid(navigation_scene):
         navigation_scene.end_combat(_combat_enemy)
     _combat_enemy = null
+
+# Forgets the running game: for when it is thrown away (loading another one, back to the menu)
+func reset() -> void:
+    for scene in [city_scene, combat_scene]:
+        if is_instance_valid(scene):
+            scene.queue_free()
+    city_scene = null
+    combat_scene = null
+    _combat_enemy = null
+    navigation_scene = null

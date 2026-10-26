@@ -1,0 +1,80 @@
+[gd_scene format=3 uid="uid://bwfey11vudgxe"]
+
+[ext_resource type="Script" uid="uid://t5rc2cqwren2" path="res://scripts/menus/game_menu.gd" id="1_4jux2"]
+[ext_resource type="PackedScene" uid="uid://b2bknxxoewqin" path="res://scenes/menus/slots_menu.tscn" id="2_q0jvu"]
+
+[node name="GameMenu" type="CanvasLayer" unique_id=305956146]
+process_mode = 3
+layer = 50
+script = ExtResource("1_4jux2")
+
+[node name="OpenButton" type="Button" parent="." unique_id=1409593623]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -53.0
+offset_bottom = 31.0
+grow_horizontal = 0
+text = "Menu
+"
+
+[node name="Overlay" type="Control" parent="." unique_id=922140029]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="Overlay" unique_id=1820183353]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.13333334)
+
+[node name="CenterContainer" type="CenterContainer" parent="Overlay" unique_id=210230790]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ButtonsBox" type="VBoxContainer" parent="Overlay/CenterContainer" unique_id=405623040]
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="ContinueButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=1579111580]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+text = "Continue Game"
+
+[node name="SaveButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=263993064]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+text = "Save Game"
+
+[node name="LoadButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=492478753]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+text = "Load Game"
+
+[node name="SettingsButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=2005304827]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+text = "Settings"
+
+[node name="ExitButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=1902864016]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+text = "Exit Game"
+
+[node name="MessageLabel" type="Label" parent="Overlay/CenterContainer/ButtonsBox" unique_id=1086532446]
+layout_mode = 2
+
+[node name="SlotsMenu" parent="Overlay" unique_id=515437966 instance=ExtResource("2_q0jvu")]
+layout_mode = 1

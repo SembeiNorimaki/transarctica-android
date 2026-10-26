@@ -5,6 +5,8 @@ extends Node
 #
 # The navigation scene must NOT be placed in this scene in the editor: it is created in _start_game().
 
+@onready var game_menu: GameMenu = $GameMenu
+
 const MENU_SCENE: PackedScene = preload("res://scenes/core/menu_scene.tscn") # adjust the paths
 const NAVIGATION_SCENE: PackedScene = preload("res://scenes/core/navigation_scene.tscn")
 
@@ -13,6 +15,7 @@ var _navigation: Node
 
 
 func _ready() -> void:
+    game_menu.load_requested.connect(_on_ingame_load_requested)
     show_menu()
 
 
@@ -20,6 +23,7 @@ func _ready() -> void:
 # scene (SceneService.city_scene / combat_scene), before showing it again.
 func show_menu() -> void:
     QuestUI.hide() # the quest list belongs to the game, not to the menu
+    game_menu.hide() # the game menu belongs to the game, not to the main menu
     _menu = MENU_SCENE.instantiate() as MainMenu
     add_child(_menu)
     _menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -50,6 +54,30 @@ func _start_game() -> void:
     _menu.queue_free()
     _menu = null
     QuestUI.show()
+    game_menu.show()
     _navigation = NAVIGATION_SCENE.instantiate()
     _navigation.name = "NavigationScene"
     add_child(_navigation)
+
+# Loading from the game menu: the running game is thrown away and built again from the slot,
+# because the trains, the map and the cities are only created when a game starts.
+func _on_ingame_load_requested(slot: int) -> void:
+    var info := GameState.get_slot_info(slot)
+    if not (info.get("exists", false) and info.get("valid", false)):
+        game_menu.show_message("Slot %d can't be loaded (see the Debugger)." % slot)
+        return # the running game is not touched
+
+    game_menu.close_menu(true)
+    _unload_game()
+    if GameState.load_game(slot):
+        _start_game()
+    else:
+        show_menu() # it should not happen after the check above, but the old game is already gone
+
+
+func _unload_game() -> void:
+    SceneService.reset()
+    if is_instance_valid(_navigation):
+        remove_child(_navigation) # now, so the new scene can take the name "NavigationScene"
+        _navigation.queue_free()
+    _navigation = null

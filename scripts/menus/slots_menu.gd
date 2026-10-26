@@ -1,24 +1,22 @@
 extends Control
-class_name LoadMenu
-# The four save slots. Each button shows what is in its slot. It has two modes:
+class_name SlotsMenu
+# The four save slots. Each button shows what is in its slot. It has three modes:
 #   LOAD:     only slots with a save can be chosen
+#   SAVE:     every slot can be chosen (to save the game in it, overwriting what was there)
 #   NEW_GAME: every slot can be chosen (to start a new game in it, overwriting what was there)
-# It only emits the chosen slot: MainMenu decides what to do with it.
-#
-# The child nodes are found by unique name ("Access as Unique Name", the % icon):
-# Slot1, Slot2, Slot3, Slot4, and optionally BackButton and Title.
+# It only emits the chosen slot: whoever opened it decides what to do with it.
 
 signal slot_chosen(slot: int)
 signal closed
 
-enum Mode {LOAD, NEW_GAME}
+enum Mode {LOAD, NEW_GAME, SAVE}
 
 @onready var slot_buttons: Array[Button] = [
-    $VBoxContainer/Slot1Button, 
-    $VBoxContainer/Slot2Button, 
-    $VBoxContainer/Slot3Button, 
+    $VBoxContainer/Slot1Button,
+    $VBoxContainer/Slot2Button,
+    $VBoxContainer/Slot3Button,
     $VBoxContainer/Slot4Button]
-@onready var back_button: Button = get_node_or_null("%BackButton")
+@onready var back_button: Button = $VBoxContainer/BackButton
 @onready var title_label: Label = get_node_or_null("%Title")
 
 var mode := Mode.LOAD
@@ -35,7 +33,13 @@ func _ready() -> void:
 func open(new_mode := Mode.LOAD) -> void:
     mode = new_mode
     if title_label != null:
-        title_label.text = "Load game" if mode == Mode.LOAD else "Choose a slot (it will be overwritten)"
+        match mode:
+            Mode.LOAD:
+                title_label.text = "Load game"
+            Mode.SAVE:
+                title_label.text = "Save game (the slot will be overwritten)"
+            Mode.NEW_GAME:
+                title_label.text = "Choose a slot (it will be overwritten)"
     refresh()
     show()
 

@@ -29,6 +29,7 @@ const MODE_SELLS := "Sells" # the place only SELLS it: the player can buy it, no
 
 
 var place_type := "City" # the "Type" in the JSON: "City" or "Industry"
+var kind := "City" # "Kind" in the JSON (Sawmill, Foundry...), or the Type when there is none
 var city_name := ""
 var recipes: Array[Dictionary] = [] # [{name, inputs: {resource: qty}, outputs: {resource: qty}}]
 var resources := {} # resource_name -> {qty, buy_price, sell_price, max_capacity}
@@ -45,8 +46,9 @@ func load_from_game_state(city_name_: String) -> bool:
     city_name = city_name_
     var city_data: Dictionary = GameState.get_city_by_name(city_name)
     place_type = str(city_data.get("Type", "City"))
+    kind = str(city_data.get("Kind", place_type))
     if city_data.is_empty():
-        push_error("CityInventory: city '%`s' not found in GameState" % city_name)
+        push_error("CityInventory: city '%s' not found in GameState" % city_name)
         return false
 
     # read resources
@@ -64,7 +66,8 @@ func load_from_game_state(city_name_: String) -> bool:
             int(data.get("Quantity", 0)),
             int(data.get("BuyPrice", 0)),
             int(data.get("SellPrice", 0)),
-            int(data.get("MaxCapacity", DEFAULT_MAX_CAPACITY)))
+            int(data.get("MaxCapacity", DEFAULT_MAX_CAPACITY)),
+            mode)
     
     # read wagons
     wagons.clear()
@@ -92,7 +95,9 @@ func load_from_game_state(city_name_: String) -> bool:
         
     # read recipes
     recipes.clear()
-    for recipe_data in city_data.get("Recipes", []):
+    if not IndustryTypes.exists(kind):
+        push_error("CityInventory: '%s' has the unknown Kind '%s'" % [city_name, kind])
+    for recipe_data in IndustryTypes.get_recipes(kind):
         _add_recipe(recipe_data)
     return true
 
@@ -197,9 +202,11 @@ func get_recruit_price(unit_type: String) -> int:
 #region changes
 func _add_recipe(recipe_data: Dictionary) -> void:
     var recipe_name := str(recipe_data.get("Name", "?"))
-    var inputs := _read_amounts(recipe_data.get("Inputs", {}), recipe_name)
+    var raw_inputs: Dictionary = recipe_data.get("Inputs", {})
+    var inputs := _read_amounts(raw_inputs, recipe_name)
     var outputs := _read_amounts(recipe_data.get("Outputs", {}), recipe_name)
-    if inputs.is_empty() or outputs.is_empty():
+    var inputs_ok := raw_inputs.is_empty() or not inputs.is_empty() # no inputs is fine: a mine, a forest
+    if not inputs_ok or outputs.is_empty():
         push_error("CityInventory: recipe '%s' in %s needs valid Inputs and Outputs, so it was skipped" % [recipe_name, city_name])
         return
     recipes.append({"name": recipe_name, "inputs": inputs, "outputs": outputs})
@@ -273,4 +280,29 @@ func _apply_change(resource_name: String, delta: int) -> void:
     info["qty"] += delta
     GameState.change_city_goods(city_name, resource_name, delta)
     city_resource_amount_changed.emit(resource_name, info["qty"])
+
+# How many times a recipe can run right now: limited by the inputs in stock and by the free space
+# for the outputs. A recipe with no inputs (a mine) is limited by the space only.
+func get_max_batches(recipe_index: int) -> int:
+    if recipe_index < 0 or recipe_index >= recipes.size():
+        return 0
+    var recipe: Dictionary = recipes[recipe_index]
+    var times := 1000000
+    for resource_name in recipe.inputs:
+        times = mini(times, floori(float(get_available_qty(resource_name)) / recipe.inputs[resource_name]))
+    for resource_name in recipe.outputs:
+        times = mini(times, floori(float(get_free_capacity(resource_name)) / recipe.outputs[resource_name]))
+    return maxi(times, 0)
+
+
+# Runs a recipe `times` times. Returns false, changing nothing, if the stock or the space is not enough.
+func produce(recipe_index: int, times := 1) -> bool:
+    if times <= 0 or times > get_max_batches(recipe_index):
+        return false
+    var recipe: Dictionary = recipes[recipe_index]
+    for resource_name in recipe.inputs:
+        remove_resource_amount(resource_name, recipe.inputs[resource_name] * times)
+    for resource_name in recipe.outputs:
+        add_resource_amount(resource_name, recipe.outputs[resource_name] * times)
+    return true
 #endregion
