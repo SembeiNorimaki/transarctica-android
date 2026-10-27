@@ -49,7 +49,8 @@ var event_popup: EventPopup
 var _open_event := {} # the event the pop-up is showing
 
 # TODO: This values should be loaded from somewhere else
-const DEFAULT_MAP_NAME: String = "world_test"
+const DEFAULT_MAP_NAME: String = "world_1"
+# const DEFAULT_MAP_NAME: String = "world_test"
 
 # This should be read from navigationtrainmanager.playerTrain
 var initial_player_train_pos = Vector2i(31, 9)
@@ -76,6 +77,10 @@ func _ready() -> void:
     process_mode = Node.PROCESS_MODE_INHERIT
     loading_screen.finish()
 
+func _process(_delta: float) -> void:
+    var cam := camera_service.cam
+    var view_size := get_viewport_rect().size / cam.zoom
+    hud.minimap.set_view_rect(Rect2(cam.get_screen_center_position() - view_size * 0.5, view_size))
 
 func suspend() -> void:
     process_mode = Node.PROCESS_MODE_DISABLED # stops _process, _input and all children
@@ -122,6 +127,7 @@ func _wire_signals() -> void:
     navigation_train_manager.trains_collided.connect(_on_trains_collided)
     navigation_train_manager.player_tile_changed.connect(events_manager.on_player_tile_changed)
     navigation_train_manager.player_driving_changed.connect(hud.set_driving)
+    navigation_train_manager.player_tile_changed.connect(hud.minimap.set_player_tile)
     # navigation_train_manager.player_tile_changed.connect(_on_player_tile_changed)
 
     rail_service.rail_changed.connect(_on_rail_changed)
@@ -185,8 +191,8 @@ func _load_map(map_name: String) -> void:
     navigation_train_manager.clear_trains()
     rail_service.clear()
 
-    await loading_screen.report(0.50, "Preparing the fog...")
-    await exploration_service.setup(map_name, terrain.get_used_cells(), _report_fog) # before _spawn_trains_from_map
+    # await loading_screen.report(0.50, "Preparing the fog...")
+    # await exploration_service.setup(map_name, terrain.get_used_cells(), _report_fog) # before _spawn_trains_from_map
 
     await loading_screen.report(0.85, "Building the rails...")
     _build_rails_from_map(new_map.get_node("Rails"))
@@ -199,8 +205,21 @@ func _load_map(map_name: String) -> void:
 
     await loading_screen.report(0.97, "Placing the trains...")
     _spawn_trains_from_map(new_map.get_node("Trains"))
+
+    await loading_screen.report(0.98, "Building the minimap...")
+    _build_minimap(new_map)
     await loading_screen.report(1.0, "Done")
 
+# The picture of the map is made once, after the rails and the cities exist
+func _build_minimap(new_map: Node2D) -> void:
+    var levels: Array = []
+    for layer_name in ["Terrain-1", "Terrain", "Terrain+1"]:
+        levels.append((new_map.get_node(layer_name) as TileMapLayer).get_used_cells())
+    hud.minimap.build(grid_service, levels, rail_service.rails.keys(), cities_manager.cities.keys())
+
+    var player_train := navigation_train_manager.player_train
+    if is_instance_valid(player_train) and not player_train.wagons.is_empty():
+        hud.minimap.set_player_tile(player_train.wagons[0].current_tile)
 
 # The fog is the heaviest step, it reports by itself while it works (0.50 to 0.85)
 func _report_fog(fraction: float) -> void:

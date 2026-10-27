@@ -42,11 +42,11 @@ const RESOURCES := {
     "copper": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 10, "sell": 8},
     "wolfmeat": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 8, "sell": 6},
     "iron": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 12, "sell": 10},
-    "ironore": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 4, "sell": 3},
+    "ironore": {"frame": 23, "wagon_type": "MerchandiseWagon", "buy": 4, "sell": 3},
     "copperore": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 4, "sell": 3},
-    "ironingot": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 14, "sell": 12},
+    "ironingot": {"frame": 21, "wagon_type": "MerchandiseWagon", "buy": 14, "sell": 12},
     "copperingot": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 12, "sell": 10},
-    "woodplanks": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 9, "sell": 8}
+    "woodplanks": {"frame": 22, "wagon_type": "MerchandiseWagon", "buy": 9, "sell": 8}
 }
 
 

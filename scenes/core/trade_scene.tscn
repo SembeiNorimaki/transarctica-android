@@ -5,8 +5,8 @@
 [ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="3_jdot1"]
 [ext_resource type="Script" uid="uid://brgr2wy32ruvh" path="res://scripts/services/trade_service.gd" id="4_05ctg"]
 [ext_resource type="PackedScene" uid="uid://bm20b6vb7qcvn" path="res://scenes/trade_resources/trade_place.tscn" id="4_keppn"]
-[ext_resource type="Script" uid="uid://bkns6sat14dwr" path="res://scripts/managers/horizontal_train_manager.gd" id="5_05ctg"]
 [ext_resource type="Script" uid="uid://jvn6ykj3gndt" path="res://scripts/managers/trade_resource_manager.gd" id="6_e4mxe"]
+[ext_resource type="PackedScene" uid="uid://c38h40g7yk2nx" path="res://scenes/managers/horizontal_train_manager.tscn" id="6_xmr62"]
 [ext_resource type="Script" uid="uid://brpr1wiygu1w" path="res://scripts/managers/trade_wagon_manager.gd" id="7_2djvw"]
 [ext_resource type="Script" uid="uid://bo4vcuwauepxj" path="res://scripts/inventories/city_inventory.gd" id="7_oh1aj"]
 [ext_resource type="Script" uid="uid://b7xt2vmxgj1lt" path="res://scripts/managers/wagon_reorder_controller.gd" id="8_ciyb7"]
@@ -53,8 +53,7 @@ script = ExtResource("4_05ctg")
 
 [node name="Managers" type="Node" parent="." unique_id=537888426]
 
-[node name="HorizontalTrainManager" type="Node" parent="Managers" unique_id=19362582]
-script = ExtResource("5_05ctg")
+[node name="HorizontalTrainManager" parent="Managers" unique_id=60617838 instance=ExtResource("6_xmr62")]
 
 [node name="TradeResourceManager" type="Node" parent="Managers" unique_id=1304254149]
 script = ExtResource("6_e4mxe")
@@ -93,6 +92,7 @@ visible = false
 layout_mode = 0
 
 [node name="ProductionMenu" parent="CanvasLayer/UI" unique_id=880084716 instance=ExtResource("15_jgirw")]
+visible = false
 layout_mode = 0
 offset_right = 50.0
 offset_bottom = 62.0

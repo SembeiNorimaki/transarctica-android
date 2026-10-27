@@ -17,7 +17,7 @@ texture = ExtResource("3_5bhlm")
 position = Vector2(-27, 20)
 texture = ExtResource("4_o4x2o")
 hframes = 3
-vframes = 7
+vframes = 10
 
 [node name="ResourceQty" type="Label" parent="ResourceInfo" index="1" unique_id=1320801498]
 offset_left = 28.0

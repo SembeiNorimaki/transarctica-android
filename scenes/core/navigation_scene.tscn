@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cqs53rwxbpqva"]
 
 [ext_resource type="Script" uid="uid://baevny3r2q51o" path="res://scripts/core/navigation_scene.gd" id="1_2bgtl"]
-[ext_resource type="PackedScene" uid="uid://bxupdeovv64rc" path="res://scenes/maps/world_test.tscn" id="2_6eg84"]
+[ext_resource type="PackedScene" uid="uid://cm3taqyltqkqe" path="res://scenes/maps/world_1.tscn" id="2_pcfji"]
 [ext_resource type="Script" uid="uid://b4tva1gkpsvfi" path="res://scripts/services/camera_service.gd" id="5_bopww"]
 [ext_resource type="Script" uid="uid://1lsfccayubl3" path="res://scripts/services/rail_service.gd" id="5_wk2tj"]
 [ext_resource type="Script" uid="uid://c4j0gdvnpybqr" path="res://scripts/services/exploration_service.gd" id="6_mqu6x"]
@@ -33,8 +33,7 @@ script = ExtResource("1_2bgtl")
 
 [node name="MapRoot" type="Node2D" parent="." unique_id=2144155385]
 
-[node name="WorldTest" parent="MapRoot" unique_id=1195897361 instance=ExtResource("2_6eg84")]
-position = Vector2(3997, -3286)
+[node name="World1" parent="MapRoot" unique_id=1301367354 instance=ExtResource("2_pcfji")]
 
 [node name="Services" type="Node" parent="." unique_id=974117156]
 
@@ -83,3 +82,4 @@ script = ExtResource("9_43f6w")
 [node name="NavigationHUD" parent="." unique_id=627801967 instance=ExtResource("13_6eg84")]
 
 [node name="LoadingScreen" parent="." unique_id=1455289540 instance=ExtResource("14_pcfji")]
+visible = false

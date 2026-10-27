@@ -11,7 +11,7 @@ var navigation_scene: NavigationScene
 
 # If trade_scene.gd has a class_name (e.g. TradeScene), use it as the type here.
 var city_scene: Node
-var combat_scene: Node
+var combat_scene: CombatScene
 var _combat_enemy: NavigationTrain
 
 
@@ -57,9 +57,9 @@ func enter_combat(enemy_train: NavigationTrain) -> void:
         return
     navigation_scene.suspend()
     _combat_enemy = enemy_train
-    combat_scene = COMBAT_SCENE.instantiate()
+    combat_scene = COMBAT_SCENE.instantiate() as CombatScene
     get_tree().root.add_child(combat_scene)
-    # TODO: combat_scene.initialize(...) with the two trains' data, once the scene exists
+    combat_scene.initialize(enemy_train.id) # NavigationTrain.id is the id in GameState
 
 func leave_combat() -> void:
     if combat_scene == null:

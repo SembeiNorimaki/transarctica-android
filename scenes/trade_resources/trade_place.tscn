@@ -1,9 +1,7 @@
 [gd_scene format=3 uid="uid://bm20b6vb7qcvn"]
 
 [ext_resource type="Script" uid="uid://kucfmbd1jwf8" path="res://scripts/trade_resources/trade_place.gd" id="1_hhoyq"]
-
-[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_1jkj3"]
-size = Vector2(200, 200)
+[ext_resource type="Texture2D" uid="uid://cijp768xn3460" path="res://assets/industries/navigation/Chemical.png" id="2_nfpii"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1jkj3"]
 size = Vector2(188, 187)
@@ -12,7 +10,7 @@ size = Vector2(188, 187)
 script = ExtResource("1_hhoyq")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1138030671]
-texture = SubResource("PlaceholderTexture2D_1jkj3")
+texture = ExtResource("2_nfpii")
 
 [node name="Area2D" type="Area2D" parent="." unique_id=1186590072]
 

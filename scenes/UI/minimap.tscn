@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/UI/minimap.gd" id="1_mm"]
+
+[node name="Minimap" type="Control"]
+clip_contents = true
+custom_minimum_size = Vector2(320, 160)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 320.0
+offset_bottom = 160.0
+texture_filter = 1
+script = ExtResource("1_mm")

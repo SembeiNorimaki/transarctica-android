@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://b2bknxxoewqin"]
 
 [ext_resource type="Script" uid="uid://cllwkvlwmssfp" path="res://scripts/menus/slots_menu.gd" id="1_a71ho"]
+[ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="2_ak2qv"]
 
 [node name="SlotsMenu" type="Control" unique_id=515437966]
 layout_mode = 3
@@ -30,24 +31,34 @@ theme_override_constants/separation = 24
 [node name="Slot1Button" type="Button" parent="VBoxContainer" unique_id=588242105]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("2_ak2qv")
+theme_override_font_sizes/font_size = 32
 text = "Slot 1"
 
 [node name="Slot2Button" type="Button" parent="VBoxContainer" unique_id=1651166010]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("2_ak2qv")
+theme_override_font_sizes/font_size = 32
 text = "Slot 2"
 
 [node name="Slot3Button" type="Button" parent="VBoxContainer" unique_id=1659769632]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("2_ak2qv")
+theme_override_font_sizes/font_size = 32
 text = "Slot 3"
 
 [node name="Slot4Button" type="Button" parent="VBoxContainer" unique_id=531994214]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("2_ak2qv")
+theme_override_font_sizes/font_size = 32
 text = "Slot 4"
 
 [node name="BackButton" type="Button" parent="VBoxContainer" unique_id=832691542]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("2_ak2qv")
+theme_override_font_sizes/font_size = 32
 text = "Back"

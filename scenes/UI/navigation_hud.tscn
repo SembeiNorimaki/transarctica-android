@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://cal2c8vywav7v" path="res://assets/button_gear.png" id="2_dn2qc"]
 [ext_resource type="Texture2D" uid="uid://bmo51avdbudms" path="res://assets/tilesets/imgs/button_gear.png" id="2_n0pre"]
 [ext_resource type="Script" uid="uid://d01c6l3glp7jk" path="res://scripts/UI/event_popup.gd" id="2_popup"]
+[ext_resource type="PackedScene" path="res://scenes/UI/minimap.tscn" id="4_jag7j"]
 
 [node name="NavigationHUD" type="CanvasLayer" unique_id=627801967]
 script = ExtResource("1_hud")
@@ -100,6 +101,20 @@ mouse_filter = 2
 
 [node name="ButtonRight" type="Button" parent="Root/BottomBar/HBoxContainer" unique_id=1167849398]
 layout_mode = 2
+
+[node name="Minimap" parent="Root" unique_id=479387543 instance=ExtResource("4_jag7j")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -160.0
+offset_top = -160.0
+offset_right = 160.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="EventPopup" type="Control" parent="Root" unique_id=403431159]
 layout_mode = 1

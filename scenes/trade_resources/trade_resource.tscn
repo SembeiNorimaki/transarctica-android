@@ -12,7 +12,8 @@ script = ExtResource("1_8cwai")
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1729581738]
 texture = ExtResource("1_g5iax")
 hframes = 3
-vframes = 7
+vframes = 10
+frame = 21
 
 [node name="Area2D" type="Area2D" parent="." unique_id=294603995]
 

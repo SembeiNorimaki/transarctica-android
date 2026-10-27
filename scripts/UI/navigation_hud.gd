@@ -30,6 +30,7 @@ signal menu_pressed
 @onready var menu_button: Button = $Root/TopBar/HBoxContainer/GameMenuButton
 @onready var button_left: Button = $Root/BottomBar/HBoxContainer/ButtonLeft
 @onready var button_right: Button = $Root/BottomBar/HBoxContainer/ButtonRight
+@onready var minimap: Minimap = $Root/Minimap
 @onready var event_popup: EventPopup = $Root/EventPopup
 
 # One image with two frames side by side: the first is shown while the train is stopped, the

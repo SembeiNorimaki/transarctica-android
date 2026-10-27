@@ -16,8 +16,8 @@ const UNITS_PER_PRESS := 1
 
 @onready var name_label: Label = $VBoxContainer/ResourceName
 @onready var image_rect: TextureRect = $VBoxContainer/ResourceImage
-@onready var qty_label: Label = $VBoxContainer/ResourceQty
-@onready var price_label: Label = $VBoxContainer/ResourceSellPrice
+@onready var qty_label: Label = $VBoxContainer/GridContainer/ResourceQty
+@onready var price_label: Label = $VBoxContainer/GridContainer/ResourcePrice
 @onready var sell1_button: Button = $VBoxContainer/ResourceBuy1
 @onready var sell_wagon_button: Button = $VBoxContainer/ResourceFillWagon
 @onready var close_button: Button = $VBoxContainer/CloseButton

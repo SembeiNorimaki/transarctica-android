@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c38h40g7yk2nx"]
+
+[ext_resource type="Script" uid="uid://bkns6sat14dwr" path="res://scripts/managers/horizontal_train_manager.gd" id="1_adcr8"]
+
+[node name="HorizontalTrainManager" type="Node" unique_id=60617838]
+script = ExtResource("1_adcr8")
