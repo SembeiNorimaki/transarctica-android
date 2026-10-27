@@ -1,0 +1,49 @@
+LOADING TIME OPTIMIZATION (navigation scene, map world_test)
+
+Baseline, desktop (LoadingScreen table):
+  Reading the map file    3198 ms   12.5%
+  Creating the map         282 ms    1.1%
+  Preparing the grid      1286 ms    5.0%
+  Preparing the fog      20592 ms   80.6%
+  Rails/cities/events/trains   ~75 ms   0.3%
+  TOTAL                  25552 ms
+The phone will be slower. The fog is the first thing to fix.
+
+IDEAS FROM THE USER
+1. The fog layer lives inside the map and is already initialized when the map is created, so the
+   game only reads it.
+2. Reading the map file: the map could already be a child of the navigation scene, and/or be
+   stored in binary form (.scn).
+
+OTHER SUGGESTIONS
+Fog (80%)
+ a. Find out which part is slow before changing it: time the loop in ExplorationService.setup
+    without set_cell, then without the _map_tiles dictionary.
+ b. _map_tiles is a Dictionary with one entry per fog cell. Replace it with a PackedByteArray
+    indexed by y * width + x (or ask the terrain), it is much cheaper in GDScript.
+ c. Check the TileSet of the fog layer: no physics, navigation or occlusion layers, no collision.
+    They make every set_cell more expensive.
+ d. Do not create the fog tiles at all: draw one dark cover over the map and keep only the explored
+    cells (they start empty). A shader with a mask texture (one pixel per fog cell) or a tile layer
+    with only the explored cells. Then loading costs nothing and the phone draws less.
+ e. If the fog stays a layer: fill it in one step with tile_map_data (the packed data of the
+    layer) instead of one set_cell per cell. Idea 1 is the same thing, baked in the map.
+ f. Fewer progress updates: each report waits for a frame. 50 updates are about 0.8 s.
+
+Reading the map file (12%)
+ g. Convert world_test to .scn (binary).
+ h. Start ResourceLoader.load_threaded_request at the main menu, while the player chooses a slot,
+    so the reading is already finished (or half done) when the game starts.
+
+Preparing the grid (5%)
+ i. It is probably not the grid: the layers of the new map are drawn for the first time in the
+    frame that the progress update waits for. Fewer / smaller layers help. The marker layers
+    (CitiesIds, Trains, Events) are drawn too even though nobody sees them: read them before the
+    map is added to the tree and delete them (or disable them).
+ j. A bigger rendering_quadrant_size on big layers means fewer quadrants.
+
+General
+ k. Measure on the phone once, with the same table (print_times), before choosing: the order of
+    the steps may be different there.
+ l. Anything that does not need to be there to start playing (far away cities, enemy trains,
+    labels) could be created after the first frame.

@@ -31,6 +31,7 @@ const DIALOG_SCENE: PackedScene = preload("res://scenes/menus/dialog_menu.tscn")
 @onready var quest_list: Control = $Control/VBoxContainer/ScrollContainer/QuestList
 @onready var notif_panel: ColorRect = $Notification/NotifPanel
 @onready var notif_label: Label = $Notification/NotifPanel/NotifLabel
+@onready var panel: Control = $Control
 
 var _refresh_pending := false
 var _notifications: Array[Dictionary] = [] # waiting to be shown: {message, is_completion}
@@ -64,6 +65,9 @@ func _debug_dialog() -> void:
     print("DIALOG visible=", _dialog.visible, " script=", _dialog.get_script().resource_path)
     _dialog.print_tree_pretty()
 
+func toggle_panel() -> void:
+    panel.visible = not panel.visible
+    
 #region list
 # Several signals can arrive in the same frame, so the list is rebuilt once
 func _request_refresh() -> void:

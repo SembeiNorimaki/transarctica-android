@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cqs53rwxbpqva"]
 
 [ext_resource type="Script" uid="uid://baevny3r2q51o" path="res://scripts/core/navigation_scene.gd" id="1_2bgtl"]
-[ext_resource type="PackedScene" uid="uid://cm3taqyltqkqe" path="res://scenes/maps/world_1.tscn" id="2_43f6w"]
+[ext_resource type="PackedScene" uid="uid://bxupdeovv64rc" path="res://scenes/maps/world_test.tscn" id="2_6eg84"]
 [ext_resource type="Script" uid="uid://b4tva1gkpsvfi" path="res://scripts/services/camera_service.gd" id="5_bopww"]
 [ext_resource type="Script" uid="uid://1lsfccayubl3" path="res://scripts/services/rail_service.gd" id="5_wk2tj"]
 [ext_resource type="Script" uid="uid://c4j0gdvnpybqr" path="res://scripts/services/exploration_service.gd" id="6_mqu6x"]
@@ -12,7 +12,8 @@
 [ext_resource type="Texture2D" uid="uid://d2yrq5w26cej2" path="res://assets/tilesets/imgs/fow64.png" id="10_1aqif"]
 [ext_resource type="Script" uid="uid://bmulqwdhpg0rh" path="res://scripts/managers/events_manager.gd" id="10_6eg84"]
 [ext_resource type="Script" uid="uid://rn2y28iu7pn7" path="res://scripts/managers/fuel_manager.gd" id="10_rjhdy"]
-[ext_resource type="Script" uid="uid://d01c6l3glp7jk" path="res://scripts/UI/event_popup.gd" id="12_6eg84"]
+[ext_resource type="PackedScene" uid="uid://8nkr012q8af6" path="res://scenes/UI/navigation_hud.tscn" id="13_6eg84"]
+[ext_resource type="PackedScene" uid="uid://b64pm4dy8e4jd" path="res://scenes/UI/loading_screen.tscn" id="14_pcfji"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rjhdy"]
 texture = ExtResource("10_1aqif")
@@ -27,19 +28,13 @@ tile_layout = 5
 tile_size = Vector2i(64, 32)
 sources/0 = SubResource("TileSetAtlasSource_rjhdy")
 
-[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_e8twf"]
-size = Vector2(100, 100)
-
-[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_a7ohx"]
-size = Vector2(100, 100)
-
 [node name="NavigationScene" type="Node2D" unique_id=1605647357]
 script = ExtResource("1_2bgtl")
 
 [node name="MapRoot" type="Node2D" parent="." unique_id=2144155385]
 
-[node name="World1" parent="MapRoot" unique_id=1301367354 instance=ExtResource("2_43f6w")]
-position = Vector2(289, -15)
+[node name="WorldTest" parent="MapRoot" unique_id=1195897361 instance=ExtResource("2_6eg84")]
+position = Vector2(3997, -3286)
 
 [node name="Services" type="Node" parent="." unique_id=974117156]
 
@@ -80,44 +75,11 @@ visible = false
 position = Vector2(96, 0)
 tile_set = SubResource("TileSet_mqu6x")
 
-[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2112287858]
-
-[node name="Buttons" type="Node2D" parent="CanvasLayer" unique_id=1095360656]
-
-[node name="ButtonLeft" type="Button" parent="CanvasLayer/Buttons" unique_id=96057289]
-offset_left = 25.0
-offset_top = 940.0
-offset_right = 133.0
-offset_bottom = 1048.0
-icon = SubResource("PlaceholderTexture2D_e8twf")
-
-[node name="ButtonRight" type="Button" parent="CanvasLayer/Buttons" unique_id=898647245]
-offset_left = 2258.0
-offset_top = 940.0
-offset_right = 2366.0
-offset_bottom = 1048.0
-icon = SubResource("PlaceholderTexture2D_a7ohx")
-
-[node name="FuelBar" type="ProgressBar" parent="CanvasLayer" unique_id=998314790]
-offset_right = 290.0
-offset_bottom = 27.0
-
-[node name="FuelLabel" type="Label" parent="CanvasLayer" unique_id=510123270]
-offset_right = 40.0
-offset_bottom = 23.0
-text = "Fuel"
-
-[node name="EventPopup" type="Control" parent="CanvasLayer" unique_id=300236767]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-script = ExtResource("12_6eg84")
-
 [node name="Overlays" type="Node2D" parent="." unique_id=1417787132]
 
 [node name="RailsOverlay" type="Node2D" parent="Overlays" unique_id=930995069]
 script = ExtResource("9_43f6w")
 
-[connection signal="pressed" from="CanvasLayer/Buttons/ButtonLeft" to="." method="_on_button_left_pressed"]
-[connection signal="pressed" from="CanvasLayer/Buttons/ButtonRight" to="." method="_on_button_right_pressed"]
+[node name="NavigationHUD" parent="." unique_id=627801967 instance=ExtResource("13_6eg84")]
+
+[node name="LoadingScreen" parent="." unique_id=1455289540 instance=ExtResource("14_pcfji")]

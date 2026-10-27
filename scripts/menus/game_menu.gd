@@ -18,7 +18,6 @@ class_name GameMenu
 
 signal load_requested(slot: int)
 
-@onready var open_button: Button = $OpenButton
 @onready var overlay: Control = $Overlay
 @onready var buttons_box: VBoxContainer = $Overlay/CenterContainer/ButtonsBox
 @onready var continue_button: Button = $Overlay/CenterContainer/ButtonsBox/ContinueButton
@@ -35,7 +34,6 @@ var _was_paused := false # whether the game was already paused when the menu ope
 func _ready() -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS # it must keep working while the game is paused
     overlay.hide()
-    open_button.pressed.connect(open_menu)
     continue_button.pressed.connect(close_menu)
     save_button.pressed.connect(_on_save_pressed)
     load_button.pressed.connect(_on_load_pressed)
@@ -54,7 +52,6 @@ func open_menu() -> void:
     message_label.text = ""
     buttons_box.show()
     overlay.show()
-    open_button.hide()
 
 
 # `force_unpause`: the game goes on whatever it was doing before (after a load, the old game is gone)
@@ -63,7 +60,6 @@ func close_menu(force_unpause := false) -> void:
         return
     slots_menu.hide()
     overlay.hide()
-    open_button.show()
     get_tree().paused = false if force_unpause else _was_paused
 
 

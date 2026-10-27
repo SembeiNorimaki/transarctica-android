@@ -1,92 +1,65 @@
 @tool
-extends Node2D
+extends RefCounted
 class_name TerrainLoader
-# Map utility.
-#   Step 1: reads a PNG with three colors and builds a matrix with one value per pixel:
-#           black = 0, gray = 1, white = 2 (a height map with three levels).
-#   Step 2: paints that matrix into the map's three TileMapLayers, one layer per level:
-#           0 -> "terrain-1", 1 -> "terrain", 2 -> "terrain+1".
+# Map tool (no node, no scene). Give it an image and the terrain layers, and it fills them.
+#   Step 1: load_image(path) reads a PNG that uses four colors and builds a matrix with one value
+#           per pixel: terrain low = 0, mid = 1, high = 2 (a height map with three levels).
+#           Pixels with the rails color are counted (rails_pixels), see the TEMPORARY note below.
+#   Step 2: paint(low, mid, high) paints that matrix, one layer per level, choosing for each cell
+#           the slope tile (TerrainTiles) that fits the height of its four vertices.
 #
-# In the editor: select the node, set "Image Path", and tick "Generate Now" (it unticks itself).
-# "Load Now" only builds the matrix, so you can check it in the Output before painting.
-# At runtime it loads the matrix in _ready() when "Image Path" is set (it doesn't paint).
+# Use:
+#   var loader := TerrainLoader.new()
+#   if loader.load_image("res://maps/world.png"):
+#       loader.paint(terrain_low, terrain_mid, terrain_high)
 #
 # The PNG is read from the file itself, not from the imported texture, so the import settings
 # (compression, filtering) can't change the pixels. That only works in the editor, because an
 # exported game doesn't contain the original PNG.
 
-const VALUE_BLACK := 0
-const VALUE_GRAY := 1
-const VALUE_WHITE := 2
-# Neighbor bits
-const N := 1
-const W := 2
-const E := 4
-const S := 8
-# Diagonal bits, in reading order like N, W, E, S
-const NW := 1
-const NE := 2
-const SW := 4
-const SE := 8
+const VALUE_LOW := 0
+const VALUE_MID := 1
+const VALUE_HIGH := 2
+const RAILS_INDEX := 3 # the 4th color of the palette
+const LAYER_NAMES := ["low", "mid", "high"]
 
-@onready var terrain_low: TileMapLayer = $terrain_low
-@onready var terrain_mid: TileMapLayer = $terrain_mid
-@onready var terrain_high: TileMapLayer = $terrain_high
+# The cells that share each vertex of a cell, as offsets from it (Diamond Down layout)
+const VERTEX_N := [Vector2i(-1, 0), Vector2i(0, -1), Vector2i(-1, -1)]
+const VERTEX_W := [Vector2i(-1, 0), Vector2i(0, 1), Vector2i(-1, 1)]
+const VERTEX_E := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(1, -1)]
+const VERTEX_S := [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
 
-# The layer of each value (indexed by value)
-var LAYER_NAMES := [terrain_low, terrain_mid, terrain_high]
+# The colors of the image, 0-255 per channel
+var terrain_low_color := Color8(0, 0, 0)
+var terrain_mid_color := Color8(128, 128, 128)
+var terrain_high_color := Color8(255, 255, 255)
+var rails_color := Color8(255, 0, 0)
+var color_tolerance := 20.0 # how far a pixel may be from a color (distance in RGB, 0-441) and still count as it
 
-# Luminance of each reference color, indexed by value. A "gray" pixel may be 127 or 128, so a
-# pixel only has to be within TOLERANCE of the nearest level.
-const LEVELS := [0.0, 0.5, 1.0]
-const TOLERANCE := 0.2
-
-@export_file("*.png") var image_path := ""
-@export var print_preview := true # print the matrix (the top left corner of big ones) after loading
-
-@export_group("Painting")
-@export var source_id := 0 # the source of the layers' TileSets
-@export var atlas_coords := Vector2i(0, 0) # the tile that is painted
-@export var clear_first := true # empty the three layers before painting (it removes what they had)
-
-@export_group("Neighbors")
-@export var outside_counts_as_neighbor := false # a cell beyond the map edge counts as "same" (no border at the map edge)
-@export var print_neighbors := true
-
-@export_group("Buttons")
-@export var load_now := false:
-    set(value):
-        load_now = false # a button: it unticks itself
-        if value and is_inside_tree():
-            load_terrain()
-@export var generate_now := false:
-    set(value):
-        generate_now = false
-        if value and is_inside_tree() and load_terrain():
-            apply_to_layers()
+# Options (set them before loading / painting)
+var print_preview := false # print the matrix (the top left corner of big ones) after loading
+var source_id := 0 # the source of the layers' TileSets
+var atlas_coords := Vector2i(0, 0) # the tile painted when paint_borders is off
+var paint_borders := true # true: slope tiles by vertex height. false: every cell gets atlas_coords
+var border_atlas_coords := Vector2i(1, 0) # marker for a slope that has no tile yet in TerrainTiles
+var clear_first := true # empty the three layers before painting (it removes what they had)
 
 var matrix: Array[PackedByteArray] = [] # matrix[y][x]. Row 0 is the TOP row of the image
 var width := 0
 var height := 0
 var counts := [0, 0, 0] # how many pixels have each value
-
-var cardinal: Array[PackedByteArray] = [] # cardinal[y][x]: N=1 W=2 E=4 S=8. Only filled for cells with value 1
-var diagonal: Array[PackedByteArray] = [] # diagonal[y][x]: NW=1 NE=2 SW=4 SE=8. Only filled for cells with value 1
-
-func _ready() -> void:
-    if not Engine.is_editor_hint() and image_path != "":
-        load_terrain()
-
+var rails_pixels := 0 # how many pixels have the rails color
+var rails_cells: Array[Vector2i] = [] # the cells that have the rails color
 
 #region step 1: image to matrix
 # Loads the image and builds the matrix. Returns false (with an error) if it can't.
-func load_terrain(path := "") -> bool:
-    if path == "":
-        path = image_path
+func load_image(path: String) -> bool:
     matrix = []
     width = 0
     height = 0
     counts = [0, 0, 0]
+    rails_pixels = 0
+    rails_cells.clear()
 
     if path == "" or not FileAccess.file_exists(path):
         push_error("TerrainLoader: image not found: '%s'" % path)
@@ -98,40 +71,71 @@ func load_terrain(path := "") -> bool:
 
     width = image.get_width()
     height = image.get_height()
+    var palette: Array[Color] = [terrain_low_color, terrain_mid_color, terrain_high_color, rails_color]
     var unexpected := 0
     var first_unexpected := Vector2i(-1, -1)
+    var seen := {} # "ff0000" -> how many pixels have exactly that color
 
     for y in height:
         var row := PackedByteArray()
         row.resize(width)
         for x in width:
             var color := image.get_pixel(x, y)
-            var luminance := color.get_luminance()
+            var hex := color.to_html(false)
+            seen[hex] = seen.get(hex, 0) + 1
 
-            # The nearest of the three levels
-            var value := 0
+            # The nearest of the four colors: low, mid, high, rails
+            var nearest := 0
             var best_distance := INF
-            for i in LEVELS.size():
-                var distance := absf(luminance - LEVELS[i])
+            for i in palette.size():
+                var distance := _color_distance(color, palette[i])
                 if distance < best_distance:
                     best_distance = distance
-                    value = i
+                    nearest = i
 
-            if best_distance > TOLERANCE or color.a < 0.5:
+            if best_distance > color_tolerance or color.a < 0.5:
                 unexpected += 1
                 if first_unexpected.x < 0:
                     first_unexpected = Vector2i(x, y)
+
+            var value: int
+            if nearest == RAILS_INDEX:
+                # TEMPORARY, until the terrain under the rails is decided: it takes the value of the pixel before it
+                rails_pixels += 1
+                rails_cells.append(Vector2i(x, y))
+                value = row[x - 1] if x > 0 else VALUE_MID
+            else:
+                value = nearest
             row[x] = value
             counts[value] += 1
         matrix.append(row)
 
-    if unexpected > 0:
-        push_warning("TerrainLoader: %d pixels are not black, gray or white (the first at %s). They got the value of the nearest level." % [unexpected, first_unexpected])
-    print("TerrainLoader: %s is %d x %d. black (0): %d, gray (1): %d, white (2): %d" % [path.get_file(), width, height, counts[0], counts[1], counts[2]])
     if print_preview:
         print_matrix()
-    compute_neighbors()
+    _print_summary(path, seen, unexpected, first_unexpected)
     return true
+
+
+# Distance between two colors in 0-255 RGB units (the alpha is checked apart)
+func _color_distance(a: Color, b: Color) -> float:
+    return Vector3(a.r8 - b.r8, a.g8 - b.g8, a.b8 - b.b8).length()
+
+
+# One block, printed last, so it is not lost under the matrix: what was expected and what was found
+func _print_summary(path: String, seen: Dictionary, unexpected: int, first_unexpected: Vector2i) -> void:
+    var keys := seen.keys()
+    keys.sort_custom(func(a, b): return seen[a] > seen[b])
+    var found: Array[String] = []
+    for key in keys.slice(0, 8):
+        found.append("%s: %d" % [key, seen[key]])
+    print("TerrainLoader: %s is %d x %d" % [path.get_file(), width, height])
+    print("  palette (hex): low %s, mid %s, high %s, rails %s, tolerance %s" % [
+            terrain_low_color.to_html(false), terrain_mid_color.to_html(false),
+            terrain_high_color.to_html(false), rails_color.to_html(false), color_tolerance])
+    print("  colors in the image (hex: pixels): %s" % ", ".join(found))
+    print("  low: %d, mid: %d, high: %d, rails pixels: %d" % [counts[0], counts[1], counts[2], rails_pixels])
+    if unexpected > 0:
+        push_warning("TerrainLoader: %d pixels are none of the 4 colors (the first at %s). They got the value of the nearest one." % [unexpected, first_unexpected])
 
 
 # The value at a pixel, or -1 if it is outside the image
@@ -158,110 +162,91 @@ func print_matrix(max_cols := 80, max_rows := 40) -> void:
 
 
 #region step 2: matrix to tilemap layers
-# Paints the matrix: cell (x, y) goes to the layer of its value, as the tile at atlas_coords.
+# Paints the matrix: cell (x, y) goes to the layer of its value, with the tile of its vertices.
 # Each cell is painted in ONE layer only. Returns false (with an error) if it can't.
-func apply_to_layers() -> bool:
+func paint(low: TileMapLayer, mid: TileMapLayer, high: TileMapLayer) -> bool:
     if matrix.is_empty():
-        push_error("TerrainLoader: there is no matrix yet. Load the terrain first.")
+        push_error("TerrainLoader: there is no matrix yet. Load an image first.")
         return false
-    var layers := _find_layers()
-    if layers.is_empty():
-        return false
+    var layers: Array[TileMapLayer] = [low, mid, high]
+    for i in layers.size():
+        if layers[i] == null:
+            push_error("TerrainLoader: the '%s' layer is null" % LAYER_NAMES[i])
+            return false
 
     if clear_first:
         for layer in layers:
             layer.clear()
 
     var painted := [0, 0, 0]
+    var slopes := 0
+    var missing := {} # names that have no tile yet: name -> how many cells
     for y in height:
         for x in width:
             var value := matrix[y][x]
-            layers[value].set_cell(Vector2i(x, y), source_id, atlas_coords)
+            var coords := atlas_coords
+            if paint_borders:
+                var tile_name := tile_name_at(x, y)
+                coords = TerrainTiles.coords_for(tile_name, value == VALUE_LOW) # the lowest level is the water
+                if coords == TerrainTiles.NONE:
+                    missing[tile_name] = missing.get(tile_name, 0) + 1
+                    coords = border_atlas_coords # a visible marker for "no tile for this yet"
+                elif tile_name != "nwes":
+                    slopes += 1
+            layers[value].set_cell(Vector2i(x, y), source_id, coords)
             painted[value] += 1
 
-    print("TerrainLoader: painted %d x %d cells. %s: %d, %s: %d, %s: %d" % [
-        width, height,
-        LAYER_NAMES[0], painted[0], LAYER_NAMES[1], painted[1], LAYER_NAMES[2], painted[2]])
-    _mark_scene_unsaved()
+    print("TerrainLoader: painted %d x %d cells (%d with a slope). low: %d, mid: %d, high: %d" % [width, height, slopes, painted[0], painted[1], painted[2]])
+    if not missing.is_empty():
+        push_warning("TerrainLoader: no tile for %s (painted with the border tile %s)" % [missing, border_atlas_coords])
     return true
 
-
-func _find_layers() -> Array[TileMapLayer]:
-    var result: Array[TileMapLayer] = [terrain_low, terrain_mid, terrain_high]
-    for i in result.size():
-        if result[i] == null:
-            push_error("TerrainLoader: layer reference for '%s' is null. Check the node paths, then reload the scene." % LAYER_NAMES[i])
-            return []
-    return result
-
-
-# Changes made by a script don't mark the scene as modified, so Ctrl+S could say there is nothing to save
-func _mark_scene_unsaved() -> void:
-    if Engine.is_editor_hint() and Engine.has_singleton("EditorInterface"):
-        var editor := Engine.get_singleton("EditorInterface")
-        if editor.has_method("mark_scene_as_unsaved"):
-            editor.call("mark_scene_as_unsaved")
-#endregion
-
-
-#region step 3: neighbors of the gray cells (terrain_mid)
-# For every cell with value 1, which of its 8 neighbors also have value 1 (a neighbor with value 0
-# or 2 counts as different). All 4 cardinals = 15, all 4 diagonals = 15.
-func compute_neighbors() -> bool:
+# Paints the rails with the terrain (autotile) of the layer's TileSet: the tile of each cell is chosen
+# from the rail cells around it. `terrain_set` and `terrain` are the indexes in the TileSet.
+func paint_rails(layer: TileMapLayer, terrain_set := 0, terrain := 0) -> bool:
     if matrix.is_empty():
-        push_error("TerrainLoader: there is no matrix yet. Load the terrain first.")
+        push_error("TerrainLoader: there is no matrix yet. Load an image first.")
         return false
-    cardinal = []
-    diagonal = []
-    for y in height:
-        var c_row := PackedByteArray()
-        var d_row := PackedByteArray()
-        c_row.resize(width)
-        d_row.resize(width)
-        for x in width:
-            if matrix[y][x] == VALUE_GRAY:
-                c_row[x] = (N if _same(x, y - 1) else 0) \
-                        | (W if _same(x - 1, y) else 0) \
-                        | (E if _same(x + 1, y) else 0) \
-                        | (S if _same(x, y + 1) else 0)
-                d_row[x] = (NW if _same(x - 1, y - 1) else 0) \
-                        | (NE if _same(x + 1, y - 1) else 0) \
-                        | (SW if _same(x - 1, y + 1) else 0) \
-                        | (SE if _same(x + 1, y + 1) else 0)
-        cardinal.append(c_row)
-        diagonal.append(d_row)
-    if print_neighbors:
-        _print_masks()
+    if layer == null:
+        push_error("TerrainLoader: the rails layer is null")
+        return false
+    if layer.tile_set == null or terrain_set >= layer.tile_set.get_terrain_sets_count() \
+            or terrain >= layer.tile_set.get_terrains_count(terrain_set):
+        push_error("TerrainLoader: the TileSet of '%s' has no terrain %d in terrain set %d" % [layer.name, terrain, terrain_set])
+        return false
+
+    print("RAILS DEBUG: layer '%s' (%s), tile_set=%s, enabled=%s" % [layer.name, layer.get_path(), layer.tile_set, layer.enabled])
+    print("RAILS DEBUG: terrain sets=%d, terrains in set %d=%d, tiles in the atlas source 0=%s" % [
+            layer.tile_set.get_terrain_sets_count(), terrain_set,
+            layer.tile_set.get_terrains_count(terrain_set),
+            layer.tile_set.get_source(0).get_tiles_count() if layer.tile_set.get_source_count() > 0 else "no source"])
+    print("RAILS DEBUG: rail cells=%d, first: %s" % [rails_cells.size(), rails_cells.slice(0, 5)])
+
+    if clear_first:
+        layer.clear()
+    layer.set_cells_terrain_connect(rails_cells, terrain_set, terrain)
+
+    var used := layer.get_used_cells()
+    print("RAILS DEBUG: after painting the layer has %d cells, first: %s" % [used.size(), used.slice(0, 5)])
+    if not used.is_empty():
+        var cell: Vector2i = used[0]
+        print("RAILS DEBUG: cell %s -> source %d, atlas %s" % [cell, layer.get_cell_source_id(cell), layer.get_cell_atlas_coords(cell)])
     return true
 
+# The name of the tile of this cell ("nwes", "NWes"...), see TerrainTiles.
+func tile_name_at(x: int, y: int) -> String:
+    return TerrainTiles.name_for(
+        _vertex_is_up(x, y, VERTEX_N),
+        _vertex_is_up(x, y, VERTEX_W),
+        _vertex_is_up(x, y, VERTEX_E),
+        _vertex_is_up(x, y, VERTEX_S))
 
-func _same(x: int, y: int) -> bool:
+
+# Up when any cell that shares the vertex is higher than this one. A cell beyond the map edge is ignored.
+func _vertex_is_up(x: int, y: int, offsets: Array) -> bool:
     var value := get_value(x, y)
-    if value == -1:
-        return outside_counts_as_neighbor
-    return value == VALUE_GRAY
-
-
-# -1 if the cell is not a value 1 cell (or is outside the map)
-func get_cardinal(x: int, y: int) -> int:
-    if get_value(x, y) != VALUE_GRAY:
-        return -1
-    return cardinal[y][x]
-
-
-func get_diagonal(x: int, y: int) -> int:
-    if get_value(x, y) != VALUE_GRAY:
-        return -1
-    return diagonal[y][x]
-
-
-# One hex digit per cell ("." where the value is not 1): cardinal masks first, then diagonal masks
-func _print_masks(max_cols := 80, max_rows := 40) -> void:
-    for pair in [["cardinal", cardinal], ["diagonal", diagonal]]:
-        print("TerrainLoader: %s masks" % pair[0])
-        for y in mini(height, max_rows):
-            var line := ""
-            for x in mini(width, max_cols):
-                line += "%X" % pair[1][y][x] if matrix[y][x] == VALUE_GRAY else "."
-            print(line)
+    for offset: Vector2i in offsets:
+        if get_value(x + offset.x, y + offset.y) > value: # -1 (outside) is never higher
+            return true
+    return false
 #endregion

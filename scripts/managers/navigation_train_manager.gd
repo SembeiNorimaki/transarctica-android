@@ -4,6 +4,7 @@ class_name NavigationTrainManager
 signal train_reached_city(city_name: String)
 signal trains_collided(player_train: NavigationTrain, enemy_train: NavigationTrain)
 signal player_tile_changed(tile: Vector2i)
+signal player_driving_changed(driving: bool)
 
 enum Team {PLAYER, ENEMY}
 
@@ -53,6 +54,8 @@ func spawn_train(tile_pos: Vector2i, ori: String, team: Team, train_data := {}, 
 
     if team == Team.PLAYER:
         player_train = train
+        train.gear_changed.connect(_on_player_gear_changed)
+        player_driving_changed.emit(train.is_driving()) # a rebuilt train starts in neutral
     else:
         enemy_trains.append(train)
         _add_ai(train)
@@ -175,6 +178,10 @@ func _on_train_tile_changed(train: NavigationTrain, _old_tile: Vector2i, new_til
     # else:
     #     _update_enemy_visibility(train)
 
+func _on_player_gear_changed(_gear) -> void:
+    if is_instance_valid(player_train):
+        player_driving_changed.emit(player_train.is_driving())
+        
 func _check_city_entry(tile: Vector2i) -> void:
     if not cities_manager.is_entry_tile(tile):
         return

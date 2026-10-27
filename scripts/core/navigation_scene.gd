@@ -1,6 +1,7 @@
 extends Node2D
 class_name NavigationScene
 
+signal menu_requested
 
 # Managers
 @onready var navigation_train_manager: NavigationTrainManager = $Managers/NavigationTrainManager
@@ -25,8 +26,10 @@ class_name NavigationScene
 @onready var city_labels_container: Node2D = $CityLabelsContainer
 
 # UI
-@onready var fuel_bar: ProgressBar = $CanvasLayer/FuelBar
-@onready var fuel_label: Label = $CanvasLayer/FuelLabel
+# @onready var fuel_bar: ProgressBar = $CanvasLayer/FuelBar
+# @onready var fuel_label: Label = $CanvasLayer/FuelLabel
+@onready var hud: NavigationHUD = $NavigationHUD
+@onready var loading_screen: LoadingScreen = $LoadingScreen
 
 # Constants
 const MUSIC_TRAVEL: AudioStream = preload("res://assets/audio/Travelling.mp3")
@@ -46,7 +49,7 @@ var event_popup: EventPopup
 var _open_event := {} # the event the pop-up is showing
 
 # TODO: This values should be loaded from somewhere else
-const DEFAULT_MAP_NAME: String = "world_1"
+const DEFAULT_MAP_NAME: String = "world_test"
 
 # This should be read from navigationtrainmanager.playerTrain
 var initial_player_train_pos = Vector2i(31, 9)
@@ -54,12 +57,13 @@ var initial_player_train_pos = Vector2i(31, 9)
 
 #region Lifecycle & Setup
 func _ready() -> void:
+    process_mode = Node.PROCESS_MODE_DISABLED # nothing runs until the map is built
+    loading_screen.begin("Loading map...")
     _create_event_nodes()
     SceneService.register_navigation_scene(self)
     _inject_services()
     _wire_signals()
-    _load_map(DEFAULT_MAP_NAME)
-
+    await _load_map(DEFAULT_MAP_NAME)
 
     var player_train := navigation_train_manager.player_train
     if is_instance_valid(player_train):
@@ -69,13 +73,15 @@ func _ready() -> void:
     camera_service.set_zoom(1.0)
 
     AudioService.play_music(MUSIC_TRAVEL, 0.0)
+    process_mode = Node.PROCESS_MODE_INHERIT
+    loading_screen.finish()
 
 
 func suspend() -> void:
     process_mode = Node.PROCESS_MODE_DISABLED # stops _process, _input and all children
     hide()
     camera_service.cam.enabled = false
-    # if the HUD buttons live in a CanvasLayer, hide that layer here too
+    hud.hide()
 
 func resume() -> void:
     process_mode = Node.PROCESS_MODE_INHERIT
@@ -84,6 +90,7 @@ func resume() -> void:
     navigation_train_manager.resume() # only if you adopted the _transitioning flag
     navigation_train_manager.rebuild_player_train() # the wagons may have changed in the city or in combat
     navigation_train_manager.recenter_player_train()
+    hud.show()
     AudioService.play_music(MUSIC_TRAVEL, 0.0)
 
 func _inject_services() -> void:
@@ -114,15 +121,22 @@ func _wire_signals() -> void:
     navigation_train_manager.train_reached_city.connect(_on_train_reached_city)
     navigation_train_manager.trains_collided.connect(_on_trains_collided)
     navigation_train_manager.player_tile_changed.connect(events_manager.on_player_tile_changed)
+    navigation_train_manager.player_driving_changed.connect(hud.set_driving)
     # navigation_train_manager.player_tile_changed.connect(_on_player_tile_changed)
 
     rail_service.rail_changed.connect(_on_rail_changed)
-    fuel_manager.fuel_changed.connect(_on_fuel_changed)
-    events_manager.event_triggered.connect(_on_event_triggered)
-    event_popup.accepted.connect(_on_event_accepted)
-    event_popup.declined.connect(_on_event_declined)
     
-    _on_fuel_changed(fuel_manager.get_fuel(), fuel_manager.get_max_fuel()) # the starting value
+    fuel_manager.fuel_changed.connect(hud.set_fuel)
+    hud.set_fuel(fuel_manager.get_fuel(), fuel_manager.get_max_fuel()) # the starting value
+    hud.reverse_pressed.connect(navigation_train_manager.player_train_reverse)
+    hud.gear_pressed.connect(navigation_train_manager.player_train_gear_toggle)
+    hud.quests_pressed.connect(QuestUI.toggle_panel)
+    hud.menu_pressed.connect(menu_requested.emit)
+    hud.event_popup.accepted.connect(_on_event_accepted)
+    hud.event_popup.declined.connect(_on_event_declined)
+
+    events_manager.event_triggered.connect(_on_event_triggered)
+    
     
 #endregion
 
@@ -140,33 +154,57 @@ func _load_map(map_name: String) -> void:
         map_root.remove_child(existing_map)
         existing_map.queue_free()
 
-    # load new map
-    var new_map: Node2D = load(map_path).instantiate()
+    # read the file in a thread, so the bar can move meanwhile
+    await loading_screen.report(0.0, "Reading the map file...")
+    ResourceLoader.load_threaded_request(map_path)
+    var progress := []
+    while true:
+        var status := ResourceLoader.load_threaded_get_status(map_path, progress)
+        if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+            await loading_screen.report(0.30 * progress[0], "Reading the map file...")
+        elif status == ResourceLoader.THREAD_LOAD_LOADED:
+            break
+        else:
+            push_error("Could not load the map at path: %s" % map_path)
+            return
+    var packed := ResourceLoader.load_threaded_get(map_path) as PackedScene
+
+    # one heavy step, it can't be split
+    await loading_screen.report(0.30, "Creating the map...")
+    var new_map: Node2D = packed.instantiate()
     map_root.add_child(new_map)
     map_root.move_child(new_map, 0)
 
-    # Set tilesize to grid service and tile occupancy service
+    await loading_screen.report(0.45, "Preparing the grid...")
     var terrain: TileMapLayer = new_map.get_node("Terrain")
     grid_service.set_tile_size(terrain.tile_set.tile_size)
-    grid_service.set_map_rect(terrain.get_used_rect()) # instead of map_size = ...size
+    grid_service.set_map_rect(terrain.get_used_rect())
     camera_service.set_world_bounds(grid_service.get_world_bounds())
 
     rail_service.rails_tilemap = new_map.get_node("Rails")
     navigation_train_manager.clear_trains()
     rail_service.clear()
 
-    exploration_service.setup(map_name, terrain.get_used_cells()) # before _spawn_trains_from_map
+    await loading_screen.report(0.50, "Preparing the fog...")
+    await exploration_service.setup(map_name, terrain.get_used_cells(), _report_fog) # before _spawn_trains_from_map
 
-    
+    await loading_screen.report(0.85, "Building the rails...")
     _build_rails_from_map(new_map.get_node("Rails"))
-    #_build_bridges_from_map(new_map.get_node("Bridges"))
+
+    await loading_screen.report(0.90, "Placing the cities...")
     _spawn_cities_from_map(new_map.get_node("CitiesIds"))
+
+    await loading_screen.report(0.94, "Placing the events...")
     events_manager.setup(map_name, new_map)
+
+    await loading_screen.report(0.97, "Placing the trains...")
     _spawn_trains_from_map(new_map.get_node("Trains"))
-    #_spawn_wagons()
-    # _reveal_around_player()
-    
-    # exploration_service.update_position(grid_service.tile_to_world(Vector2(initial_player_train_pos))) # TEMP
+    await loading_screen.report(1.0, "Done")
+
+
+# The fog is the heaviest step, it reports by itself while it works (0.50 to 0.85)
+func _report_fog(fraction: float) -> void:
+    await loading_screen.report(0.50 + 0.35 * fraction, "Preparing the fog...")
 
 func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
     # the id tiles sit on the ENTRANCE of each city/industry/depot
@@ -267,10 +305,7 @@ func _create_event_nodes() -> void:
     events_manager = EventsManager.new()
     events_manager.name = "EventsManager"
     $Managers.add_child(events_manager)
-    event_popup = EventPopup.new()
-    event_popup.name = "EventPopup"
-    $CanvasLayer.add_child(event_popup)
-
+    
 func end_combat(enemy: NavigationTrain) -> void:
     # TODO: depends on the combat result. For now the enemy is removed. Otherwise it would collide
     # again as soon as the scene is enabled, because its area is still overlapping the player's.
@@ -312,14 +347,6 @@ func _on_trains_collided(_player: NavigationTrain, enemy: NavigationTrain) -> vo
     AudioService.stop_music(1.5)
     SceneService.enter_combat(enemy)
 
-func _on_button_left_pressed() -> void:
-    navigation_train_manager.player_train_reverse()
-
-
-func _on_button_right_pressed() -> void:
-    print("Button right pressed")
-    navigation_train_manager.player_train_gear_toggle()
-
 func _on_map_tapped(screen_pos: Vector2) -> void:
     var world_pos := get_canvas_transform().affine_inverse() * screen_pos # undoes the camera's position and zoom
     var tile := grid_service.world_to_tile(world_pos)
@@ -327,18 +354,11 @@ func _on_map_tapped(screen_pos: Vector2) -> void:
     if rail_service.has_junction(tile):
         rail_service.change_junction(tile)
 
-
-func _on_fuel_changed(current: int, maximum: int) -> void:
-    fuel_bar.max_value = maxf(maximum, 1.0)
-    fuel_bar.value = current
-    fuel_label.text = "NO COAL" if current <= 0 else "%d / %d" % [current, maximum]
-    fuel_bar.modulate = Color.RED if current * 5 < maximum else Color.WHITE # below 20%
-
 func _on_event_triggered(event: Dictionary) -> void:
     _open_event = event
     navigation_train_manager.player_train.immediate_stop()
     navigation_train_manager.pause() # the enemies wait too, so nobody attacks behind the pop-up
-    event_popup.show_event(
+    hud.event_popup.show_event(
         event["name"],
         event["text"],
         event["accept_text"],

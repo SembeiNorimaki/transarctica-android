@@ -55,9 +55,11 @@ func _start_game() -> void:
     _menu = null
     QuestUI.show()
     game_menu.show()
-    _navigation = NAVIGATION_SCENE.instantiate()
-    _navigation.name = "NavigationScene"
-    add_child(_navigation)
+    var navigation := NAVIGATION_SCENE.instantiate() as NavigationScene
+    navigation.name = "NavigationScene"
+    navigation.menu_requested.connect(game_menu.open_menu)
+    _navigation = navigation
+    add_child(navigation)
 
 # Loading from the game menu: the running game is thrown away and built again from the slot,
 # because the trains, the map and the cities are only created when a game starts.

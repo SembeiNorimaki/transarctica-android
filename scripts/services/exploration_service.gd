@@ -50,7 +50,7 @@ func _ready() -> void:
 # Call when a map is loaded, with the cells of its terrain (rail tiles). Everything starts
 # unexplored, except what GameState says was explored before in this map.
 @warning_ignore("integer_division")
-func setup(map_name: String, rail_tiles: Array) -> void:
+func setup(map_name: String, rail_tiles: Array, on_progress := Callable()) -> void:
     if fog_layer == null or fog_layer.tile_set == null or grid_service == null:
         push_error("ExplorationService: fog_layer (with a TileSet) and grid_service must be injected")
         return
@@ -75,12 +75,16 @@ func setup(map_name: String, rail_tiles: Array) -> void:
     _has_center = false
 
     var s := _subdivision
+    var done := 0
     for rail_tile: Vector2i in rail_tiles:
         for i in s:
             for j in s:
                 var tile := Vector2i(rail_tile.x * s + i, rail_tile.y * s + j)
                 _map_tiles[tile] = true
                 fog_layer.set_cell(tile, fog_source_id, unexplored_atlas)
+        done += 1
+        if on_progress.is_valid() and done % 200 == 0:
+            await on_progress.call(float(done) / rail_tiles.size())
 
     for tile in _decode_explored(GameState.get_explored(map_name)):
         if _map_tiles.has(tile):

@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dxot3aouof2ut"]
 
 [ext_resource type="TileSet" uid="uid://d2uvx33jrelml" path="res://assets/tilesets/navigation_terrain.tres" id="1_d1vn1"]
+[ext_resource type="Script" uid="uid://bg2bcbjym68ky" path="res://scripts/generic_navigation_map.gd" id="1_uqwmi"]
 [ext_resource type="TileSet" uid="uid://bbjxv1glk7q3r" path="res://assets/tilesets/navigation_tracks.tres" id="2_hctaa"]
 [ext_resource type="TileSet" uid="uid://b0iq75h61whcq" path="res://assets/tilesets/navigation_cities.tres" id="3_75oc5"]
 [ext_resource type="TileSet" uid="uid://dkfq0a766sqds" path="res://assets/tilesets/navigation_locomotive.tres" id="4_ivt2f"]
@@ -26,6 +27,7 @@ tile_size = Vector2i(256, 128)
 sources/0 = SubResource("TileSetAtlasSource_vi62s")
 
 [node name="GenericNavigationMap" type="Node2D" unique_id=1195897361]
+script = ExtResource("1_uqwmi")
 
 [node name="Terrain+1" type="TileMapLayer" parent="." unique_id=527008799]
 position = Vector2(0, -32)
