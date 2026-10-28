@@ -21,12 +21,11 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="TopBar" parent="Root" unique_id=884397168 instance=ExtResource("3_ierxw")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
 
 [node name="BottomBar" parent="Root" unique_id=1844444344 instance=ExtResource("4_3h18x")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+offset_top = -216.0
 
 [node name="Minimap" parent="Root" unique_id=479387543 instance=ExtResource("4_jag7j")]
 layout_mode = 1

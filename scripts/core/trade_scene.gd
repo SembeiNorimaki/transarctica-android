@@ -24,13 +24,15 @@ signal trade_failed(message: String) # for the HUD
 @onready var player_train: HorizontalTrain = $TrainContainer/PlayerTrain
 
 # UI
-@onready var buy_menu: BuyMenu = $CanvasLayer/UI/BuyMenu
-@onready var sell_menu: SellMenu = $CanvasLayer/UI/SellMenu
-@onready var production_menu: ProductionMenu = $CanvasLayer/UI/ProductionMenu
-@onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
-@onready var exit_button: Button = $CanvasLayer/UI/ExitButton
-@onready var resource_slots: Node2D = $ResourceSlots
+@onready var top_bar: TopBar = $CanvasLayer/UI/TopBar
+@onready var bottom_bar: BottomBar = $CanvasLayer/UI/BottomBar
+@onready var trade_ui: TradeUI = $CanvasLayer/UI/TradeUI
 
+# @onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
+@onready var exit_button: Button = $CanvasLayer/UI/ExitButton
+
+
+@onready var resource_slots: Node2D = $ResourceSlots
 @onready var place: TradePlace = $Place
 @onready var brake_marker: Marker2D = $TrainBrakeStart
 
@@ -69,30 +71,36 @@ func _ready() -> void:
     _set_resource_slots()
     wagon_reorder_controller.setup(player_train)
 
-    
-    # connect signals
-    trade_resource_manager.resource_clicked.connect(_on_resource_clicked)
-    buy_menu.buy_requested.connect(_on_buy_requested)
-    exit_button.pressed.connect(_on_exit_button_pressed)
-    city_inventory.city_resource_amount_changed.connect(_on_city_resource_amount_changed)
-    train_inventory.wagon_resource_amount_changed.connect(_on_wagon_resource_amount_changed)
-    player_train.wagon_clicked.connect(_on_wagon_clicked)
-    sell_menu.sell_requested.connect(_on_sell_from_wagon_requested)
-    trade_wagon_manager.wagon_clicked.connect(_on_city_wagon_clicked)
-    buy_menu.buy_wagon_requested.connect(_on_buy_wagon_requested)
-    city_inventory.city_wagon_amount_changed.connect(_on_city_wagon_amount_changed)
-    train_inventory.wagon_added.connect(_on_wagon_added)
-    sell_menu.sell_wagon_requested.connect(_on_sell_wagon_requested)
-    train_inventory.wagon_removed.connect(_on_wagon_removed)
-    wagon_reorder_controller.wagon_dropped.connect(_on_wagon_dropped)
-    train_inventory.wagon_moved.connect(_on_wagon_moved)
-    trade_unit_manager.unit_clicked.connect(_on_city_unit_clicked)
-    buy_menu.recruit_requested.connect(_on_recruit_requested)
-    city_inventory.city_recruit_amount_changed.connect(_on_city_recruit_amount_changed)
-    train_inventory.unit_added.connect(_on_unit_added)
-    place.clicked.connect(_on_place_clicked)
-    production_menu.produce_requested.connect(_on_produce_requested)
+    trade_ui.setup(city_inventory, train_inventory, player_train, trade_resource_manager, trade_wagon_manager, trade_unit_manager)
 
+
+    # connect signals
+    city_inventory.city_resource_amount_changed.connect(_on_city_resource_amount_changed)
+    city_inventory.city_wagon_amount_changed.connect(_on_city_wagon_amount_changed)
+    city_inventory.city_recruit_amount_changed.connect(_on_city_recruit_amount_changed)
+    
+    train_inventory.wagon_resource_amount_changed.connect(_on_wagon_resource_amount_changed)
+    train_inventory.wagon_added.connect(_on_wagon_added)
+    train_inventory.wagon_removed.connect(_on_wagon_removed)
+    train_inventory.wagon_moved.connect(_on_wagon_moved)
+    
+    trade_ui.buy_requested.connect(_on_buy_requested)
+    trade_ui.buy_wagon_requested.connect(_on_buy_wagon_requested)
+    trade_ui.recruit_requested.connect(_on_recruit_requested)
+    trade_ui.produce_requested.connect(_on_produce_requested)
+    trade_ui.sell_from_wagon_requested.connect(_on_sell_from_wagon_requested)
+    trade_ui.sell_wagon_requested.connect(_on_sell_wagon_requested)
+    trade_ui.refused.connect(trade_failed.emit)
+    
+    trade_resource_manager.resource_clicked.connect(trade_ui.toggle_resource)
+    trade_wagon_manager.wagon_clicked.connect(trade_ui.toggle_city_wagon)
+    trade_unit_manager.unit_clicked.connect(trade_ui.toggle_city_unit)
+    
+    exit_button.pressed.connect(_on_exit_button_pressed)
+    player_train.wagon_clicked.connect(_on_wagon_clicked)
+    wagon_reorder_controller.wagon_dropped.connect(_on_wagon_dropped)
+    place.clicked.connect(_on_place_clicked)
+    
     AudioService.play_music(MUSIC_TRADE, 0.0)
 
 
@@ -131,8 +139,6 @@ func initialize(city_name_: String) -> void:
     _initialized = true
     city_name = city_name_
 
-    GameState.money_changed.connect(_on_money_changed)
-    player_money_label.text = str(GameState.get_money())
     _load_train()
     _load_city_resources()
     _load_city_wagons()
@@ -199,89 +205,15 @@ func _on_sell_from_wagon_requested(wagon_index: int, qty: int) -> void:
         trade_failed.emit(TradeService.result_text(result))
 
 
-func _on_resource_clicked(resource_name: String) -> void:
-    production_menu.close()
-    if buy_menu.visible and buy_menu.current_resource == resource_name:
-        buy_menu.close() # tapping the open resource again closes it
-        return
-    if sell_menu.visible:
-        sell_menu.close()
-    var node := trade_resource_manager.get_resource(resource_name)
-    buy_menu.show_resource(
-        resource_name,
-        node.get_icon() if node != null else null,
-        city_inventory.get_available_qty(resource_name),
-        city_inventory.get_buy_price(resource_name))
-    _refresh_buy_menu()
-
 func _on_wagon_clicked(wagon: GenericWagon) -> void:
-    production_menu.close()
     if city_inventory.allows_rearranging():
-        wagon_reorder_controller.begin_drag(wagon) # in a depot a press starts a drag, there is no trading
-        return
-        
-    var index := player_train.wagons.find(wagon)
-    if index < 0:
-        return
-    if sell_menu.visible and sell_menu.current_wagon == index:
-        sell_menu.close() # tapping the open wagon again closes it
-        return
-
-    var wagon_type := train_inventory.get_wagon_type(index)
-    var resource_name := train_inventory.get_wagon_current_resource(index)
-    var sells_cargo := resource_name != "" and city_inventory.can_player_sell(resource_name)
-    if not sells_cargo and not TradeService.can_sell_wagon(city_inventory, train_inventory, index):
-        trade_failed.emit("The city doesn't buy anything from this wagon.")
-        return
-
-    buy_menu.close() # only one menu at a time
-    if sells_cargo:
-        var node := trade_resource_manager.get_resource(resource_name)
-        sell_menu.show_wagon(
-            index,
-            resource_name,
-            node.get_icon() if node != null else null,
-            train_inventory.get_wagon_resource_qty(index),
-            city_inventory.get_sell_price(resource_name))
+        wagon_reorder_controller.begin_drag(wagon) # in a depot a press starts a drag
     else:
-        sell_menu.show_empty_wagon(index, wagon_type, wagon.get_icon())
-    _refresh_sell_menu()
+        trade_ui.toggle_player_wagon(wagon)
 
-func _on_city_wagon_clicked(wagon_type: String) -> void:
-    production_menu.close()
-    if buy_menu.visible and buy_menu.current_wagon_type == wagon_type:
-        buy_menu.close() # tapping the open wagon again closes it
-        return
-    sell_menu.close() # only one menu at a time
-    var wagon := trade_wagon_manager.get_wagon(wagon_type)
-    buy_menu.show_wagon(
-        wagon_type,
-        wagon.get_icon() if wagon != null else null,
-        city_inventory.get_wagon_available_qty(wagon_type),
-        city_inventory.get_wagon_buy_price(wagon_type))
-    _refresh_buy_menu()
-
-func _on_city_unit_clicked(unit_type: String) -> void:
-    production_menu.close()
-    if buy_menu.visible and buy_menu.current_unit_type == unit_type:
-        buy_menu.close() # tapping the open soldier again closes it
-        return
-    sell_menu.close() # only one menu at a time
-    var unit := trade_unit_manager.get_unit(unit_type)
-    buy_menu.show_unit(
-        unit_type,
-        unit.get_icon() if unit != null else null,
-        city_inventory.get_recruit_qty(unit_type),
-        city_inventory.get_recruit_price(unit_type))
-    _refresh_buy_menu()
 
 func _on_place_clicked(_clicked_place: TradePlace) -> void:
-    if production_menu.visible:
-        production_menu.close() # tapping the open industry again closes it
-        return
-    buy_menu.close() # only one menu at a time
-    sell_menu.close()
-    _show_production_menu()
+    trade_ui.toggle_production()
 
 func _on_buy_wagon_requested(wagon_type: String) -> void:
     var result := TradeService.buy_wagon(city_inventory, train_inventory, wagon_type)
@@ -301,24 +233,15 @@ func _on_recruit_requested(unit_type: String) -> void:
 
 func _on_city_wagon_amount_changed(wagon_type: String, qty: int) -> void:
     if qty == 0:
-        # The last one was bought: the wagon leaves the city
-        if buy_menu.current_wagon_type == wagon_type:
-            buy_menu.close()
         trade_wagon_manager.remove_wagon(wagon_type)
-    else:
-        if trade_wagon_manager.get_wagon(wagon_type) == null:
-            trade_wagon_manager.spawn_wagon(wagon_type) # the city has this wagon again
-        _refresh_buy_menu()
+    elif trade_wagon_manager.get_wagon(wagon_type) == null:
+        trade_wagon_manager.spawn_wagon(wagon_type)
 
 func _on_city_recruit_amount_changed(unit_type: String, qty: int) -> void:
     if qty == 0:
-        # The last one was hired: the soldier leaves the city
-        if buy_menu.current_unit_type == unit_type:
-            buy_menu.close()
         trade_unit_manager.remove_unit(unit_type)
     else:
         trade_unit_manager.set_unit_qty(unit_type, qty)
-        _refresh_buy_menu()
 
 
 # The data already has the wagon, so the train only has to show it at the rear
@@ -327,67 +250,7 @@ func _on_wagon_added(wagon_index: int, _wagon_type: String) -> void:
     player_train.add_wagon(wagons_data[wagon_index])
 
 func _on_wagon_removed(wagon_index: int) -> void:
-    sell_menu.close() # the indices after this wagon moved, so an open menu would point at the wrong wagon
     player_train.remove_wagon(wagon_index)
-
-# The barracks has one soldier more, and fewer places: the menu's button may have to be disabled
-func _on_unit_added(_wagon_index: int, _unit_id: String) -> void:
-    _refresh_buy_menu()
-
-# Keeps the open menu in sync: stock and whether buying is possible right now
-func _refresh_buy_menu() -> void:
-    if buy_menu.current_unit_type != "":
-        var unit_type := buy_menu.current_unit_type
-        buy_menu.set_qty(city_inventory.get_recruit_qty(unit_type))
-        buy_menu.set_can_buy(TradeService.can_recruit(city_inventory, train_inventory, unit_type))
-        return
-        
-    if buy_menu.current_wagon_type != "":
-        var wagon_type := buy_menu.current_wagon_type
-        buy_menu.set_qty(city_inventory.get_wagon_available_qty(wagon_type))
-        buy_menu.set_can_buy(TradeService.can_buy_wagon(city_inventory, wagon_type))
-        return
-
-    var resource_name := buy_menu.current_resource
-    if resource_name == "":
-        return
-    buy_menu.set_qty(city_inventory.get_available_qty(resource_name))
-    buy_menu.set_can_buy(TradeService.max_buyable(city_inventory, train_inventory, resource_name) > 0)
-
-func _refresh_sell_menu() -> void:
-    var index := sell_menu.current_wagon
-    if index < 0:
-        return
-    var wagon_type := train_inventory.get_wagon_type(index)
-    var can_sell_wagon := TradeService.can_sell_wagon(city_inventory, train_inventory, index)
-    sell_menu.set_wagon_offer(city_inventory.get_wagon_sell_price(wagon_type) if can_sell_wagon else -1)
-
-    var qty := train_inventory.get_wagon_resource_qty(index)
-    if qty > 0:
-        sell_menu.set_qty(qty)
-        sell_menu.set_can_sell(TradeService.max_sellable_from_wagon(city_inventory, train_inventory, index) > 0)
-    elif can_sell_wagon:
-        # emptied: only the wagon itself can be sold now
-        sell_menu.show_empty_wagon(index, wagon_type, player_train.wagons[index].get_icon())
-    else:
-        sell_menu.close()
-
-func _show_production_menu() -> void:
-    production_menu.show_recipes(city_name, city_inventory.get_recipes(), _recipe_batches())
-
-
-# What each recipe can do right now, in the order of the recipes
-func _recipe_batches() -> Array[int]:
-    var result: Array[int] = []
-    for i in city_inventory.get_recipes().size():
-        result.append(city_inventory.get_max_batches(i))
-    return result
-
-
-# Keeps the open menu in sync: the stock changed, so what can be produced changed
-func _refresh_production_menu() -> void:
-    if production_menu.visible:
-        production_menu.set_batches(_recipe_batches())
 
 
 func _on_produce_requested(recipe_index: int, times: int) -> void:
@@ -408,12 +271,8 @@ func _update_all_wagon_prices() -> void:
     for i in player_train.wagons.size():
         _update_wagon_price(i)
 
-# The numbers on screen come from the inventories' signals, never from the buttons themselves
 func _on_city_resource_amount_changed(resource_name: String, qty: int) -> void:
     trade_resource_manager.set_resource_qty(resource_name, qty)
-    _refresh_buy_menu()
-    _refresh_sell_menu()
-    _refresh_production_menu()
 
 
 func _on_wagon_resource_amount_changed(wagon_index: int, resource_name: String, qty: int) -> void:
@@ -421,13 +280,6 @@ func _on_wagon_resource_amount_changed(wagon_index: int, resource_name: String, 
     if is_instance_valid(train) and wagon_index < train.wagons.size():
         train.wagons[wagon_index].set_cargo(resource_name, qty)
         _update_wagon_price(wagon_index)
-    _refresh_buy_menu()
-    _refresh_sell_menu()
-
-
-func _on_money_changed(money: int) -> void:
-    player_money_label.text = str(money)
-    _refresh_buy_menu()
 
 
 #endregion
@@ -470,9 +322,7 @@ func _process(_delta: float) -> void:
 func _start_outro() -> void:
     _phase = Phase.OUTRO
     exit_button.disabled = true
-    buy_menu.close() # nothing to trade any more
-    sell_menu.close()
-    production_menu.close()
+    trade_ui.close_all()
     player_train.drive()
 
 
@@ -488,7 +338,6 @@ func _on_wagon_dropped(from_index: int, to_index: int) -> void:
 
 
 func _on_wagon_moved(from_index: int, to_index: int) -> void:
-    sell_menu.close() # indices changed, so an open menu would point at the wrong wagon
     player_train.move_wagon(from_index, to_index)
     
 

@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://csbv3q5hmbl4w"]
+
+[ext_resource type="PackedScene" uid="uid://swu4wkh6mhyx" path="res://scenes/menus/buy_menu.tscn" id="1_6en67"]
+[ext_resource type="Script" uid="uid://bmkc3mc2n2d3n" path="res://scripts/UI/trade_ui.gd" id="1_huhwc"]
+[ext_resource type="PackedScene" uid="uid://nfn44fiqwyhr" path="res://scenes/menus/sell_menu.tscn" id="2_huhwc"]
+[ext_resource type="PackedScene" uid="uid://dppit6a6oo1ok" path="res://scenes/menus/production_menu.tscn" id="3_d66k2"]
+
+[node name="TradeUI" type="MarginContainer" unique_id=1113789489]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_huhwc")
+
+[node name="BuyMenu" parent="." unique_id=2121969279 instance=ExtResource("1_6en67")]
+layout_mode = 2
+
+[node name="SellMenu" parent="." unique_id=753301594 instance=ExtResource("2_huhwc")]
+layout_mode = 2
+
+[node name="ProductionMenu" parent="." unique_id=880084716 instance=ExtResource("3_d66k2")]
+layout_mode = 2

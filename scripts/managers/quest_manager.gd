@@ -15,8 +15,6 @@ signal quest_offered(quest: Quest) # its intro dialog should be shown
 signal quest_outro_requested(quest: Quest) # its outro dialog should be shown
 
 const QUESTS_PATH := "res://data/quests.json"
-# const FIRST_QUEST := "quest_tutorial_1" # accepted when a new game starts
-const FIRST_QUEST := "" # accepted when a new game starts
 const QUESTS_ENABLED := false # false: no quest is offered (for debugging). The data and the saves are not touched.
 
 var quest_database := {} # quest id -> data from quests.json
@@ -72,7 +70,7 @@ func _build_quest(quest_id: String) -> Quest:
     quest.title = str(data.get("title", "Untitled Quest"))
     quest.description = str(data.get("description", ""))
     quest.is_main_quest = bool(data.get("is_main_quest", false))
-    quest.next_quest = str(data.get("next_quest", ""))
+    quest.conditions = data.get("conditions", {})
     quest.rewards = data.get("rewards", {})
     quest.intro = data.get("intro", {})
     quest.outro = data.get("outro", {})
@@ -91,6 +89,26 @@ func _build_quest(quest_id: String) -> Quest:
 
 
 #region quest flow
+# Offers every quest whose conditions are met now. Call it when something that conditions depend on
+# changes. `arrived_city` is the city the player has just arrived in ("" for the other moments), the
+# only moment when a "city" condition is true. A quest that was offered and declined is offered again.
+func check_offers(arrived_city := "") -> void:
+    if not QUESTS_ENABLED:
+        return
+    for quest_id in quest_database:
+        if active_quests.has(quest_id) or completed_quests.has(quest_id):
+            continue
+        if _conditions_met(quest_database[quest_id].get("conditions", {}), arrived_city):
+            offer_quest(quest_id)
+
+
+func _conditions_met(conditions: Dictionary, arrived_city: String) -> bool:
+    if conditions.has("city") and str(conditions["city"]) != arrived_city:
+        return false
+    for required in conditions.get("completed", []):
+        if not completed_quests.has(str(required)):
+            return false
+    return true
 # Offers a quest to the player. With an intro dialog, the player decides (a choice with
 # "accept": true starts it). Without one, it starts right away.
 func offer_quest(quest_id: String) -> void:
@@ -158,9 +176,8 @@ func complete_quest(quest: Quest) -> void:
 
     if not quest.outro.is_empty():
         quest_outro_requested.emit(quest)
-    if quest.next_quest != "":
-        # Deferred, so the UI can react to the completion before the next quest appears
-        offer_quest.call_deferred(quest.next_quest)
+    # Deferred, so the UI can react to the completion before the quests it unlocks appear
+    check_offers.call_deferred()
     quests_updated.emit()
 
 func dismiss_completed() -> void:
@@ -186,6 +203,7 @@ func claim_rewards(quest: Quest) -> void:
 func notify_city_reached(city_name: String) -> void:
     _current_city = city_name
     process_event(QuestObjective.TYPE_REACH_CITY, {"city_name": city_name})
+    check_offers.call_deferred(city_name) # after the outros of the quests this arrival completed
 
 
 func notify_city_left() -> void:
@@ -241,13 +259,8 @@ func load_from_game_state() -> void:
         active_quests[str(quest_id)] = quest
 
     # A new game: offer the first quest. Otherwise offer again what was offered but not accepted.
-    if not QUESTS_ENABLED:
-        pass
-    if active_quests.is_empty() and completed_quests.is_empty() and offered_quests.is_empty():
-        offer_quest(FIRST_QUEST)
-    else:
-        for quest_id in offered_quests.duplicate():
-            offer_quest.call_deferred(quest_id)
+    if QUESTS_ENABLED:
+        check_offers.call_deferred() # a new game offers the quests with no conditions
     quests_updated.emit()
     _refresh_collect_objectives()
 #endregion
@@ -283,9 +296,7 @@ func _validate_database() -> void:
 # Everything in quests.json that doesn't match the rest of the game's data
 func find_database_problems() -> Array[String]:
     var problems: Array[String] = []
-    if not quest_database.has(FIRST_QUEST):
-        problems.append("the first quest '%s' is missing" % FIRST_QUEST)
-
+    
     for quest_id in quest_database:
         var data: Dictionary = quest_database[quest_id]
         var objectives: Array = data.get("objectives", [])
@@ -300,9 +311,14 @@ func find_database_problems() -> Array[String]:
             seen_ids[objective_id] = true
             problems.append_array(_objective_problems(quest_id, objective_data))
 
-        var next_quest := str(data.get("next_quest", ""))
-        if next_quest != "" and not quest_database.has(next_quest):
-            problems.append("'%s' has next_quest '%s', which doesn't exist" % [quest_id, next_quest])
+        var conditions: Dictionary = data.get("conditions", {})
+        if conditions.has("city") and GameState.get_city_by_name(str(conditions["city"])).is_empty():
+            problems.append("'%s' has the condition city '%s', which doesn't exist" % [quest_id, conditions["city"]])
+        for required in conditions.get("completed", []):
+            if not quest_database.has(str(required)):
+                problems.append("'%s' needs the quest '%s' completed, which doesn't exist" % [quest_id, required])
+            elif str(required) == quest_id:
+                problems.append("'%s' needs itself completed" % quest_id)
 
         var rewards: Dictionary = data.get("rewards", {})
         if rewards.has("wagon") and not WagonTypes.TYPES.has(str(rewards["wagon"])):

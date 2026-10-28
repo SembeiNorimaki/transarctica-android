@@ -12,11 +12,9 @@
 [ext_resource type="Script" uid="uid://bo4vcuwauepxj" path="res://scripts/inventories/city_inventory.gd" id="7_oh1aj"]
 [ext_resource type="Script" uid="uid://b7xt2vmxgj1lt" path="res://scripts/managers/wagon_reorder_controller.gd" id="8_ciyb7"]
 [ext_resource type="Script" uid="uid://83xnpffg07jw" path="res://scripts/inventories/train_inventory.gd" id="8_jdot1"]
-[ext_resource type="PackedScene" uid="uid://swu4wkh6mhyx" path="res://scenes/menus/buy_menu.tscn" id="9_io20h"]
 [ext_resource type="Script" uid="uid://bybumlmye14d" path="res://scripts/managers/trade_unit_manager.gd" id="9_pelun"]
-[ext_resource type="PackedScene" uid="uid://nfn44fiqwyhr" path="res://scenes/menus/sell_menu.tscn" id="10_wiigk"]
 [ext_resource type="PackedScene" uid="uid://b4j11lbqypfcu" path="res://scenes/menus/dialog_menu.tscn" id="12_1x0sx"]
-[ext_resource type="PackedScene" uid="uid://dppit6a6oo1ok" path="res://scenes/menus/production_menu.tscn" id="15_jgirw"]
+[ext_resource type="PackedScene" uid="uid://csbv3q5hmbl4w" path="res://scenes/UI/trade_ui.tscn" id="17_3xerl"]
 [ext_resource type="PackedScene" uid="uid://cke7jrixhqf0x" path="res://scenes/trade_resources/crate_resource.tscn" id="17_xmr62"]
 [ext_resource type="PackedScene" uid="uid://drfi68tnm8em0" path="res://scenes/UI/top_bar.tscn" id="18_vca0f"]
 [ext_resource type="PackedScene" uid="uid://bosf8j47x84il" path="res://scenes/UI/bottom_bar.tscn" id="19_vv4w2"]
@@ -119,7 +117,7 @@ scale = Vector2(2, 2)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=917918418]
 
-[node name="Control" type="Control" parent="CanvasLayer" unique_id=1597647434]
+[node name="UI" type="Control" parent="CanvasLayer" unique_id=1597647434]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -128,53 +126,43 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TopBar" parent="CanvasLayer/Control" unique_id=884397168 instance=ExtResource("18_vca0f")]
-layout_mode = 0
-anchors_preset = 0
-anchor_right = 0.0
-grow_horizontal = 1
+[node name="TopBar" parent="CanvasLayer/UI" unique_id=884397168 instance=ExtResource("18_vca0f")]
+layout_mode = 1
 
-[node name="BottomBar" parent="CanvasLayer/Control" unique_id=1844444344 instance=ExtResource("19_vv4w2")]
-visible = false
-layout_mode = 0
-anchors_preset = 0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-grow_horizontal = 1
-grow_vertical = 1
+[node name="BottomBar" parent="CanvasLayer/UI" unique_id=1844444344 instance=ExtResource("19_vv4w2")]
+layout_mode = 1
+offset_top = -216.0
 
-[node name="TradeUI" type="MarginContainer" parent="CanvasLayer/Control" unique_id=516097683]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="TradeUI" parent="CanvasLayer/UI" unique_id=1113789489 instance=ExtResource("17_3xerl")]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -25.0
+offset_top = -31.0
+offset_right = 25.0
+offset_bottom = 31.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="BuyMenu" parent="CanvasLayer/Control/TradeUI" unique_id=2121969279 instance=ExtResource("9_io20h")]
-visible = false
-layout_mode = 2
-
-[node name="SellMenu" parent="CanvasLayer/Control/TradeUI" unique_id=143864169 instance=ExtResource("10_wiigk")]
-visible = false
-layout_mode = 2
-
-[node name="ProductionMenu" parent="CanvasLayer/Control/TradeUI" unique_id=880084716 instance=ExtResource("15_jgirw")]
-visible = false
-layout_mode = 2
-
-[node name="TradeHUD" type="MarginContainer" parent="CanvasLayer/Control" unique_id=1881986667]
+[node name="TradeHUD" type="MarginContainer" parent="CanvasLayer/UI" unique_id=1881986667]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="ExitButton" type="Button" parent="CanvasLayer/Control/TradeHUD" unique_id=917235037]
+[node name="DialogMenu" parent="CanvasLayer/UI/TradeHUD" unique_id=1994343864 instance=ExtResource("12_1x0sx")]
+visible = false
 layout_mode = 2
+
+[node name="ExitButton" type="Button" parent="CanvasLayer/UI" unique_id=917235037]
+layout_mode = 0
+offset_right = 71.0
+offset_bottom = 77.0
 text = "        
   X      
                "
-
-[node name="DialogMenu" parent="CanvasLayer/Control/TradeHUD" unique_id=1994343864 instance=ExtResource("12_1x0sx")]
-visible = false
-layout_mode = 2
 
 [node name="TrainBrakeStart" type="Marker2D" parent="." unique_id=1115846006]
 position = Vector2(1400, 992)

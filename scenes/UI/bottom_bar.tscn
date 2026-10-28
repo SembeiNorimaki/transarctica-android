@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bosf8j47x84il"]
 
 [ext_resource type="Texture2D" uid="uid://cal2c8vywav7v" path="res://assets/button_gear.png" id="1_7kui4"]
+[ext_resource type="Script" uid="uid://c20dex3s0jqpc" path="res://scripts/UI/bottom_bar.gd" id="1_f60aa"]
 [ext_resource type="Texture2D" uid="uid://bmo51avdbudms" path="res://assets/tilesets/imgs/button_gear.png" id="2_1stvg"]
 
 [node name="BottomBar" type="MarginContainer" unique_id=1844444344]
@@ -15,6 +16,7 @@ theme_override_constants/margin_left = 64
 theme_override_constants/margin_top = 64
 theme_override_constants/margin_right = 64
 theme_override_constants/margin_bottom = 64
+script = ExtResource("1_f60aa")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=73403248]
 layout_mode = 2

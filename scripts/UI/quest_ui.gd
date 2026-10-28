@@ -36,6 +36,7 @@ const DIALOG_SCENE: PackedScene = preload("res://scenes/menus/dialog_menu.tscn")
 var _refresh_pending := false
 var _notifications: Array[Dictionary] = [] # waiting to be shown: {message, is_completion}
 var _showing := false
+var _showing_quest := "" # the quest of the dialog on screen
 var _dialog: DialogMenu
 var _dialog_queue: Array[Dictionary] = [] # {quest, is_intro}
 var _dialog_running := false
@@ -209,8 +210,10 @@ func _on_notification_finished() -> void:
 #endregion
 
 #region quest dialogs
-# They are shown one after another, and the game is paused while they are open
 func _enqueue_dialog(quest: Quest, is_intro: bool) -> void:
+    # The same offer can arrive twice in a row (two checks); once is enough
+    if is_intro and (_showing_quest == quest.id or _dialog_queue.any(func(item): return item["is_intro"] and item["quest"].id == quest.id)):
+        return
     _dialog_queue.append({"quest": quest, "is_intro": is_intro})
     if not _dialog_running:
         _run_dialogs()
@@ -224,11 +227,13 @@ func _run_dialogs() -> void:
             await visibility_changed
         var item: Dictionary = _dialog_queue.pop_front()
         var quest: Quest = item["quest"]
+        _showing_quest = quest.id if item["is_intro"] else ""
         get_tree().paused = true
         if item["is_intro"]:
             await _show_intro(quest)
         else:
             await _show_outro(quest)
+        _showing_quest = ""
 
     get_tree().paused = was_paused
     _dialog_running = false
