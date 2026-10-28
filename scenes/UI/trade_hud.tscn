@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://efl51wl1jcte"]
+
+[ext_resource type="PackedScene" uid="uid://cqwklhkq5iomc" path="res://scenes/UI/trade_hud2.tscn" id="1_6ftol"]
+
+[node name="TradeHUD" type="CanvasLayer" unique_id=1420677141]
+
+[node name="Control" parent="." unique_id=1025255057 instance=ExtResource("1_6ftol")]

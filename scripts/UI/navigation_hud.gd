@@ -23,15 +23,12 @@ signal gear_pressed # right button
 signal quests_pressed
 signal menu_pressed
 
-@onready var fuel_bar: ProgressBar = $Root/TopBar/HBoxContainer/FuelBar
-@onready var fuel_label: Label = $Root/TopBar/HBoxContainer/FuelBar/FuelLabel
-@onready var money_label: Label = $Root/TopBar/HBoxContainer/MoneyLabel
-@onready var quests_button: Button = $Root/TopBar/HBoxContainer/QuestsButton
-@onready var menu_button: Button = $Root/TopBar/HBoxContainer/GameMenuButton
+# @onready var fuel_bar: ProgressBar = $Root/TopBar/HBoxContainer/FuelBar
 @onready var button_left: Button = $Root/BottomBar/HBoxContainer/ButtonLeft
 @onready var button_right: Button = $Root/BottomBar/HBoxContainer/ButtonRight
 @onready var minimap: Minimap = $Root/Minimap
 @onready var event_popup: EventPopup = $Root/EventPopup
+@onready var top_bar: TopBar = $Root/TopBar
 
 # One image with two frames side by side: the first is shown while the train is stopped, the
 # second while it is driving. Swap the two images in the file if it looks the wrong way round.
@@ -46,22 +43,8 @@ func _ready() -> void:
 
     button_left.pressed.connect(reverse_pressed.emit)
     button_right.pressed.connect(gear_pressed.emit)
-    quests_button.pressed.connect(quests_pressed.emit)
-    menu_button.pressed.connect(menu_pressed.emit)
-
-    GameState.money_changed.connect(set_money)
-    set_money(GameState.get_money())
-
-
-func set_fuel(current: int, maximum: int) -> void:
-    fuel_bar.max_value = maxf(maximum, 1.0)
-    fuel_bar.value = current
-    fuel_label.text = "NO COAL" if current <= 0 else "%d / %d" % [current, maximum]
-    fuel_bar.modulate = Color.RED if current * 5 < maximum else Color.WHITE # below 20%
-
-
-func set_money(amount: int) -> void:
-    money_label.text = "Money: %d" % amount
+    top_bar.quests_pressed.connect(quests_pressed.emit)
+    top_bar.menu_pressed.connect(menu_pressed.emit)
 
 # Called when the player train changes gear (or is rebuilt)
 func set_driving(driving: bool) -> void:

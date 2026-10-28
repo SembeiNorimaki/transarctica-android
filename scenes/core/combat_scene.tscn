@@ -1,9 +1,11 @@
 [gd_scene format=4 uid="uid://b1cox2n8spdb5"]
 
-[ext_resource type="Script" uid="uid://beaycnrfgi7eb" path="res://scripts/core/combat_scene.gd" id="1_rsaqb"]
+[ext_resource type="Script" uid="uid://dyy811wfjep40" path="res://scripts/core/combat_scene.gd" id="1_rsaqb"]
 [ext_resource type="PackedScene" uid="uid://c38h40g7yk2nx" path="res://scenes/managers/horizontal_train_manager.tscn" id="2_ocogj"]
 [ext_resource type="TileSet" uid="uid://d2uvx33jrelml" path="res://assets/tilesets/navigation_terrain.tres" id="2_tcmw6"]
 [ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="4_7ee8q"]
+[ext_resource type="Script" uid="uid://b5pxl1b42s5hm" path="res://scripts/managers/combat_unit_manager.gd" id="4_vc47n"]
+[ext_resource type="Script" uid="uid://c6wueomnghw5t" path="res://scripts/menus/barracks_menu.gd" id="5_1vy2x"]
 
 [node name="CombatScene" type="Node2D" unique_id=514721222]
 script = ExtResource("1_rsaqb")
@@ -18,6 +20,9 @@ tile_set = ExtResource("2_tcmw6")
 
 [node name="HorizontalTrainManager" parent="Managers" unique_id=60617838 instance=ExtResource("2_ocogj")]
 
+[node name="CombatUnitManager" type="Node" parent="Managers" unique_id=167400487]
+script = ExtResource("4_vc47n")
+
 [node name="TrainContainer" type="Node2D" parent="." unique_id=343826687]
 
 [node name="PlayerTrain" parent="TrainContainer" unique_id=1459319408 instance=ExtResource("4_7ee8q")]
@@ -25,3 +30,14 @@ position = Vector2(1800, 990)
 
 [node name="EnemyTrain" parent="TrainContainer" unique_id=2139225877 instance=ExtResource("4_7ee8q")]
 position = Vector2(1800, 100)
+
+[node name="UnitContainer" type="Node2D" parent="." unique_id=30287120]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=353424019]
+
+[node name="BarracksMenu" type="HBoxContainer" parent="CanvasLayer" unique_id=657631877]
+offset_left = 506.0
+offset_top = 333.0
+offset_right = 546.0
+offset_bottom = 373.0
+script = ExtResource("5_1vy2x")

@@ -1,5 +1,24 @@
 [gd_scene format=3 uid="uid://dn6io6l1esb8d"]
 
 [ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_xf65r"]
+[ext_resource type="Script" uid="uid://di5uveq1j2phl" path="res://scripts/wagons/barracks_wagon.gd" id="2_rysgy"]
 
 [node name="BarracksWagon" unique_id=420343912 instance=ExtResource("1_xf65r")]
+script = ExtResource("2_rysgy")
+
+[node name="DeploymentPositions" type="Node2D" parent="." index="2" unique_id=975617288]
+
+[node name="Marker2D" type="Marker2D" parent="DeploymentPositions" index="0" unique_id=1103785480]
+position = Vector2(0, -100)
+
+[node name="Marker2D2" type="Marker2D" parent="DeploymentPositions" index="1" unique_id=1280083763]
+position = Vector2(-30, -100)
+
+[node name="Marker2D3" type="Marker2D" parent="DeploymentPositions" index="2" unique_id=992126581]
+position = Vector2(30, -100)
+
+[node name="Marker2D4" type="Marker2D" parent="DeploymentPositions" index="3" unique_id=755987369]
+position = Vector2(-60, -100)
+
+[node name="Marker2D5" type="Marker2D" parent="DeploymentPositions" index="4" unique_id=552712644]
+position = Vector2(60, -100)

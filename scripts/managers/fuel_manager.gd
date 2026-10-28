@@ -41,6 +41,23 @@ func get_max_fuel() -> int:
 
 func has_fuel() -> bool:
     return _fuel > 0
+
+# Coal in the tender wagons of the player train, straight from GameState:
+# x = current, y = maximum. Static, so a HUD can use it without a FuelManager.
+static func read_fuel() -> Vector2i:
+    var fuel := 0
+    var maximum := 0
+    var fuel_wagon_type: String = ResourceTypes.wagon_type_for(FUEL_RESOURCE)
+    var capacity := int(WagonTypes.TYPES.get(fuel_wagon_type, {}).get("capacity", 0))
+
+    for wagon in GameState.get_player_train().get("wagons", []):
+        var data: Dictionary = wagon
+        if data.get("type", "") != fuel_wagon_type:
+            continue
+        maximum += capacity
+        if ResourceTypes.same(str(data.get("cargo_name", "")), FUEL_RESOURCE):
+            fuel += int(data.get("cargo_qty", 0))
+    return Vector2i(fuel, maximum)
 #endregion
 
 
@@ -112,9 +129,10 @@ func refresh() -> void:
         if ResourceTypes.same(str(data.get("cargo_name", "")), FUEL_RESOURCE):
             fuel += int(data.get("cargo_qty", 0))
 
-    var changed := fuel != _fuel or maximum != _max_fuel
-    _fuel = fuel
-    _max_fuel = maximum
+    var counted := read_fuel()
+    var changed := counted.x != _fuel or counted.y != _max_fuel
+    _fuel = counted.x
+    _max_fuel = counted.y
     if _fuel > 0:
         _was_empty = false
     if changed:

@@ -11,9 +11,9 @@ const LAYOUT_TIME := 0.15 # seconds the wagons take to slide into their places
 var _layout_tween: Tween
 var gear := "N" # "D" drive, "R" reverse, "N" neutral (brakes)
 var speed := 0.0
-var max_speed := 1000.0
-var acceleration := 100.0
-var deceleration := 300.0
+var max_speed := 1500.0
+var acceleration := 1200.0
+var deceleration := 1200.0
 
 var wagons: Array[GenericWagon] = []
 var last_wagon_position := Vector2.ZERO # back end of the last wagon, local to the train
@@ -131,6 +131,10 @@ func gear_down() -> void:
         gear = "N"
     elif gear == "N":
         gear = "R"
+
+# Drive forward, whatever the gear was
+func drive() -> void:
+    gear = "D"
 
 # Called every frame by HorizontalTrainManager
 func update(delta: float) -> void:

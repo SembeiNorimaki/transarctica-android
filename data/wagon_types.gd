@@ -23,7 +23,7 @@ const TYPES = {
         "navigation_size": Vector2i(78, 55),
         "stores": ["Soldiers"],
         "default_cargo": "Soldiers",
-        "capacity": 6,
+        "capacity": 5,
         "footprint": "wagon_small"
     },
     "CannonWagon": {

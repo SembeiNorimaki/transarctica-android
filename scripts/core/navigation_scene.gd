@@ -127,8 +127,6 @@ func _wire_signals() -> void:
 
     rail_service.rail_changed.connect(_on_rail_changed)
     
-    fuel_manager.fuel_changed.connect(hud.set_fuel)
-    hud.set_fuel(fuel_manager.get_fuel(), fuel_manager.get_max_fuel()) # the starting value
     hud.reverse_pressed.connect(navigation_train_manager.player_train_reverse)
     hud.gear_pressed.connect(navigation_train_manager.player_train_gear_toggle)
     hud.quests_pressed.connect(QuestUI.toggle_panel)

@@ -29,9 +29,10 @@ signal trade_failed(message: String) # for the HUD
 @onready var production_menu: ProductionMenu = $CanvasLayer/UI/ProductionMenu
 @onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
 @onready var exit_button: Button = $CanvasLayer/UI/ExitButton
-
+@onready var resource_slots: Node2D = $ResourceSlots
 
 @onready var place: TradePlace = $Place
+@onready var brake_marker: Marker2D = $TrainBrakeStart
 
 const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
 
@@ -48,9 +49,11 @@ const DEBUG_CITY_NAME := "Paris"
 
 
 const PRINT_INVENTORIES := false # debug: print both inventories when the scene opens
+enum Phase {INTRO, TRADING, OUTRO}
 
 static var _problems_reported := false
 
+var _phase := Phase.TRADING
 var city_name := ""
 
 var _initialized := false
@@ -107,7 +110,8 @@ func _ready() -> void:
 # Optional: the Marker2D children of a "ResourceSlots" node define where the resources go.
 # Without that node, the manager's default positions are used.
 func _set_resource_slots() -> void:
-    var markers := get_node_or_null("ResourceSlots")
+    # var markers := get_node_or_null("ResourceSlots")
+    var markers := resource_slots
     if markers == null:
         return
     var slots: Array[Vector2] = []
@@ -137,6 +141,7 @@ func initialize(city_name_: String) -> void:
     _update_all_wagon_prices()
     if PRINT_INVENTORIES:
         _print_inventories()
+    _start_intro()
 
 
 # The train is already in the scene: the manager only builds its wagons
@@ -424,11 +429,6 @@ func _on_money_changed(money: int) -> void:
     player_money_label.text = str(money)
     _refresh_buy_menu()
 
-func _on_exit_button_pressed() -> void:
-    if get_tree().current_scene == self:
-        print("Running the trade scene on its own: there is no navigation scene to return to")
-        return
-    SceneService.leave_city()
 
 #endregion
 
@@ -440,6 +440,47 @@ func _on_right_button_pressed() -> void:
 
 func _on_left_button_pressed() -> void:
     horizontal_train_manager.player_train_gear_down()
+
+
+func _on_exit_button_pressed() -> void:
+    _start_outro()
+#endregion
+
+#region intro and outro
+# The train comes in from the left at full speed, in Drive, and brakes when it reaches the marker
+func _start_intro() -> void:
+    _phase = Phase.INTRO
+    player_train.set_speed(player_train.max_speed) # speed > 0 puts it in Drive, at the top speed: it keeps it
+
+
+func _process(_delta: float) -> void:
+    match _phase:
+        Phase.INTRO:
+            if player_train.global_position.x >= brake_marker.global_position.x:
+                player_train.gear_down() # D -> N: it brakes
+                _phase = Phase.TRADING
+        Phase.OUTRO:
+            # The train node is its FRONT; the back end of the last wagon must be past the right edge
+            var tail_x := player_train.to_global(player_train.last_wagon_position).x
+            if tail_x > get_viewport_rect().size.x:
+                _phase = Phase.TRADING # it only happens once
+                _finish_leaving()
+
+
+func _start_outro() -> void:
+    _phase = Phase.OUTRO
+    exit_button.disabled = true
+    buy_menu.close() # nothing to trade any more
+    sell_menu.close()
+    production_menu.close()
+    player_train.drive()
+
+
+func _finish_leaving() -> void:
+    if get_tree().current_scene == self:
+        print("Running the trade scene on its own: there is no navigation scene to return to")
+        return
+    SceneService.leave_city()
 #endregion
 
 func _on_wagon_dropped(from_index: int, to_index: int) -> void:

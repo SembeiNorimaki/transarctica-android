@@ -15,7 +15,9 @@ signal quest_offered(quest: Quest) # its intro dialog should be shown
 signal quest_outro_requested(quest: Quest) # its outro dialog should be shown
 
 const QUESTS_PATH := "res://data/quests.json"
-const FIRST_QUEST := "quest_tutorial_1" # accepted when a new game starts
+# const FIRST_QUEST := "quest_tutorial_1" # accepted when a new game starts
+const FIRST_QUEST := "" # accepted when a new game starts
+const QUESTS_ENABLED := false # false: no quest is offered (for debugging). The data and the saves are not touched.
 
 var quest_database := {} # quest id -> data from quests.json
 var active_quests := {} # quest id -> Quest
@@ -239,6 +241,8 @@ func load_from_game_state() -> void:
         active_quests[str(quest_id)] = quest
 
     # A new game: offer the first quest. Otherwise offer again what was offered but not accepted.
+    if not QUESTS_ENABLED:
+        pass
     if active_quests.is_empty() and completed_quests.is_empty() and offered_quests.is_empty():
         offer_quest(FIRST_QUEST)
     else:

@@ -1,9 +1,10 @@
 [gd_scene format=3 uid="uid://8nkr012q8af6"]
 
-[ext_resource type="Script" uid="uid://bb6exr4r84plk" path="res://scripts/UI/navigation_hud.gd" id="1_hud"]
-[ext_resource type="Texture2D" uid="uid://cal2c8vywav7v" path="res://assets/button_gear.png" id="2_dn2qc"]
+[ext_resource type="Script" uid="uid://njvw37nndjnm" path="res://scripts/UI/navigation_hud.gd" id="1_hud"]
 [ext_resource type="Texture2D" uid="uid://bmo51avdbudms" path="res://assets/tilesets/imgs/button_gear.png" id="2_n0pre"]
 [ext_resource type="Script" uid="uid://d01c6l3glp7jk" path="res://scripts/UI/event_popup.gd" id="2_popup"]
+[ext_resource type="PackedScene" uid="uid://drfi68tnm8em0" path="res://scenes/UI/top_bar.tscn" id="3_ierxw"]
+[ext_resource type="PackedScene" uid="uid://bosf8j47x84il" path="res://scenes/UI/bottom_bar.tscn" id="4_3h18x"]
 [ext_resource type="PackedScene" path="res://scenes/UI/minimap.tscn" id="4_jag7j"]
 
 [node name="NavigationHUD" type="CanvasLayer" unique_id=627801967]
@@ -19,88 +20,13 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TopBar" type="MarginContainer" parent="Root" unique_id=1905306340]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-grow_horizontal = 2
-mouse_filter = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_bottom = 24
+[node name="TopBar" parent="Root" unique_id=884397168 instance=ExtResource("3_ierxw")]
+layout_mode = 0
+anchors_preset = 0
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Root/TopBar" unique_id=791229830]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 24
-
-[node name="FuelBar" type="ProgressBar" parent="Root/TopBar/HBoxContainer" unique_id=237089608]
-custom_minimum_size = Vector2(320, 36)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-show_percentage = false
-
-[node name="FuelLabel" type="Label" parent="Root/TopBar/HBoxContainer/FuelBar" unique_id=2091299577]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "Fuel"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="MoneyLabel" type="Label" parent="Root/TopBar/HBoxContainer" unique_id=881583353]
-layout_mode = 2
-text = "Money: 0"
-
-[node name="Spacer" type="Control" parent="Root/TopBar/HBoxContainer" unique_id=81268923]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="QuestsButton" type="Button" parent="Root/TopBar/HBoxContainer" unique_id=713682296]
-custom_minimum_size = Vector2(140, 56)
-layout_mode = 2
-text = "Quests"
-
-[node name="GameMenuButton" type="Button" parent="Root/TopBar/HBoxContainer" unique_id=940671791]
-custom_minimum_size = Vector2(140, 56)
-layout_mode = 2
-text = "Menu"
-
-[node name="BottomBar" type="MarginContainer" parent="Root" unique_id=1128768619]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 0
-mouse_filter = 2
-theme_override_constants/margin_left = 64
-theme_override_constants/margin_top = 64
-theme_override_constants/margin_right = 64
-theme_override_constants/margin_bottom = 64
-
-[node name="HBoxContainer" type="HBoxContainer" parent="Root/BottomBar" unique_id=1806827116]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="ButtonLeft" type="Button" parent="Root/BottomBar/HBoxContainer" unique_id=1050459783]
-layout_mode = 2
-icon = ExtResource("2_dn2qc")
-
-[node name="Spacer" type="Control" parent="Root/BottomBar/HBoxContainer" unique_id=1990218355]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="ButtonRight" type="Button" parent="Root/BottomBar/HBoxContainer" unique_id=1167849398]
-layout_mode = 2
+[node name="BottomBar" parent="Root" unique_id=1844444344 instance=ExtResource("4_3h18x")]
+layout_mode = 0
+anchors_preset = 0
 
 [node name="Minimap" parent="Root" unique_id=479387543 instance=ExtResource("4_jag7j")]
 layout_mode = 1

@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://cqwklhkq5iomc"]
+
+[ext_resource type="PackedScene" uid="uid://drfi68tnm8em0" path="res://scenes/UI/top_bar.tscn" id="1_88q7s"]
+[ext_resource type="PackedScene" uid="uid://bosf8j47x84il" path="res://scenes/UI/bottom_bar.tscn" id="2_xfo6y"]
+
+[node name="Control" type="Control" unique_id=1025255057]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" parent="." unique_id=884397168 instance=ExtResource("1_88q7s")]
+layout_mode = 1
+offset_bottom = 56.0
+
+[node name="BottomBar" parent="." unique_id=1844444344 instance=ExtResource("2_xfo6y")]
+layout_mode = 1
+offset_top = -216.0

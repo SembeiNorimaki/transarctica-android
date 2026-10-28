@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://bosf8j47x84il"]
+
+[ext_resource type="Texture2D" uid="uid://cal2c8vywav7v" path="res://assets/button_gear.png" id="1_7kui4"]
+[ext_resource type="Texture2D" uid="uid://bmo51avdbudms" path="res://assets/tilesets/imgs/button_gear.png" id="2_1stvg"]
+
+[node name="BottomBar" type="MarginContainer" unique_id=1844444344]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 64
+theme_override_constants/margin_right = 64
+theme_override_constants/margin_bottom = 64
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=73403248]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ButtonLeft" type="Button" parent="HBoxContainer" unique_id=92994517]
+layout_mode = 2
+icon = ExtResource("1_7kui4")
+
+[node name="Spacer" type="Control" parent="HBoxContainer" unique_id=493738168]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="ButtonRight" type="Button" parent="HBoxContainer" unique_id=287646799]
+layout_mode = 2
+icon = ExtResource("2_1stvg")

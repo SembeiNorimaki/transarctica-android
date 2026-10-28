@@ -1,0 +1,83 @@
+[gd_scene format=3 uid="uid://drfi68tnm8em0"]
+
+[ext_resource type="Texture2D" uid="uid://c8rduxe5t5cio" path="res://assets/resources/fuel.png" id="1_lcl1b"]
+[ext_resource type="Script" uid="uid://dghm58080etlp" path="res://scripts/UI/top_bar.gd" id="1_phfas"]
+[ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="2_phfas"]
+[ext_resource type="Texture2D" uid="uid://cu85h151rl3fc" path="res://assets/resources/gold.png" id="3_2g76v"]
+
+[node name="TopBar" type="MarginContainer" unique_id=884397168]
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+script = ExtResource("1_phfas")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=394726459]
+layout_mode = 2
+color = Color(0.446777, 0.44677705, 0.44677705, 1)
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1422065859]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="Spacer" type="Control" parent="HBoxContainer" unique_id=1629634289]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="FuelPanel" type="TextureRect" parent="HBoxContainer" unique_id=2141547324]
+layout_mode = 2
+texture = ExtResource("1_lcl1b")
+
+[node name="FuelLabel" type="Label" parent="HBoxContainer/FuelPanel" unique_id=1886935711]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_phfas")
+theme_override_font_sizes/font_size = 32
+text = "1000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MoneyPanel" type="TextureRect" parent="HBoxContainer" unique_id=47863204]
+layout_mode = 2
+texture = ExtResource("3_2g76v")
+
+[node name="MoneyLabel" type="Label" parent="HBoxContainer/MoneyPanel" unique_id=1394503606]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("2_phfas")
+theme_override_font_sizes/font_size = 32
+text = "1000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Spacer2" type="Control" parent="HBoxContainer" unique_id=2108092879]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="QuestsButton" type="Button" parent="HBoxContainer" unique_id=831351822]
+custom_minimum_size = Vector2(140, 56)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_phfas")
+theme_override_font_sizes/font_size = 32
+text = "quests"
+
+[node name="GameMenuButton" type="Button" parent="HBoxContainer" unique_id=1024809338]
+custom_minimum_size = Vector2(140, 56)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_phfas")
+theme_override_font_sizes/font_size = 32
+text = "menu"
