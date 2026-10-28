@@ -2,6 +2,7 @@ extends Node2D
 class_name TradeScene
 
 signal trade_failed(message: String) # for the HUD
+signal menu_requested
 
 # Managers (adjust the paths to where the nodes are)
 @onready var horizontal_train_manager: HorizontalTrainManager = $Managers/HorizontalTrainManager
@@ -24,13 +25,9 @@ signal trade_failed(message: String) # for the HUD
 @onready var player_train: HorizontalTrain = $TrainContainer/PlayerTrain
 
 # UI
-@onready var top_bar: TopBar = $CanvasLayer/UI/TopBar
-@onready var bottom_bar: BottomBar = $CanvasLayer/UI/BottomBar
-@onready var trade_ui: TradeUI = $CanvasLayer/UI/TradeUI
-
-# @onready var player_money_label: Label = $CanvasLayer/UI/PlayerMoney
-@onready var exit_button: Button = $CanvasLayer/UI/ExitButton
-
+@onready var hud: TradeHUD = $TradeHUD
+@onready var trade_ui: TradeUI = $TradeHUD/UI/TradeUI
+@onready var exit_button: Button = $TradeHUD/UI/ExitButton
 
 @onready var resource_slots: Node2D = $ResourceSlots
 @onready var place: TradePlace = $Place
@@ -72,8 +69,8 @@ func _ready() -> void:
     wagon_reorder_controller.setup(player_train)
 
     trade_ui.setup(city_inventory, train_inventory, player_train, trade_resource_manager, trade_wagon_manager, trade_unit_manager)
-
-
+    
+    
     # connect signals
     city_inventory.city_resource_amount_changed.connect(_on_city_resource_amount_changed)
     city_inventory.city_wagon_amount_changed.connect(_on_city_wagon_amount_changed)
@@ -95,6 +92,9 @@ func _ready() -> void:
     trade_resource_manager.resource_clicked.connect(trade_ui.toggle_resource)
     trade_wagon_manager.wagon_clicked.connect(trade_ui.toggle_city_wagon)
     trade_unit_manager.unit_clicked.connect(trade_ui.toggle_city_unit)
+    
+    hud.quests_pressed.connect(QuestUI.toggle_panel)
+    hud.menu_pressed.connect(GameMenu.open_menu)
     
     exit_button.pressed.connect(_on_exit_button_pressed)
     player_train.wagon_clicked.connect(_on_wagon_clicked)

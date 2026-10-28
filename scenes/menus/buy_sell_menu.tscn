@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://cmxr1tn24hlb2"]
 
+[ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="1_1ipfn"]
 [ext_resource type="PackedScene" uid="uid://bv3w2hsg1tbeh" path="res://scenes/UI/border.tscn" id="1_lvpha"]
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_io20h"]
@@ -8,8 +9,8 @@ size = Vector2(100, 100)
 [node name="BuySellMenu" type="Control" unique_id=2121969279]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 280.0
-offset_bottom = 271.0
+offset_right = 1000.0
+offset_bottom = 536.0
 
 [node name="ColorRect" type="ColorRect" parent="." unique_id=1281528706]
 layout_mode = 1
@@ -25,7 +26,6 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_bottom = 33.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -36,7 +36,9 @@ text = " X "
 [node name="ResourceName" type="Label" parent="VBoxContainer" unique_id=1629789578]
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Resource name"
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
+text = "resource name"
 
 [node name="ResourceImage" type="TextureRect" parent="VBoxContainer" unique_id=1119404772]
 layout_mode = 2
@@ -44,33 +46,53 @@ size_flags_horizontal = 4
 texture = SubResource("PlaceholderTexture2D_io20h")
 stretch_mode = 2
 
+[node name="Label" type="Label" parent="VBoxContainer" unique_id=234336360]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
+text = "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+horizontal_alignment = 1
+autowrap_mode = 2
+
 [node name="GridContainer" type="GridContainer" parent="VBoxContainer" unique_id=2108032931]
 layout_mode = 2
 columns = 2
 
 [node name="LabelQty" type="Label" parent="VBoxContainer/GridContainer" unique_id=534224442]
 layout_mode = 2
-text = "Qty:"
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
+text = "qty          "
 
 [node name="ResourceQty" type="Label" parent="VBoxContainer/GridContainer" unique_id=620542392]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
 text = "1"
 
 [node name="LabelPrice" type="Label" parent="VBoxContainer/GridContainer" unique_id=308611999]
 layout_mode = 2
-text = "Sell Price"
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
+text = "sell price   "
 
 [node name="ResourcePrice" type="Label" parent="VBoxContainer/GridContainer" unique_id=292538735]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
 text = "2"
 
 [node name="ResourceBuy1" type="Button" parent="VBoxContainer" unique_id=1064227244]
 layout_mode = 2
-text = "Buy 1"
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
+text = "buy 1"
 
 [node name="ResourceFillWagon" type="Button" parent="VBoxContainer" unique_id=1012785838]
 layout_mode = 2
-text = "Fill Wagon"
+theme_override_fonts/font = ExtResource("1_1ipfn")
+theme_override_font_sizes/font_size = 32
+text = "fill wagon"
 
 [node name="NinePatchRect" parent="." unique_id=1605977615 instance=ExtResource("1_lvpha")]
 layout_mode = 1

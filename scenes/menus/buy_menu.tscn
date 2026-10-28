@@ -4,4 +4,6 @@
 [ext_resource type="Script" uid="uid://c8bp2hkrdr2n5" path="res://scripts/menus/buy_menu.gd" id="1_ypclv"]
 
 [node name="BuyMenu" unique_id=2121969279 instance=ExtResource("1_io12f")]
+offset_right = 1112.0
+offset_bottom = 526.0
 script = ExtResource("1_ypclv")

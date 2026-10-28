@@ -1,22 +1,13 @@
 [gd_scene format=3 uid="uid://bwfey11vudgxe"]
 
-[ext_resource type="Script" uid="uid://t5rc2cqwren2" path="res://scripts/menus/game_menu.gd" id="1_4jux2"]
+[ext_resource type="Script" uid="uid://bxu0ibr8kdar4" path="res://scripts/menus/game_menu.gd" id="1_4jux2"]
+[ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="2_mhj1m"]
 [ext_resource type="PackedScene" uid="uid://b2bknxxoewqin" path="res://scenes/menus/slots_menu.tscn" id="2_q0jvu"]
 
 [node name="GameMenu" type="CanvasLayer" unique_id=305956146]
 process_mode = 3
 layer = 50
 script = ExtResource("1_4jux2")
-
-[node name="OpenButton" type="Button" parent="." unique_id=1409593623]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -53.0
-offset_bottom = 31.0
-grow_horizontal = 0
-text = "Menu
-"
 
 [node name="Overlay" type="Control" parent="." unique_id=922140029]
 layout_mode = 3
@@ -51,30 +42,41 @@ theme_override_constants/separation = 24
 [node name="ContinueButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=1579111580]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-text = "Continue Game"
+theme_override_fonts/font = ExtResource("2_mhj1m")
+theme_override_font_sizes/font_size = 32
+text = "continue game"
 
 [node name="SaveButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=263993064]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-text = "Save Game"
+theme_override_fonts/font = ExtResource("2_mhj1m")
+theme_override_font_sizes/font_size = 32
+text = "save game"
 
 [node name="LoadButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=492478753]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-text = "Load Game"
+theme_override_fonts/font = ExtResource("2_mhj1m")
+theme_override_font_sizes/font_size = 32
+text = "load game"
 
 [node name="SettingsButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=2005304827]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-text = "Settings"
+theme_override_fonts/font = ExtResource("2_mhj1m")
+theme_override_font_sizes/font_size = 32
+text = "settings"
 
 [node name="ExitButton" type="Button" parent="Overlay/CenterContainer/ButtonsBox" unique_id=1902864016]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
-text = "Exit Game"
+theme_override_fonts/font = ExtResource("2_mhj1m")
+theme_override_font_sizes/font_size = 32
+text = "exit game"
 
 [node name="MessageLabel" type="Label" parent="Overlay/CenterContainer/ButtonsBox" unique_id=1086532446]
 layout_mode = 2
 
 [node name="SlotsMenu" parent="Overlay" unique_id=515437966 instance=ExtResource("2_q0jvu")]
+visible = false
 layout_mode = 1

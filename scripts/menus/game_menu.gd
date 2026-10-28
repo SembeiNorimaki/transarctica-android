@@ -1,5 +1,5 @@
 extends CanvasLayer
-class_name GameMenu
+# class_name GameMenu
 # The menu of a running game: a button in the top right corner opens it, and the game is paused
 # while it is open. Continue, Save game, Load game, Settings, Exit game.
 # It is only a VIEW for loading: it asks MainScene to load a slot (load_requested), because loading
@@ -7,7 +7,6 @@ class_name GameMenu
 #
 # Scene structure (game_menu.tscn). Layer 50, Process Mode = Always:
 #   GameMenu (CanvasLayer, this script)
-#   |- OpenButton (Button)                 top right corner
 #   `- Overlay (Control, Full Rect)
 #      |- Dim (ColorRect, Full Rect)       dark, half transparent
 #      |- CenterContainer (Full Rect)

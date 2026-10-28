@@ -5,8 +5,6 @@ extends Node
 #
 # The navigation scene must NOT be placed in this scene in the editor: it is created in _start_game().
 
-@onready var game_menu: GameMenu = $GameMenu
-
 const MENU_SCENE: PackedScene = preload("res://scenes/core/menu_scene.tscn")
 const NAVIGATION_SCENE: PackedScene = preload("res://scenes/core/navigation_scene.tscn")
 
@@ -15,7 +13,7 @@ var _navigation: Node
 
 
 func _ready() -> void:
-    game_menu.load_requested.connect(_on_ingame_load_requested)
+    GameMenu.load_requested.connect(_on_ingame_load_requested)
     show_menu()
 
 
@@ -23,7 +21,7 @@ func _ready() -> void:
 # scene (SceneService.city_scene / combat_scene), before showing it again.
 func show_menu() -> void:
     QuestUI.hide() # the quest list belongs to the game, not to the menu
-    game_menu.hide() # the game menu belongs to the game, not to the main menu
+    GameMenu.hide() # the game menu belongs to the game, not to the main menu
     _menu = MENU_SCENE.instantiate() as MainMenu
     add_child(_menu)
     _menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -48,10 +46,10 @@ func _start_game() -> void:
     _menu.queue_free()
     _menu = null
     QuestUI.show()
-    game_menu.show()
+    GameMenu.show()
     var navigation := NAVIGATION_SCENE.instantiate() as NavigationScene
     navigation.name = "NavigationScene"
-    navigation.menu_requested.connect(game_menu.open_menu)
+    navigation.menu_requested.connect(GameMenu.open_menu)
     _navigation = navigation
     add_child(navigation)
 
@@ -60,10 +58,10 @@ func _start_game() -> void:
 func _on_ingame_load_requested(slot: int) -> void:
     var info := GameState.get_slot_info(slot)
     if not (info.get("exists", false) and info.get("valid", false)):
-        game_menu.show_message("Slot %d can't be loaded (see the Debugger)." % slot)
+        GameMenu.show_message("Slot %d can't be loaded (see the Debugger)." % slot)
         return # the running game is not touched
 
-    game_menu.close_menu(true)
+    GameMenu.close_menu(true)
     _unload_game()
     if GameState.load_game(slot):
         _start_game()

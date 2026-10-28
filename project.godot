@@ -24,6 +24,7 @@ SceneService="*uid://bhyg46o8k5sww"
 ResourceTypes="*uid://d0gv4mjl5pw63"
 QuestManager="*uid://djr0gywritul5"
 QuestUI="*uid://dxkgsverup06q"
+GameMenu="*uid://bwfey11vudgxe"
 
 [display]
 
