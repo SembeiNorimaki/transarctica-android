@@ -10,10 +10,6 @@ class_name CombatScene
 
 # Only used when this scene is run on its own (F6), where SceneService is not calling initialize()
 const DEBUG_ENEMY_ID := "e0"
-const TRAIN_SCALE := Vector2(2.0, 2.0) # like in the trade scene
-# Where the FRONT of the player's locomotive is, as a fraction of the screen size.
-# The wagons go to the left of it.
-const PLAYER_TRAIN_POSITION := Vector2(0.45, 0.7)
 
 var enemy_id := ""
 var _initialized := false

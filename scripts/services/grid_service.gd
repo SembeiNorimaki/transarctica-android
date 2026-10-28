@@ -12,8 +12,6 @@ var tile_size := Vector2i.ZERO
 var tile_half_size := Vector2.ZERO
 var tile_center_offset := Vector2.ZERO # world position of tile (0,0)'s center
 var map_rect := Rect2i()
-var map_size: Vector2i:
-    get: return map_rect.size
 
 
 func set_tile_size(size: Vector2i) -> void:
@@ -94,7 +92,3 @@ func get_orientation(from_tile: Vector2i, to_tile: Vector2i) -> String:
     # 0 = N, then clockwise in 45° steps, matching ORIENTATIONS
     var step := roundi(atan2(d.x, -d.y) / (TAU / 8.0))
     return ORIENTATIONS[posmod(step, 8)]
-
-
-func _cone_key(view_range: int, view_angle: float, orientation: String) -> Vector3i:
-    return Vector3i(view_range, roundi(view_angle * 10.0), ORIENTATIONS.find(orientation))

@@ -4,14 +4,15 @@ class_name TradeService
 # Stateless: the inventories are passed in. Money lives in GameState.
 # Every rule is checked BEFORE anything changes, so a trade is all or nothing.
 #
-# Assumption: a city only trades the resources it lists (it needs their prices).
+# Assumption: a city only trades the resources it lists (it needs their prices), and each one has a
+# mode: the place may only sell it (the player can only buy), only buy it, or both.
 
-enum Result {OK, INVALID, NO_STOCK, NO_MONEY, NO_TRAIN_SPACE, NOT_IN_TRAIN, NO_CITY_SPACE, NO_BARRACKS_SPACE}
+enum Result {OK, INVALID, NO_STOCK, NO_MONEY, NO_TRAIN_SPACE, NOT_IN_TRAIN, NO_CITY_SPACE, NO_BARRACKS_SPACE, NOT_SOLD_HERE, NOT_BOUGHT_HERE}
 
 #region limits (for the UI: enable buttons, "buy max")
 # Most units the player can buy right now: limited by city stock, money and train space.
 static func max_buyable(city: CityInventory, train: TrainInventory, resource_name: String) -> int:
-    if not city.has_resource(resource_name):
+    if not city.can_player_buy(resource_name):
         return 0
     var limit := mini(city.get_available_qty(resource_name), train.get_free_capacity_for(resource_name))
     var price := city.get_buy_price(resource_name)
@@ -22,14 +23,14 @@ static func max_buyable(city: CityInventory, train: TrainInventory, resource_nam
 
 # Most units the player can sell right now: limited by what the train carries and the city's free space.
 static func max_sellable(city: CityInventory, train: TrainInventory, resource_name: String) -> int:
-    if not city.has_resource(resource_name):
+    if not city.can_player_sell(resource_name):
         return 0
     return mini(train.get_total_qty_of(resource_name), city.get_free_capacity(resource_name))
 
 # Most units that can be sold from this wagon: what it holds, limited by the city's free space.
 static func max_sellable_from_wagon(city: CityInventory, train: TrainInventory, wagon_index: int) -> int:
     var resource_name := train.get_wagon_current_resource(wagon_index)
-    if resource_name == "" or not city.has_resource(resource_name):
+    if resource_name == "" or not city.can_player_sell(resource_name):
         return 0
     return mini(train.get_wagon_resource_qty(wagon_index), city.get_free_capacity(resource_name))
 
@@ -41,14 +42,18 @@ static func can_buy_wagon(city: CityInventory, wagon_type: String) -> bool:
     return city.get_wagon_available_qty(wagon_type) > 0 \
             and GameState.get_money() >= city.get_wagon_buy_price(wagon_type)
 
+# Only an empty wagon can be sold: the cargo or the soldiers inside would be lost for nothing.
 static func can_sell_wagon(city: CityInventory, train: TrainInventory, wagon_index: int) -> bool:
     return wagon_index > 0 and train.has_wagon(wagon_index) \
             and city.has_wagon_type(train.get_wagon_type(wagon_index)) \
+            and train.get_wagon_resource_qty(wagon_index) == 0 \
             and train.get_unit_ids(wagon_index).is_empty()
 
 static func buy(city: CityInventory, train: TrainInventory, resource_name: String, qty: int) -> Result:
     if qty <= 0 or not city.has_resource(resource_name):
         return Result.INVALID
+    if not city.can_player_buy(resource_name):
+        return Result.NOT_SOLD_HERE
     if city.get_available_qty(resource_name) < qty:
         return Result.NO_STOCK
     var cost := city.get_buy_price(resource_name) * qty
@@ -69,6 +74,8 @@ static func buy(city: CityInventory, train: TrainInventory, resource_name: Strin
 static func sell(city: CityInventory, train: TrainInventory, resource_name: String, qty: int) -> Result:
     if qty <= 0 or not city.has_resource(resource_name):
         return Result.INVALID
+    if not city.can_player_sell(resource_name):
+        return Result.NOT_BOUGHT_HERE
     if train.get_total_qty_of(resource_name) < qty:
         return Result.NOT_IN_TRAIN
     if city.get_free_capacity(resource_name) < qty:
@@ -86,6 +93,8 @@ static func sell_from_wagon(city: CityInventory, train: TrainInventory, wagon_in
     var resource_name := train.get_wagon_current_resource(wagon_index)
     if qty <= 0 or resource_name == "" or not city.has_resource(resource_name):
         return Result.INVALID
+    if not city.can_player_sell(resource_name):
+        return Result.NOT_BOUGHT_HERE
     if train.get_wagon_resource_qty(wagon_index) < qty:
         return Result.NOT_IN_TRAIN
     if city.get_free_capacity(resource_name) < qty:
@@ -171,6 +180,10 @@ static func result_text(result: Result) -> String:
             return "The city can't store more."
         Result.NO_BARRACKS_SPACE:
             return "No room in the barracks."
+        Result.NOT_SOLD_HERE:
+            return "This place doesn't sell that."
+        Result.NOT_BOUGHT_HERE:
+            return "This place doesn't buy that."
         Result.INVALID:
             return "That can't be traded."
     return ""

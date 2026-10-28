@@ -7,7 +7,6 @@ const ZOOM_STEP := 1.1 # multiplicative, per wheel notch
 const MIN_ZOOM := 0.25
 const MAX_ZOOM := 6.0
 
-@export var move_speed := 500.0 # screen px/s, independent of zoom
 @export var initial_zoom := 1.0
 
 var grid_service: GridService # injected
@@ -70,13 +69,6 @@ func _unhandled_input(event: InputEvent) -> void:
                 zoom_at_screen_pos(1.0 / ZOOM_STEP, event.position)
     elif event is InputEventMagnifyGesture:
         zoom_at_screen_pos(event.factor, event.position)
-
-func _process(_delta: float) -> void:
-    pass
-    #var input := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down")
-    #if input != Vector2.ZERO:
-    #    _move_to(cam.global_position + input * move_speed * delta / zoom)
-
 
 # --- Internal -----------------------------------------------------------
 

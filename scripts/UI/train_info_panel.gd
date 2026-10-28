@@ -10,14 +10,14 @@ class_name TrainInfoPanel
 # train (an enemy, for the combat scene) call show_train() with its data; show_player_train()
 # goes back to the player's.
 #
-# Scene structure (see the notes in the answer):
+# Scene structure:
 #   TrainInfoPanel (Control, this script)
 #   └── ScrollContainer
 #       └── Grid (GridContainer, columns = 3, "Access as Unique Name" ON)
 
 const RESOURCE_SHEET: Texture2D = preload("res://assets/resources/resources_120x46.png")
 const RESOURCE_SHEET_COLUMNS := 3
-const RESOURCE_SHEET_ROWS := 7
+const RESOURCE_SHEET_ROWS := 10 # 360 x 460 px: 3 columns of 120 px, 10 rows of 46 px (like the sprite in trade_resource.tscn)
 const SOLDIER_FRAMES: SpriteFrames = preload("res://assets/tilesets/unit.tres")
 
 @export var font_size := 28
@@ -126,8 +126,6 @@ func _describe(wagon: Dictionary, train_data: Dictionary) -> String:
 
 
 func _describe_unit(unit_id: String) -> String:
-    if not GameState.has_method("get_unit"):
-        return unit_id
     var unit: Dictionary = GameState.get_unit(unit_id)
     if unit.is_empty():
         return unit_id + " (?)"

@@ -54,7 +54,6 @@ func generate_terrain_from_image() -> bool:
         return false
     if not loader.paint(terrain_low, terrain_mid, terrain_high):
         return false
-    print("RAILS DEBUG: rails_layer=%s, rails pixels=%d" % [rails_layer, loader.rails_pixels])
     if not loader.paint_rails(rails_layer, rails_terrain_set, rails_terrain):
         return false
     _mark_scene_unsaved()

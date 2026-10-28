@@ -215,22 +215,10 @@ func paint_rails(layer: TileMapLayer, terrain_set := 0, terrain := 0) -> bool:
         push_error("TerrainLoader: the TileSet of '%s' has no terrain %d in terrain set %d" % [layer.name, terrain, terrain_set])
         return false
 
-    print("RAILS DEBUG: layer '%s' (%s), tile_set=%s, enabled=%s" % [layer.name, layer.get_path(), layer.tile_set, layer.enabled])
-    print("RAILS DEBUG: terrain sets=%d, terrains in set %d=%d, tiles in the atlas source 0=%s" % [
-            layer.tile_set.get_terrain_sets_count(), terrain_set,
-            layer.tile_set.get_terrains_count(terrain_set),
-            layer.tile_set.get_source(0).get_tiles_count() if layer.tile_set.get_source_count() > 0 else "no source"])
-    print("RAILS DEBUG: rail cells=%d, first: %s" % [rails_cells.size(), rails_cells.slice(0, 5)])
-
     if clear_first:
         layer.clear()
     layer.set_cells_terrain_connect(rails_cells, terrain_set, terrain)
-
-    var used := layer.get_used_cells()
-    print("RAILS DEBUG: after painting the layer has %d cells, first: %s" % [used.size(), used.slice(0, 5)])
-    if not used.is_empty():
-        var cell: Vector2i = used[0]
-        print("RAILS DEBUG: cell %s -> source %d, atlas %s" % [cell, layer.get_cell_source_id(cell), layer.get_cell_atlas_coords(cell)])
+    print("TerrainLoader: painted %d rail cells (the layer has %d cells now)" % [rails_cells.size(), layer.get_used_cells().size()])
     return true
 
 # The name of the tile of this cell ("nwes", "NWes"...), see TerrainTiles.

@@ -244,10 +244,17 @@ func _resolve_bus(preferred: String) -> String:
 
 
 func _set_stream_loop(player: AudioStreamPlayer, loop: bool) -> void:
-    # AudioStreamMP3 / AudioStreamOggVorbis / AudioStreamWAV all expose `loop`.
-    if player.stream == null:
+    var stream := player.stream
+    if stream == null:
         return
-    if player.stream.has_method("set_loop"):
-        player.stream.loop = loop
-    elif "loop" in player.stream:
-        player.stream.loop = loop
+    if stream is AudioStreamWAV:
+        # A WAV has no `loop` property: it loops with loop_mode, between loop_begin and loop_end (in samples)
+        var wav := stream as AudioStreamWAV
+        if not loop:
+            wav.loop_mode = AudioStreamWAV.LOOP_DISABLED
+        elif wav.loop_mode == AudioStreamWAV.LOOP_DISABLED:
+            wav.loop_begin = 0
+            wav.loop_end = int(wav.get_length() * wav.mix_rate)
+            wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+    elif "loop" in stream:
+        stream.set("loop", loop) # AudioStreamMP3 and AudioStreamOggVorbis

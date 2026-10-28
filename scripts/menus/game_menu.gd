@@ -103,7 +103,7 @@ func _on_load_pressed() -> void:
 
 
 func _on_settings_pressed() -> void:
-    print("Settings button pressed")
+    show_message("Settings are not available yet.")
 
 
 func _on_exit_pressed() -> void:

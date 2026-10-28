@@ -79,30 +79,12 @@ const RAILNAME_TO_ATLAS = {
     "SX": Vector2i(2, 7)
 }
 
-const ATLAS_TO_BRIDGENAME = {
-    Vector2i(0, 0): "WE",
-    Vector2i(1, 0): "NS"
-}
-
-const BRIDGENAME_TO_ATLAS = {
-    "WE": Vector2i(0, 0),
-    "NS": Vector2i(1, 0)
-}
-
 # Edge letter -> tile delta (tile space)
 const DIRS = {
     "N": Vector2i(0, -1),
     "E": Vector2i(1, 0),
     "S": Vector2i(0, 1),
     "W": Vector2i(-1, 0)
-}
-
-# Edge midpoints in half-tile units. Not used here; kept in case RailsOverlay reads it.
-const EDGE_POS = {
-    "N": Vector2(0.5, -0.5),
-    "E": Vector2(0.5, 0.5),
-    "S": Vector2(-0.5, 0.5),
-    "W": Vector2(-0.5, -0.5)
 }
 
 # Moving by `delta` into a tile means entering it through this edge.
@@ -156,7 +138,6 @@ const JUNCTION_CHANGES = {
 #region State
 var rails := {} # tile -> rail name (e.g. "NS", "NSW")
 var edges := {} # tile -> Array[RailEdge]. For junctions, [0] is the ACTIVE route (kept for the overlay)
-#var bridges := {} # tile -> bridge name. TODO: bridges need their own routing layer
 var _routes := {} # tile -> {entry_edge: exit_edge}, active routes only
 #endregion
 
@@ -165,7 +146,6 @@ var _routes := {} # tile -> {entry_edge: exit_edge}, active routes only
 func clear() -> void:
     rails.clear()
     edges.clear()
-    #bridges.clear()
     _routes.clear()
 
 # Registers the rail found at `tile` (nothing is spawned; the tile already exists in the tilemap)
@@ -175,15 +155,6 @@ func spawn_rail(tile: Vector2i, atlas_coords: Vector2i) -> void:
         push_warning("RailService: no rail for atlas %s at tile %s" % [atlas_coords, tile])
         return
     _rebuild_edges_for_tile(tile, rail_name)
-
-# Bridges are stored separately so they don't overwrite the rail under them.
-# TODO: make calculate_new_orientation aware of bridges when you enable them.
-# func spawn_bridge(tile: Vector2i, atlas_coords: Vector2i) -> void:
-#     var bridge_name: String = ATLAS_TO_BRIDGENAME.get(atlas_coords, "")
-#     if bridge_name.is_empty():
-#         push_warning("RailService: no bridge for atlas %s at tile %s" % [atlas_coords, tile])
-#         return
-#     bridges[tile] = bridge_name
 
 func _rebuild_edges_for_tile(tile: Vector2i, rail_name: String) -> void:
     var l := rail_name.split("")

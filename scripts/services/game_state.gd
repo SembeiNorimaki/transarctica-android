@@ -2,9 +2,9 @@ extends Node
 
 # Autoload. Single source of truth for persistent game data (cities, player train).
 #
-# Cities are stored by name. To look cities up by location or id, the correspondence
-# dictionaries below are used. Always go through the API:
-#   get_city_by_name / get_city_by_location / get_city_by_id
+# Cities are stored by name. To look cities up by id, the correspondence dictionary below is
+# used. Always go through the API:
+#   get_city_by_name / get_city_by_id
 #
 # NOTE: the getters return the INTERNAL dictionaries, not copies. Changes made to them are live
 # immediately. Use .duplicate(true) if you need to edit and be able to cancel (e.g. a trade preview).
@@ -13,7 +13,7 @@ extends Node
 #   "<id>": {
 #       "Name": String,
 #       "Location": [x, y],
-#       "TradeResources": { "<Resource>": {"Quantity": n, "SellPrice": n, "BuyPrice": n} }
+#       "TradeResources": { "<Resource>": {"Quantity": n, "BuyFactor": f, "SellFactor": f, "Mode": "Both"} }
 #   }
 # Player train JSON: see data/newgame/player_train.json
 #   (id, owner, position [x, y, ori], fuel, max_fuel, max_speed, acceleration, deceleration, wagons[])
@@ -26,7 +26,6 @@ const PLAYER_TRAIN_PATH := "res://data/newgame/player_train.json"
 const UNITS_PATH := "res://data/newgame/units.json"
 const ENEMY_TRAINS_PATH := "res://data/newgame/enemy_trains.json"
 
-# const SAVE_PATH := "user://savegame.json"
 const SAVES_DIR := "user://saves"
 const SLOT_COUNT := 4
 const DEBUG_SLOT := 1 # slot used while debugging scenes, until the main menu sets one
@@ -42,7 +41,6 @@ const SAVE_FILES := [FILE_CITIES, FILE_PLAYER, FILE_ENEMIES, FILE_QUESTS]
 
 
 var _cities_state: Dictionary = {} # city name -> city data
-var _cities_by_location: Dictionary = {} # Vector2i -> city name
 var _cities_by_id: Dictionary = {} # int -> city name
 var _player_train_state: Dictionary = {}
 var _enemies_state := {} # enemy trains: the navigation scene will fill it on game_saving
@@ -56,10 +54,6 @@ var _flags := {} # story flags set by events: name -> true
 
 var current_slot := DEBUG_SLOT # the main menu will set this
 
-
-var state := {
-    "cities": {},
-}
 
 # Signals
 signal money_changed(money: int)
@@ -92,11 +86,9 @@ func _read_json(path: String) -> Variant:
         push_error("GameState: invalid JSON in %s" % path)
     return data
 
-# Loads cities into _cities_state, _cities_by_location and _cities_by_id.
-# Public so a "new game" flow can reload them.
-func _load_initial_cities(path: String):
+# Loads cities into _cities_state and _cities_by_id. A new game calls it again.
+func _load_initial_cities(path: String) -> void:
     _cities_state = {}
-    # _cities_by_location = {}
     _cities_by_id = {}
 
     var data = _read_json(path)
@@ -117,18 +109,8 @@ func _load_initial_cities(path: String):
         if _cities_state.has(city_name):
             push_warning("GameState: duplicate city name '%s' (id %s), the later one overwrites the earlier" % [city_name, key])
  
-        # _cities_by_location[Vector2i(int(location[0]), int(location[1]))] = city_name
         _cities_by_id[int(key)] = city_name
         _cities_state[city_name] = city
-
-    # var file = FileAccess.open(filename, FileAccess.READ)
-    # var data = JSON.parse_string(file.get_as_text())
-    # for city_id in data.keys():
-    #     var city_name = data[city_id].Name
-    #     var city_location = Vector2i(data[city_id].Location[0], data[city_id].Location[1])
-    #     _cities_by_location[city_location] = city_name
-    #     _cities_by_id[int(city_id)] = city_name
-    #     _cities_state[city_name] = data[city_id]
 
 
 # Loads the initial player train into _player_train_state.
@@ -191,11 +173,6 @@ func set_wagon_cargo(wagon_idx: int, resource_name: String, qty: int) -> void:
     wagons[wagon_idx]["cargo_qty"] = qty
     player_cargo_changed.emit()
 
-# TODO: not implemented yet. The data lives in _player_train_state["wagons"][idx] (cargo_name, cargo_qty, capacity).
-func get_wagon_cargo(_wagon_idx: int) -> Dictionary:
-    push_warning("GameState.get_wagon_cargo() is not implemented")
-    return {}
-    
 # City State
 func get_all_city_names() -> Array:
     return _cities_state.keys()
@@ -203,15 +180,12 @@ func get_all_city_names() -> Array:
 func get_city_by_name(city_name: String) -> Dictionary:
     return _cities_state.get(city_name, {})
 
-# func get_city_by_location(loc: Vector2i) -> Dictionary:
-#     return get_city_by_name(_cities_by_location.get(loc, ""))
-
 func get_city_by_id(id: int) -> Dictionary:
     return get_city_by_name(_cities_by_id.get(id, ""))
 
 func set_city(city_name: String, city_data: Dictionary) -> void:
     if not _cities_state.has(city_name):
-        push_warning("GameState: set_city() on unknown city '%s' (it has no id or location mapping)" % city_name)
+        push_warning("GameState: set_city() on unknown city '%s' (it has no id mapping)" % city_name)
     _cities_state[city_name] = city_data
 #endregion
 
@@ -359,6 +333,7 @@ func start_new_game(slot: int) -> bool:
     _load_initial_enemies(ENEMY_TRAINS_PATH)
     _load_initial_cities(CITIES_PATH)
     _load_initial_player_train(PLAYER_TRAIN_PATH)
+    _load_initial_units(UNITS_PATH) # the soldiers of the previous game must not survive
     _events_state = {}
     _flags = {}
     game_loaded.emit() # before money_changed, like in load_game

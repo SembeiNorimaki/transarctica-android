@@ -143,10 +143,8 @@ func reverse_train() -> void:
     reversed = not reversed
     # TODO: on a curve tile, derive the reverse direction from the previous tile instead
     var n := wagons.size()
-    var positions: Array[Vector2] = []
     var oris: Array[String] = []
     for wagon in wagons:
-        positions.append(wagon.position)
         oris.append(wagon.orientation)
     for i in n:
         var target := wagons[n - i - 1]
@@ -183,7 +181,7 @@ func _follow_rail(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i
     var delta := new_tile - old_tile
     if absi(delta.x) > 1 or absi(delta.y) > 1:
         push_warning("Train %s skipped tiles: %s -> %s" % [id, old_tile, new_tile])
-    var new_ori = rail_service.calculate_new_orientation(new_tile, delta)
+    var new_ori: String = rail_service.calculate_new_orientation(new_tile, delta)
     if new_ori.is_empty():
         return false
     _face(wagon, new_ori)

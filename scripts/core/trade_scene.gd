@@ -47,14 +47,11 @@ const DEBUG_CITY_NAME := "Paris"
 # const DEBUG_CITY_NAME := "Workshop"
 
 
+const PRINT_INVENTORIES := false # debug: print both inventories when the scene opens
+
 static var _problems_reported := false
 
 var city_name := ""
-
-# Kept so other scripts reading TradeScene.player_train keep working
-# var player_train: HorizontalTrain:
-#     get:
-#         return horizontal_train_manager.player_train
 
 var _initialized := false
 
@@ -138,24 +135,18 @@ func initialize(city_name_: String) -> void:
     _load_city_units()
     _load_place()
     _update_all_wagon_prices()
-    _print_inventories()
+    if PRINT_INVENTORIES:
+        _print_inventories()
 
 
+# The train is already in the scene: the manager only builds its wagons
 func _load_train() -> void:
     var train_data: Dictionary = GameState.get_player_train()
     if not horizontal_train_manager.setup_train(player_train, train_data, HorizontalTrainManager.Team.PLAYER):
-           return
-    #player_train.set_bounds(0.0, get_viewport_rect().size.x)
+        return
     train_inventory.load_from_game_state()
-    
-    # var train := horizontal_train_manager.spawn_train(PLAYER_TRAIN_POSITION, train_data, HorizontalTrainManager.Team.PLAYER)
-    # if train == null:
-    #     return
-    # train.set_bounds(0.0, get_viewport_rect().size.x)
-    # train_inventory.load_from_game_state()
-    # TODO: train.wagon_clicked -> show the wagon's details
 
-    
+
 func _load_city_resources() -> void:
     if not city_inventory.load_from_game_state(city_name):
         return
@@ -189,11 +180,10 @@ func _load_place() -> void:
 
 #region trading
 func _on_buy_requested(resource_name: String, qty: int) -> void:
-    _trade(resource_name, qty, true)
+    var result := TradeService.buy(city_inventory, train_inventory, resource_name, qty)
+    if result != TradeService.Result.OK:
+        trade_failed.emit(TradeService.result_text(result))
 
-
-func _on_sell_requested(resource_name: String, qty: int) -> void:
-    _trade(resource_name, qty, false)
 
 func _on_sell_from_wagon_requested(wagon_index: int, qty: int) -> void:
     var resource_name := train_inventory.get_wagon_current_resource(wagon_index)
@@ -234,7 +224,7 @@ func _on_wagon_clicked(wagon: GenericWagon) -> void:
 
     var wagon_type := train_inventory.get_wagon_type(index)
     var resource_name := train_inventory.get_wagon_current_resource(index)
-    var sells_cargo := resource_name != "" and city_inventory.has_resource(resource_name)
+    var sells_cargo := resource_name != "" and city_inventory.can_player_sell(resource_name)
     if not sells_cargo and not TradeService.can_sell_wagon(city_inventory, train_inventory, index):
         trade_failed.emit("The city doesn't buy anything from this wagon.")
         return
@@ -292,7 +282,6 @@ func _on_buy_wagon_requested(wagon_type: String) -> void:
     var result := TradeService.buy_wagon(city_inventory, train_inventory, wagon_type)
     if result != TradeService.Result.OK:
         trade_failed.emit(TradeService.result_text(result))
-    _print_inventories() # TODO: remove after checking
 
 func _on_sell_wagon_requested(wagon_index: int) -> void:
     var result := TradeService.sell_wagon(city_inventory, train_inventory, wagon_index)
@@ -400,27 +389,13 @@ func _on_produce_requested(recipe_index: int, times: int) -> void:
     if not city_inventory.produce(recipe_index, times):
         trade_failed.emit("The industry can't produce that now.")
 
-func _trade(resource_name: String, qty: int, buying: bool) -> void:
-    var result: TradeService.Result
-    if buying:
-        result = TradeService.buy(city_inventory, train_inventory, resource_name, qty)
-    else:
-        result = TradeService.sell(city_inventory, train_inventory, resource_name, qty)
-    
-    if result == TradeService.Result.OK:
-        if not buying:
-            QuestManager.notify_goods_delivered(city_name, resource_name, qty)
-    else:
-        trade_failed.emit(TradeService.result_text(result))
-
-
 func _update_wagon_price(wagon_index: int) -> void:
     var wagon := player_train.wagons[wagon_index] as MerchandiseWagon
     if wagon == null:
         return
     var resource_name := train_inventory.get_wagon_current_resource(wagon_index)
     var price := -1 # -1: the city doesn't buy it
-    if resource_name != "" and city_inventory.has_resource(resource_name):
+    if resource_name != "" and city_inventory.can_player_sell(resource_name):
         price = city_inventory.get_sell_price(resource_name)
     wagon.set_sell_price(price)
 

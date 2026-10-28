@@ -26,8 +26,6 @@ signal menu_requested
 @onready var city_labels_container: Node2D = $CityLabelsContainer
 
 # UI
-# @onready var fuel_bar: ProgressBar = $CanvasLayer/FuelBar
-# @onready var fuel_label: Label = $CanvasLayer/FuelLabel
 @onready var hud: NavigationHUD = $NavigationHUD
 @onready var loading_screen: LoadingScreen = $LoadingScreen
 
@@ -43,9 +41,7 @@ const TAP_MAX_DRAG := 10.0 # screen pixels; moving more than this is a camera dr
 
 var dragging := false
 var _drag_distance := 0.0
-var last_pos := Vector2.ZERO
-var events_manager: EventsManager
-var event_popup: EventPopup
+var events_manager: EventsManager # made in code, see _create_event_nodes()
 var _open_event := {} # the event the pop-up is showing
 
 # TODO: This values should be loaded from somewhere else
@@ -92,7 +88,7 @@ func resume() -> void:
     process_mode = Node.PROCESS_MODE_INHERIT
     show()
     camera_service.cam.enabled = true
-    navigation_train_manager.resume() # only if you adopted the _transitioning flag
+    navigation_train_manager.resume() # also clears its _transitioning flag
     navigation_train_manager.rebuild_player_train() # the wagons may have changed in the city or in combat
     navigation_train_manager.recenter_player_train()
     hud.show()
@@ -128,7 +124,6 @@ func _wire_signals() -> void:
     navigation_train_manager.player_tile_changed.connect(events_manager.on_player_tile_changed)
     navigation_train_manager.player_driving_changed.connect(hud.set_driving)
     navigation_train_manager.player_tile_changed.connect(hud.minimap.set_player_tile)
-    # navigation_train_manager.player_tile_changed.connect(_on_player_tile_changed)
 
     rail_service.rail_changed.connect(_on_rail_changed)
     
@@ -142,12 +137,9 @@ func _wire_signals() -> void:
     hud.event_popup.declined.connect(_on_event_declined)
 
     events_manager.event_triggered.connect(_on_event_triggered)
-    
-    
 #endregion
 
 #region Map Loading
-# TODO: children (trains, cities, rails, labels) spawned from the old map are not cleaned up when you reload a map, only the map node is removed. Containers train_container and city_labels_container, plus rail and city data in services, would keep stale entries.
 func _load_map(map_name: String) -> void:
     var map_path := "res://scenes/maps/%s.tscn" % map_name
     if not ResourceLoader.exists(map_path):
@@ -189,6 +181,7 @@ func _load_map(map_name: String) -> void:
 
     rail_service.rails_tilemap = new_map.get_node("Rails")
     navigation_train_manager.clear_trains()
+    cities_manager.clear()
     rail_service.clear()
 
     # await loading_screen.report(0.50, "Preparing the fog...")
@@ -228,8 +221,8 @@ func _report_fog(fraction: float) -> void:
 func _spawn_cities_from_map(cities_ids_tilemap: TileMapLayer) -> void:
     # the id tiles sit on the ENTRANCE of each city/industry/depot
     for tile in cities_ids_tilemap.get_used_cells():
-        var atlas_coords = cities_ids_tilemap.get_cell_atlas_coords(tile)
-        var city_id = atlas_coords.y * 10 + atlas_coords.x
+        var atlas_coords := cities_ids_tilemap.get_cell_atlas_coords(tile)
+        var city_id := atlas_coords.y * 10 + atlas_coords.x
         cities_manager.spawn_city(city_id, tile)
 
 
@@ -312,14 +305,10 @@ func _spawn_enemy_trains(spots: Array[Dictionary]) -> void:
 
 func _build_rails_from_map(rails_tilemap: TileMapLayer) -> void:
     for tile in rails_tilemap.get_used_cells():
-        var atlas_coords = rails_tilemap.get_cell_atlas_coords(tile)
-        # var source_id = rails_tilemap.get_cell_source_id(tile)
-        
-        rail_service.spawn_rail(tile, atlas_coords)
-
+        rail_service.spawn_rail(tile, rails_tilemap.get_cell_atlas_coords(tile))
 #endregion
 
-# Both are made in code, so the scene file doesn't need new nodes
+# Made in code, so the scene file doesn't need a new node
 func _create_event_nodes() -> void:
     events_manager = EventsManager.new()
     events_manager.name = "EventsManager"
@@ -331,7 +320,8 @@ func end_combat(enemy: NavigationTrain) -> void:
     if is_instance_valid(enemy):
         navigation_train_manager.remove_train(enemy)
     resume()
-    
+
+
 func _unhandled_input(event: InputEvent) -> void:
     # Godot also sends a mouse event for every touch. Ignore those, the touch events are used instead.
     if event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION:
@@ -369,13 +359,13 @@ func _on_trains_collided(_player: NavigationTrain, enemy: NavigationTrain) -> vo
 func _on_map_tapped(screen_pos: Vector2) -> void:
     var world_pos := get_canvas_transform().affine_inverse() * screen_pos # undoes the camera's position and zoom
     var tile := grid_service.world_to_tile(world_pos)
-    print("tapped tile ", tile) # TEMPORARY
     if rail_service.has_junction(tile):
         rail_service.change_junction(tile)
 
 func _on_event_triggered(event: Dictionary) -> void:
     _open_event = event
-    navigation_train_manager.player_train.immediate_stop()
+    if is_instance_valid(navigation_train_manager.player_train):
+        navigation_train_manager.player_train.immediate_stop()
     navigation_train_manager.pause() # the enemies wait too, so nobody attacks behind the pop-up
     hud.event_popup.show_event(
         event["name"],
@@ -399,14 +389,3 @@ func _on_event_declined() -> void:
 func _close_event() -> void:
     _open_event = {}
     navigation_train_manager.resume()
-
-# func _on_player_tile_changed(tile: Vector2i) -> void:
-#     exploration_service.update_vision(tile)
-#     navigation_train_manager.update_enemy_visibility()
-
-
-# The train appears without a tile change, so reveal the start by hand
-# func _reveal_around_player() -> void:
-#     var train := navigation_train_manager.player_train
-#     if is_instance_valid(train) and not train.wagons.is_empty():
-#         _on_player_tile_changed(train.wagons[0].current_tile)

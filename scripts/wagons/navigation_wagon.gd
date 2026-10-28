@@ -59,10 +59,6 @@ func set_sprite_frames(frames: SpriteFrames) -> void:
     if orientation != "":
         sprite.play(orientation) # a new SpriteFrames stops the current animation
         
-func reverse() -> void:
-    set_orientation(grid_service.turn_right(orientation, 4))
-
-
 ## Called by the train. Sub-steps so no tile can be skipped.
 func advance(delta: float) -> void:
     if not _placed:

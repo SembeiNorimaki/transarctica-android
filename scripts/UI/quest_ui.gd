@@ -48,26 +48,19 @@ func _ready() -> void:
     add_child(_dialog)
     _dialog.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 24)
     _dialog.grow_vertical = Control.GROW_DIRECTION_BEGIN # a taller dialog grows upward, not below the screen
-    #_dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT) # TEST: covers the whole screen
     QuestManager.quest_offered.connect(func(quest: Quest) -> void: _enqueue_dialog(quest, true))
     QuestManager.quest_outro_requested.connect(func(quest: Quest) -> void: _enqueue_dialog(quest, false))
     QuestManager.quests_updated.connect(_request_refresh)
     QuestManager.quest_accepted.connect(_on_quest_accepted)
     QuestManager.quest_completed.connect(_on_quest_completed)
-    
+
     refresh_ui()
 
-func _input(event: InputEvent) -> void:
-    if event is InputEventMouseButton and event.pressed:
-        print("paused=", get_tree().paused, "  hovered=", get_viewport().gui_get_hovered_control())
-
-func _debug_dialog() -> void:
-    print("DIALOG visible=", _dialog.visible, " script=", _dialog.get_script().resource_path)
-    _dialog.print_tree_pretty()
 
 func toggle_panel() -> void:
     panel.visible = not panel.visible
-    
+
+
 #region list
 # Several signals can arrive in the same frame, so the list is rebuilt once
 func _request_refresh() -> void:
@@ -80,6 +73,7 @@ func _request_refresh() -> void:
 func refresh_ui() -> void:
     _refresh_pending = false
     for child in quest_list.get_children():
+        quest_list.remove_child(child) # out of the list right now, not at the end of the frame
         child.queue_free()
 
     var shown := 0
@@ -224,6 +218,7 @@ func _enqueue_dialog(quest: Quest, is_intro: bool) -> void:
 
 func _run_dialogs() -> void:
     _dialog_running = true
+    var was_paused := get_tree().paused # a game menu may already have paused the game
     while not _dialog_queue.is_empty():
         while not visible: # the main menu hides this layer: wait until the game shows it
             await visibility_changed
@@ -235,12 +230,11 @@ func _run_dialogs() -> void:
         else:
             await _show_outro(quest)
 
-    get_tree().paused = false
+    get_tree().paused = was_paused
     _dialog_running = false
 
 
 func _show_intro(quest: Quest) -> void:
-    _debug_dialog.call_deferred()
     if not QuestManager.offered_quests.has(quest.id):
         return # it was accepted or completed while it was waiting
     var choices := _choices_of(quest.intro)

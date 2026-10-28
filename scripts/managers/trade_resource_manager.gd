@@ -3,10 +3,8 @@ class_name TradeResourceManager
 # Spawns and controls the TradeResource nodes of the trade scene: one per resource the city sells.
 # Like the train managers, it owns placement: it adds the nodes to the injected container.
 # It knows nothing about inventories or trading. The scene tells it what to show,
-# and it relays what the player presses.
+# and it relays what the player taps.
 
-signal resource_buy_requested(resource_name: String, qty: int)
-signal resource_sell_requested(resource_name: String, qty: int)
 signal resource_clicked(resource_name: String)
 
 const RESOURCE_SCENE: PackedScene = preload("res://scenes/trade_resources/trade_resource.tscn")
@@ -57,8 +55,6 @@ func spawn_resource(resource_name: String, qty: int, buy_price := 0, sell_price 
     node.set_prices(buy_price, sell_price)
 
     node.clicked.connect(_on_resource_clicked)
-    node.buy_requested.connect(_on_buy_requested)
-    node.sell_requested.connect(_on_sell_requested)
 
     resource_container.add_child(node)
     trade_resources[resource_name] = node
@@ -85,35 +81,8 @@ func set_resource_qty(resource_name: String, qty: int) -> void:
         node.set_qty(qty)
 
 
-func set_resource_can_buy(resource_name: String, value: bool) -> void:
-    var node := get_resource(resource_name)
-    if node != null:
-        node.set_can_buy(value)
-
-
-func set_resource_can_sell(resource_name: String, value: bool) -> void:
-    var node := get_resource(resource_name)
-    if node != null:
-        node.set_can_sell(value)
-
-
-# Only one resource is selected at a time. An empty name deselects all.
-func select_resource(resource_name: String) -> void:
-    for key in trade_resources:
-        var node: TradeResource = trade_resources[key]
-        node.set_selected(key == resource_name)
 #endregion
 
 
-#region relayed signals
 func _on_resource_clicked(resource: TradeResource) -> void:
     resource_clicked.emit(resource.resource_type)
-
-
-func _on_buy_requested(resource_name: String, qty: int) -> void:
-    resource_buy_requested.emit(resource_name, qty)
-
-
-func _on_sell_requested(resource_name: String, qty: int) -> void:
-    resource_sell_requested.emit(resource_name, qty)
-#endregion

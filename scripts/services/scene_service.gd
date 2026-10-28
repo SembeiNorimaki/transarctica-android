@@ -2,15 +2,14 @@ extends Node
 # Autoload. Swaps between the navigation scene and the city (trade) scene.
 
 const TRADE_SCENE: PackedScene = preload("res://scenes/core/trade_scene.tscn")
-const COMBAT_SCENE: PackedScene = preload("res://scenes/core/combat_scene.tscn") # adjust the path
+const COMBAT_SCENE: PackedScene = preload("res://scenes/core/combat_scene.tscn")
 
 
 # Registered by NavigationScene in its _ready().
 # (An autoload's _ready runs before the main scene exists, so it can't look the scene up itself.)
 var navigation_scene: NavigationScene
 
-# If trade_scene.gd has a class_name (e.g. TradeScene), use it as the type here.
-var city_scene: Node
+var city_scene: TradeScene
 var combat_scene: CombatScene
 var _combat_enemy: NavigationTrain
 
@@ -32,7 +31,7 @@ func enter_city(city_name: String) -> void:
 
     navigation_scene.suspend()
 
-    city_scene = TRADE_SCENE.instantiate()
+    city_scene = TRADE_SCENE.instantiate() as TradeScene
     get_tree().root.add_child(city_scene)
     # After add_child (so its @onready vars exist) and synchronous, so there is no frame
     # where the city scene is in the tree but not initialized.

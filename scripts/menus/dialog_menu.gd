@@ -84,11 +84,6 @@ func show_dialog(text: String, portrait: Texture2D = null, choices: Array = [], 
     _tween.tween_property(_text, "visible_ratio", 1.0, count / cps)
     _tween.finished.connect(_finish_typing)
 
-    print("DIALOG shown: visible=", visible, " is_visible_in_tree=", is_visible_in_tree(),
-        " global_rect=", get_global_rect(), " min_size=", get_combined_minimum_size(),
-        " parent=", get_parent().name, " text_len=", _text.text.length(),
-        " portrait_visible=", _portrait.visible)
-
 
 func is_open() -> bool:
     return _open

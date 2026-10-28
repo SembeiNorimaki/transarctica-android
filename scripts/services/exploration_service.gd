@@ -49,7 +49,6 @@ func _ready() -> void:
 #region setup
 # Call when a map is loaded, with the cells of its terrain (rail tiles). Everything starts
 # unexplored, except what GameState says was explored before in this map.
-@warning_ignore("integer_division")
 func setup(map_name: String, rail_tiles: Array, on_progress := Callable()) -> void:
     if fog_layer == null or fog_layer.tile_set == null or grid_service == null:
         push_error("ExplorationService: fog_layer (with a TileSet) and grid_service must be injected")
@@ -265,12 +264,13 @@ func _on_game_saving() -> void:
 
 # GameState replaced its data (a load): rebuild the fog from it
 func _on_game_loaded() -> void:
-    if _map_name == "" or fog_layer == null:
+    # After a load the old navigation scene is being thrown away: a new one builds its own fog
+    if _map_name == "" or not is_inside_tree() or not is_instance_valid(fog_layer) or not fog_layer.is_inside_tree():
         return
     var center := _center
     var radius := _radius
     var had_center := _has_center
-    setup(_map_name, _rail_tiles)
+    await setup(_map_name, _rail_tiles)
     if had_center:
         _update_vision(center, radius)
 #endregion

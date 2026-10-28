@@ -5,9 +5,6 @@ class_name HorizontalTrain
 # Driven by HorizontalTrainManager, which calls update(delta) every frame.
 
 signal wagon_clicked(wagon: GenericWagon)
-# wagon_index is the index in the "wagons" array of the train data (valid while no wagon was skipped)
-# signal wagon_cargo_changed(wagon_index: int, wagon: GenericWagon)
-
 
 const LAYOUT_TIME := 0.15 # seconds the wagons take to slide into their places
 
@@ -55,8 +52,7 @@ func add_wagon(wagon_data: Dictionary) -> GenericWagon:
     wagon.position = last_wagon_position - Vector2(wagon_width / 2.0, 0.0)
     last_wagon_position.x -= wagon_width
 
-    wagon.clicked.connect(_on_wagon_clicked)
-    # wagon.cargo_changed.connect(_on_wagon_cargo_changed)
+    wagon.clicked.connect(wagon_clicked.emit) # the wagon passes itself
     add_child(wagon)
     wagons.append(wagon)
     return wagon
@@ -104,13 +100,6 @@ func _layout_wagons(animated := false) -> void:
             wagon.position = target
         last_wagon_position.x -= width
 
-func _on_wagon_clicked(wagon: GenericWagon) -> void:
-    print("HorizontalTrain: wagon clicked: %s" % wagon)
-    wagon_clicked.emit(wagon)
-
-
-# func _on_wagon_cargo_changed(wagon: GenericWagon) -> void:
-#     wagon_cargo_changed.emit(wagons.find(wagon), wagon)
 #endregion
 
 

@@ -7,7 +7,7 @@ extends Node
 
 @onready var game_menu: GameMenu = $GameMenu
 
-const MENU_SCENE: PackedScene = preload("res://scenes/core/menu_scene.tscn") # adjust the paths
+const MENU_SCENE: PackedScene = preload("res://scenes/core/menu_scene.tscn")
 const NAVIGATION_SCENE: PackedScene = preload("res://scenes/core/navigation_scene.tscn")
 
 var _menu: MainMenu
@@ -28,15 +28,9 @@ func show_menu() -> void:
     add_child(_menu)
     _menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     _menu.size = get_viewport().get_visible_rect().size
-    
     _menu.new_game_requested.connect(_on_new_game_requested)
     _menu.load_game_requested.connect(_on_load_game_requested)
 
-    await get_tree().process_frame
-    print("menu pos=", _menu.position, " size=", _menu.size, " viewport=", get_viewport().get_visible_rect().size)
-    for c in _menu.get_children():
-        if c is Control:
-            print(c.name, " pos=", c.position, " size=", c.size)
 
 func _on_new_game_requested(slot: int) -> void:
     if GameState.start_new_game(slot):
