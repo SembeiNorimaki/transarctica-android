@@ -15,23 +15,23 @@ extends Node
 #       "Location": [x, y],
 #       "TradeResources": { "<Resource>": {"Quantity": n, "BuyFactor": f, "SellFactor": f, "Mode": "Both"} }
 #   }
-# Player train JSON: see data/newgame/player_train.json
+# Player train JSON: see data/campaigns/tutorial/player_train.json
 #   (id, owner, position [x, y, ori], fuel, max_fuel, max_speed, acceleration, deceleration, wagons[])
 #
 # JSON numbers are loaded as floats (3 -> 3.0). Convert with int() where an int is required.
  
 
-const CITIES_PATH := "res://data/newgame/cities_World2.json"
-const PLAYER_TRAIN_PATH := "res://data/newgame/player_train.json"
-const UNITS_PATH := "res://data/newgame/units.json"
-const ENEMY_TRAINS_PATH := "res://data/newgame/enemy_trains.json"
+# The data of a new game comes from the folder of the campaign being played (see Campaigns)
+const FILE_CAMPAIGN_CITIES := "cities.json"
+const FILE_CAMPAIGN_TRAIN := "player_train.json"
+const FILE_CAMPAIGN_UNITS := "units.json"
+const FILE_CAMPAIGN_ENEMIES := "enemy_trains.json"
 
 const SAVES_DIR := "user://saves"
 const SLOT_COUNT := 4
 const DEBUG_SLOT := 1 # slot used while debugging scenes, until the main menu sets one
 const DEBUG_AUTOLOAD := false # true: every debug run starts from the DEBUG_SLOT save, if it exists
 const SAVE_VERSION := 1
-const INITIAL_MONEY := 100
 
 const FILE_CITIES := "cities.json"
 const FILE_PLAYER := "player.json"
@@ -44,15 +44,16 @@ var _cities_state: Dictionary = {} # city name -> city data
 var _cities_by_id: Dictionary = {} # int -> city name
 var _player_train_state: Dictionary = {}
 var _enemies_state := {} # enemy trains: the navigation scene will fill it on game_saving
-var _units_state: Dictionary = {} # unit id -> unit data (see data/newgame/units.json)
+var _units_state: Dictionary = {} # unit id -> unit data (see data/campaigns/tutorial/units.json)
 
-var _player_money := INITIAL_MONEY # TODO: load the starting value from data
+var _player_money := Campaigns.DEFAULT_MONEY # a new game takes the money from campaign.json
 var _explored := {} # map name -> explored tiles, encoded by ExplorationService
 var _quests_state := {}
 var _events_state := {} # map name -> {"x,y": true} for the events already done
 var _flags := {} # story flags set by events: name -> true
 
 var current_slot := DEBUG_SLOT # the main menu will set this
+var campaign_id := Campaigns.DEFAULT_ID # the story being played. It is saved with the game
 
 
 # Signals
@@ -65,12 +66,17 @@ signal game_loaded # emitted after a load: scenes should rebuild themselves from
 
 #region initialization
 func _ready() -> void:
-    _load_initial_cities(CITIES_PATH)
-    _load_initial_player_train(PLAYER_TRAIN_PATH)
-    _load_initial_enemies(ENEMY_TRAINS_PATH)
-    _load_initial_units(UNITS_PATH)
+    _load_campaign_data()
     if DEBUG_AUTOLOAD and OS.is_debug_build() and has_save(DEBUG_SLOT):
         load_game(DEBUG_SLOT)
+
+# The cities, the player train, the enemies and the soldiers of the start of the current campaign
+func _load_campaign_data() -> void:
+    _load_initial_enemies(Campaigns.path(campaign_id, FILE_CAMPAIGN_ENEMIES))
+    _load_initial_cities(Campaigns.path(campaign_id, FILE_CAMPAIGN_CITIES))
+    _load_initial_player_train(Campaigns.path(campaign_id, FILE_CAMPAIGN_TRAIN))
+    _load_initial_units(Campaigns.path(campaign_id, FILE_CAMPAIGN_UNITS)) # the soldiers of the previous game must not survive
+
 
 # Returns the parsed JSON, or null (with an error) if the file is missing or invalid.
 func _read_json(path: String) -> Variant:
@@ -320,20 +326,21 @@ func find_free_slot() -> int:
             return slot
     return 0
 
-# Sets the game to its initial state, from the newgame folder, in the given slot.
+# Sets the game to its initial state, from the folder of the campaign, in the given slot.
 # Nothing is written to disk: the slot only changes when the game is saved.
-func start_new_game(slot: int) -> bool:
+func start_new_game(slot: int, new_campaign_id := Campaigns.DEFAULT_ID) -> bool:
     if slot < 1 or slot > SLOT_COUNT:
         push_error("GameState: slot %d does not exist (1 to %d)" % [slot, SLOT_COUNT])
         return false
+    if not Campaigns.exists(new_campaign_id):
+        push_error("GameState: the campaign '%s' does not exist (no %s)" % [new_campaign_id, Campaigns.path(new_campaign_id, Campaigns.FILE_INFO)])
+        return false
     current_slot = slot
-    _player_money = INITIAL_MONEY
+    campaign_id = new_campaign_id
+    _player_money = int(Campaigns.get_info(campaign_id)["start_money"])
     _explored = {}
     _quests_state = {} # empty quest state: QuestManager starts the quest line
-    _load_initial_enemies(ENEMY_TRAINS_PATH)
-    _load_initial_cities(CITIES_PATH)
-    _load_initial_player_train(PLAYER_TRAIN_PATH)
-    _load_initial_units(UNITS_PATH) # the soldiers of the previous game must not survive
+    _load_campaign_data()
     _events_state = {}
     _flags = {}
     game_loaded.emit() # before money_changed, like in load_game
@@ -428,6 +435,7 @@ func save_game(slot := -1) -> bool:
         FILE_PLAYER: {
             "version": SAVE_VERSION,
             "saved_at": Time.get_datetime_string_from_system(),
+            "campaign": campaign_id,
             "money": _player_money,
             "train": _player_train_state,
             "explored": _explored,
@@ -506,6 +514,10 @@ func load_game(slot := -1) -> bool:
     
 
     current_slot = target # saving now goes to the slot you loaded
+    campaign_id = str(player.get("campaign", Campaigns.DEFAULT_ID)) # a save from before the campaigns is the tutorial
+    if not Campaigns.exists(campaign_id):
+        push_warning("GameState: the campaign '%s' of the save does not exist, using '%s'" % [campaign_id, Campaigns.DEFAULT_ID])
+        campaign_id = Campaigns.DEFAULT_ID
 
     _player_money = int(player["money"])
     _player_train_state = player["train"]
@@ -516,10 +528,10 @@ func load_game(slot := -1) -> bool:
     if player.get("units") is Dictionary:
         _units_state = player["units"]
     else:
-        _load_initial_units(UNITS_PATH) # an older save has no units: start with the initial ones
+        _load_initial_units(Campaigns.path(campaign_id, FILE_CAMPAIGN_UNITS)) # an older save has no units: start with the initial ones
 
     if cities.is_empty():
-        _load_initial_cities(CITIES_PATH) # no cities.json: the cities start as in a new game
+        _load_initial_cities(Campaigns.path(campaign_id, FILE_CAMPAIGN_CITIES)) # no cities.json: the cities start as in a new game
     else:
         _cities_state = cities["cities"]
         _cities_by_id = {}

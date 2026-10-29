@@ -1,0 +1,10 @@
+{
+    "name": "The Long Rails",
+    "description": "The main story.",
+    "map": "world_1",
+    "start_money": 100,
+    "intro": {
+        "text": "The rails stretch farther than any map. Somebody has to build the line.",
+        "image": ""
+    }
+}

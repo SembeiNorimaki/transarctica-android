@@ -1,0 +1,341 @@
+{
+    "quest_tutorial_1": {
+        "title": "First steps",
+        "description": "Drive your train to Paris.",
+        "intro": {
+            "character": "comrad",
+            "text": "Comrade, the line to Paris is open. Take the train there and we will talk.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "comrad",
+            "text": "You made it! Here is something for the trouble.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
+        "is_main_quest": true,
+        "objectives": [
+            {
+                "id": "reach_paris",
+                "type": "reach_city",
+                "description": "Reach Paris",
+                "target_city": "Paris"
+            }
+        ],
+        "rewards": {
+            "money": 50
+        }
+    },
+    "quest_tutorial_2": {
+        "title": "First purchase",
+        "description": "Buy some alcohol from the market.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "quest_tutorial_1"
+            ]
+        },
+        "objectives": [
+            {
+                "id": "buy_alcohol",
+                "type": "collect_goods",
+                "description": "Buy alcohol",
+                "target_resource": "alcohol",
+                "target_qty": 2
+            }
+        ],
+        "rewards": {
+            "money": 30
+        }
+    },
+    "quest_tutorial_3": {
+        "title": "Make a delivery",
+        "description": "Sell the alcohol to a city.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "quest_tutorial_2"
+            ]
+        },
+        "objectives": [
+            {
+                "id": "sell_alcohol",
+                "type": "deliver_goods",
+                "description": "Sell alcohol in Paris",
+                "target_city": "Paris",
+                "target_resource": "alcohol",
+                "target_qty": 2
+            }
+        ],
+        "rewards": {
+            "wagon": "MerchandiseWagon"
+        }
+    },
+    "quest_industry_1": {
+        "title": "Raw materials",
+        "description": "Gather the raw materials for the new railway.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "quest_tutorial_3"
+            ]
+        },
+        "intro": {
+            "character": "comrad",
+            "text": "We need rails, comrade. First the raw materials: wood from the Forest, iron ore from the Iron Mine, and coal from the Coal Mine. The mine also sells a tender wagon, and you will need the room.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "comrad",
+            "text": "Good. Now the materials must be worked.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "collect_wood",
+                "type": "collect_goods",
+                "description": "Buy wood at the Forest",
+                "target_resource": "wood",
+                "target_qty": 10
+            },
+            {
+                "id": "collect_ironore",
+                "type": "collect_goods",
+                "description": "Buy iron ore at the Iron Mine",
+                "target_resource": "ironore",
+                "target_qty": 10
+            },
+            {
+                "id": "collect_coal",
+                "type": "collect_goods",
+                "description": "Carry 120 coal (buy a second tender at the Coal Mine)",
+                "target_resource": "coal",
+                "target_qty": 120
+            }
+        ],
+        "rewards": {
+            "money": 120
+        }
+    },
+    "quest_industry_2": {
+        "title": "First processing",
+        "description": "Take the materials to the industries that work them.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "quest_industry_1"
+            ]
+        },
+        "intro": {
+            "character": "comrad",
+            "text": "Wood goes to the Sawmill. Iron ore and coal go to the Foundry. Sell them there, then make them work.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "deliver_wood",
+                "type": "deliver_goods",
+                "description": "Sell wood to the Sawmill",
+                "target_resource": "wood",
+                "target_qty": 10,
+                "target_city": "Sawmill"
+            },
+            {
+                "id": "deliver_ironore",
+                "type": "deliver_goods",
+                "description": "Sell iron ore to the Foundry",
+                "target_resource": "ironore",
+                "target_qty": 10,
+                "target_city": "Foundry"
+            },
+            {
+                "id": "deliver_coal",
+                "type": "deliver_goods",
+                "description": "Sell coal to the Foundry",
+                "target_resource": "coal",
+                "target_qty": 5,
+                "target_city": "Foundry"
+            }
+        ],
+        "rewards": {
+            "money": 60
+        }
+    },
+    "quest_industry_3": {
+        "title": "Intermediate goods",
+        "description": "Produce planks and iron ingots.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "quest_industry_2"
+            ]
+        },
+        "intro": {
+            "character": "comrad",
+            "text": "Now produce. Open the Sawmill and the Foundry, run their recipes, and take the planks and the ingots with you.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "collect_planks",
+                "type": "collect_goods",
+                "description": "Collect wood planks from the Sawmill",
+                "target_resource": "woodplanks",
+                "target_qty": 5
+            },
+            {
+                "id": "collect_ingots",
+                "type": "collect_goods",
+                "description": "Collect iron ingots from the Foundry",
+                "target_resource": "ironingot",
+                "target_qty": 5
+            }
+        ],
+        "rewards": {
+            "money": 80
+        }
+    },
+    "quest_industry_4": {
+        "title": "To the workshop",
+        "description": "Bring planks and ingots to the Workshop.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "quest_industry_3"
+            ]
+        },
+        "intro": {
+            "character": "comrad",
+            "text": "The Workshop makes rails from planks and iron. Take what you have made there.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "deliver_planks",
+                "type": "deliver_goods",
+                "description": "Sell wood planks to the Workshop",
+                "target_resource": "woodplanks",
+                "target_qty": 4,
+                "target_city": "Workshop"
+            },
+            {
+                "id": "deliver_ingots",
+                "type": "deliver_goods",
+                "description": "Sell iron ingots to the Workshop",
+                "target_resource": "ironingot",
+                "target_qty": 2,
+                "target_city": "Workshop"
+            }
+        ],
+        "rewards": {
+            "money": 60
+        }
+    },
+    "quest_industry_5": {
+        "title": "Rails",
+        "description": "Make rails at the Workshop.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "quest_industry_4"
+            ]
+        },
+        "intro": {
+            "character": "comrad",
+            "text": "Last step: have the Workshop make the rails, and carry them out.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "comrad",
+            "text": "Rails! Now the line can grow. You have done well, comrade.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "collect_rails",
+                "type": "collect_goods",
+                "description": "Collect rails from the Workshop",
+                "target_resource": "rails",
+                "target_qty": 4
+            }
+        ],
+        "rewards": {
+            "money": 200,
+            "wagon": "MerchandiseWagon"
+        }
+    }
+}

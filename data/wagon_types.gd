@@ -52,6 +52,20 @@ const TYPES = {
         "capacity": 10,
         "footprint": "wagon_small"
     },
+    "SteelWagon": {
+        "horizontal_scene": preload("res://scenes/wagons/steel_wagon.tscn"),
+        # TODO: draw nav_SteelWagon.png. Until then it uses the merchandise wagon
+        "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_MerchandiseWagon.png",
+        "navigation_atlas_orientations": ["SE", "S", "SW", "W", "NW", "N", "NE", "E"],
+        "navigation_atlas_cargo": ["Empty_Crate"],
+        "team": "Player",
+        "horizontal_size": Vector2i(128, 46),
+        "navigation_size": Vector2i(78, 55),
+        "stores": ["Steel"],
+        "default_cargo": "Steel",
+        "capacity": 20,
+        "footprint": "wagon_small"
+    },
     "TenderWagon": {
         "horizontal_scene": preload("res://scenes/wagons/tender_wagon.tscn"),
         "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_TenderWagon.png",

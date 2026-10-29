@@ -22,7 +22,7 @@ class_name EventsManager
 signal event_triggered(event: Dictionary)
 signal event_completed(event_id: int, tile: Vector2i)
 
-const EVENTS_PATH := "res://data/events.json"
+const EVENTS_FILE := "events.json" # in the folder of the campaign being played (see Campaigns)
 
 const TYPE_BRIDGE := "bridge"
 const TYPE_TUNNEL := "tunnel"
@@ -51,19 +51,20 @@ func _ready() -> void:
 #region loading
 func _load_definitions() -> void:
     _definitions.clear()
-    if not FileAccess.file_exists(EVENTS_PATH):
-        push_error("EventsManager: %s not found" % EVENTS_PATH)
+    var events_path := Campaigns.path(GameState.campaign_id, EVENTS_FILE)
+    if not FileAccess.file_exists(events_path):
+        push_error("EventsManager: %s not found" % events_path)
         return
-    var data = JSON.parse_string(FileAccess.get_file_as_string(EVENTS_PATH))
+    var data = JSON.parse_string(FileAccess.get_file_as_string(events_path))
     if not (data is Dictionary):
-        push_error("EventsManager: %s must contain a JSON object" % EVENTS_PATH)
+        push_error("EventsManager: %s must contain a JSON object" % events_path)
         return
     for key in data:
         if str(key).begins_with("_"):
             continue # comments
         var problem := _validate(str(key), data[key])
         if not problem.is_empty():
-            push_error("EventsManager: event '%s' in %s: %s (skipped)" % [key, EVENTS_PATH, problem])
+            push_error("EventsManager: event '%s' in %s: %s (skipped)" % [key, events_path, problem])
             continue
         _definitions[int(key)] = data[key]
 
@@ -96,6 +97,7 @@ func _validate(key: String, info) -> String:
 # Call when a map is loaded, AFTER its rails are registered in RailService: the crossings that
 # were already built in this game are built again here.
 func setup(map_name: String, map: Node2D) -> void:
+    _load_definitions() # the campaign may have changed since the last map
     _map_name = map_name
     _map = map
     _events.clear()

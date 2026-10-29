@@ -47,8 +47,7 @@ const RESOURCES := {
     "ironingot": {"frame": 21, "wagon_type": "MerchandiseWagon", "buy": 14, "sell": 12},
     "copperingot": {"frame": - 1, "wagon_type": "MerchandiseWagon", "buy": 12, "sell": 10},
     "woodplanks": {"frame": 22, "wagon_type": "MerchandiseWagon", "buy": 9, "sell": 8},
-    "steel": {"frame": 22, "wagon_type": "SteelWagon", "buy": 9, "sell": 8},
-    
+    "steel": {"frame": 21, "wagon_type": "SteelWagon", "buy": 25, "sell": 20} # TODO: frame 21 is the iron ingot, draw the steel bars
 }
 
 

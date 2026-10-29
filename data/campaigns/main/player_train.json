@@ -1,0 +1,68 @@
+{
+    "id": "TP0",
+    "owner": "Player",
+    "max_speed": 5000,
+    "acceleration": 1000,
+    "deceleration": 1000,
+    "wagons": [
+        {
+            "type": "LocomotiveWagon",
+            "hp": 100,
+            "max_hp": 100,
+            "capacity": 0,
+            "cargo_name": "",
+            "cargo_qty": 0
+        },
+        {
+            "type": "TenderWagon",
+            "hp": 60,
+            "max_hp": 60,
+            "capacity": 1000,
+            "cargo_name": "coal",
+            "cargo_qty": 1000
+        },
+        {
+            "type": "BarracksWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 6,
+            "unit_ids": [
+                "u0",
+                "u1",
+                "u2"
+            ]
+        },
+        {
+            "type": "MerchandiseWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 20,
+            "cargo_name": "wood",
+            "cargo_qty": 10
+        },
+        {
+            "type": "MerchandiseWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 20,
+            "cargo_name": "ironore",
+            "cargo_qty": 10
+        },
+        {
+            "type": "MerchandiseWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 20,
+            "cargo_name": "",
+            "cargo_qty": 0
+        },
+        {
+            "type": "MerchandiseWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 20,
+            "cargo_name": "",
+            "cargo_qty": 0
+        }
+    ]
+}

@@ -1,0 +1,335 @@
+{
+    "0": {
+        "Name": "Paris",
+        "Type": "City",
+        "Location": [
+            11,
+            -8
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyFactor": 2.0,
+                "SellFactor": 1.25,
+                "Quantity": 4,
+                "MaxCapacity": 40
+            },
+            "fishingrods": {
+                "BuyFactor": 0.5,
+                "SellFactor": 1.67,
+                "Quantity": 6,
+                "MaxCapacity": 40
+            },
+            "furs": {
+                "BuyFactor": 0.5,
+                "SellFactor": 1.25,
+                "Quantity": 12,
+                "MaxCapacity": 40
+            },
+            "mammothdung": {
+                "BuyFactor": 0.33,
+                "SellFactor": 1.5,
+                "Quantity": 20,
+                "MaxCapacity": 40
+            }
+        },
+        "TradeWagons": {
+            "MerchandiseWagon": {
+                "BuyPrice": 20,
+                "SellPrice": 10,
+                "Quantity": 4
+            },
+            "SteelWagon": {
+                "BuyPrice": 60,
+                "SellPrice": 30,
+                "Quantity": 2
+            }
+        },
+        "Recruits": {
+            "liquidator": {
+                "Price": 40,
+                "Quantity": 3
+            },
+            "pioneer": {
+                "Price": 60,
+                "Quantity": 2
+            }
+        }
+    },
+    "1": {
+        "Name": "Foundry",
+        "Type": "Industry",
+        "Kind": "Foundry",
+        "Location": [
+            11,
+            -8
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyFactor": 2.0,
+                "SellFactor": 1.25,
+                "Mode": "Both",
+                "Quantity": 4
+            },
+            "ironore": {
+                "SellFactor": 1.67,
+                "Mode": "Buys",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "coal": {
+                "SellFactor": 1.0,
+                "Mode": "Buys",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "ironingot": {
+                "BuyFactor": 1.0,
+                "Mode": "Sells",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "copperingot": {
+                "BuyFactor": 1.08,
+                "Mode": "Sells",
+                "Quantity": 4,
+                "MaxCapacity": 40
+            },
+            "copperore": {
+                "SellFactor": 1.67,
+                "Mode": "Buys",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "steel": {
+                "BuyFactor": 1.0,
+                "Mode": "Sells",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            }
+        }
+    },
+    "2": {
+        "Name": "Central Depot",
+        "Type": "Depot",
+        "Location": [
+            11,
+            -8
+        ]
+    },
+    "3": {
+        "Name": "Amsterdam",
+        "Type": "City",
+        "Location": [
+            11,
+            -8
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyFactor": 1.0,
+                "SellFactor": 1.75,
+                "Quantity": 20
+            },
+            "oil": {
+                "BuyFactor": 0.83,
+                "SellFactor": 1.6,
+                "Quantity": 16
+            },
+            "gasoline": {
+                "BuyFactor": 1.0,
+                "SellFactor": 1.28,
+                "Quantity": 12
+            },
+            "salt": {
+                "BuyFactor": 0.5,
+                "SellFactor": 1.67,
+                "Quantity": 10
+            }
+        }
+    },
+    "4": {
+        "Name": "Leeds Station",
+        "Type": "City",
+        "Location": [
+            -9,
+            -20
+        ],
+        "TradeResources": {
+            "missiles": {
+                "BuyFactor": 0.33,
+                "SellFactor": 0.6,
+                "Quantity": 10
+            },
+            "salt": {
+                "BuyFactor": 1.0,
+                "SellFactor": 1.67,
+                "Quantity": 6
+            }
+        }
+    },
+    "5": {
+        "Name": "Ruhr",
+        "Type": "City",
+        "Location": [
+            22,
+            -12
+        ],
+        "TradeResources": {
+            "oil": {
+                "BuyFactor": 0.83,
+                "SellFactor": 2.0,
+                "Quantity": 10
+            },
+            "caviar": {
+                "BuyFactor": 0.83,
+                "SellFactor": 1.2,
+                "Quantity": 16
+            },
+            "fish": {
+                "BuyFactor": 1.0,
+                "SellFactor": 1.5,
+                "Quantity": 6
+            }
+        }
+    },
+    "6": {
+        "Name": "Berlin",
+        "Type": "City",
+        "Location": [
+            31,
+            -10
+        ],
+        "TradeResources": {
+            "missiles": {
+                "BuyFactor": 0.83,
+                "SellFactor": 1.4,
+                "Quantity": 20
+            },
+            "alcohol": {
+                "BuyFactor": 0.4,
+                "SellFactor": 0.62,
+                "Quantity": 6
+            }
+        }
+    },
+    "7": {
+        "Name": "Bayreuth",
+        "Type": "City",
+        "Location": [
+            32,
+            -2
+        ],
+        "TradeResources": {
+            "alcohol": {
+                "BuyFactor": 1.0,
+                "SellFactor": 0.38,
+                "Quantity": 5
+            },
+            "mammothdung": {
+                "BuyFactor": 1.33,
+                "SellFactor": 2.5,
+                "Quantity": 16
+            },
+            "plants": {
+                "BuyFactor": 1.0,
+                "SellFactor": 1.4,
+                "Quantity": 12
+            }
+        }
+    },
+    "8": {
+        "Name": "Forest",
+        "Type": "Industry",
+        "Kind": "Forest",
+        "TradeResources": {
+            "wood": {
+                "BuyFactor": 1.0,
+                "Mode": "Sells",
+                "Quantity": 40,
+                "MaxCapacity": 60
+            }
+        }
+    },
+    "9": {
+        "Name": "Iron Mine",
+        "Type": "Industry",
+        "Kind": "IronMine",
+        "TradeResources": {
+            "ironore": {
+                "BuyFactor": 1.0,
+                "Mode": "Sells",
+                "Quantity": 40,
+                "MaxCapacity": 60
+            }
+        }
+    },
+    "10": {
+        "Name": "Coal Mine",
+        "Type": "Industry",
+        "Kind": "CoalMine",
+        "TradeResources": {
+            "coal": {
+                "BuyFactor": 0.5,
+                "Mode": "Sells",
+                "Quantity": 60,
+                "MaxCapacity": 100
+            }
+        },
+        "TradeWagons": {
+            "TenderWagon": {
+                "BuyPrice": 40,
+                "SellPrice": 20,
+                "Quantity": 2
+            }
+        }
+    },
+    "11": {
+        "Name": "Sawmill",
+        "Type": "Industry",
+        "Kind": "Sawmill",
+        "TradeResources": {
+            "wood": {
+                "SellFactor": 2.0,
+                "Mode": "Buys",
+                "Quantity": 0,
+                "MaxCapacity": 60
+            },
+            "woodplanks": {
+                "BuyFactor": 1.0,
+                "Mode": "Sells",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            }
+        }
+    },
+    "12": {
+        "Name": "Workshop",
+        "Type": "Industry",
+        "Kind": "Workshop",
+        "TradeResources": {
+            "woodplanks": {
+                "SellFactor": 1.25,
+                "Mode": "Buys",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "ironingot": {
+                "SellFactor": 1.33,
+                "Mode": "Buys",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "rails": {
+                "BuyFactor": 1.0,
+                "Mode": "Sells",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            },
+            "steel": {
+                "SellFactor": 1.25,
+                "Mode": "Buys",
+                "Quantity": 0,
+                "MaxCapacity": 40
+            }
+        }
+    }
+}

@@ -50,7 +50,7 @@ const KINDS := {
         "recipes": [
             {"Name": "Iron ingot", "Inputs": {"ironore": 2, "coal": 1}, "Outputs": {"ironingot": 1}},
             {"Name": "Copper ingot", "Inputs": {"copperore": 2, "coal": 1}, "Outputs": {"copperingot": 1}},
-            {"Name": "Steel", "Inputs": {"ironore": 2, "coal": 1}, "Outputs": {"steel": 1}}
+            {"Name": "Steel", "Inputs": {"ironore": 2, "coal": 1}, "Outputs": {"steel": 1}},
         ],
     },
     "Workshop": {

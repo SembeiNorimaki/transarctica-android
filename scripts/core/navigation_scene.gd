@@ -44,9 +44,8 @@ var _drag_distance := 0.0
 var events_manager: EventsManager # made in code, see _create_event_nodes()
 var _open_event := {} # the event the pop-up is showing
 
-# TODO: This values should be loaded from somewhere else
-const DEFAULT_MAP_NAME: String = "world_1"
-# const DEFAULT_MAP_NAME: String = "world_test"
+# The map comes from campaign.json. This one is used only if the campaign doesn't say.
+const DEFAULT_MAP_NAME: String = Campaigns.DEFAULT_MAP
 
 # This should be read from navigationtrainmanager.playerTrain
 var initial_player_train_pos = Vector2i(31, 9)
@@ -60,7 +59,7 @@ func _ready() -> void:
     SceneService.register_navigation_scene(self)
     _inject_services()
     _wire_signals()
-    await _load_map(DEFAULT_MAP_NAME)
+    await _load_map(str(Campaigns.get_info(GameState.campaign_id).get("map", DEFAULT_MAP_NAME)))
 
     var player_train := navigation_train_manager.player_train
     if is_instance_valid(player_train):
@@ -133,7 +132,6 @@ func _wire_signals() -> void:
     hud.menu_pressed.connect(menu_requested.emit)
     hud.event_popup.accepted.connect(_on_event_accepted)
     hud.event_popup.declined.connect(_on_event_declined)
-    hud.camera_follow_toggled.connect(navigation_train_manager.set_camera_follow)
 
     events_manager.event_triggered.connect(_on_event_triggered)
 #endregion
@@ -337,9 +335,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
     elif dragging and (event is InputEventScreenDrag or event is InputEventMouseMotion):
         _drag_distance += event.relative.length()
-        if navigation_train_manager.camera_lock_to_engine:
-            navigation_train_manager.set_camera_follow(false)
-            hud.set_camera_following(false)
         camera_service.pan(event.relative)
 
 func _on_train_reached_city(city_name: String) -> void:

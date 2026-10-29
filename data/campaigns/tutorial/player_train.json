@@ -1,0 +1,41 @@
+{
+    "id": "TP0",
+    "owner": "Player",
+    "max_speed": 400,
+    "acceleration": 100,
+    "deceleration": 300,
+    "wagons": [
+        {
+            "type": "LocomotiveWagon",
+            "hp": 100,
+            "max_hp": 100,
+            "capacity": 0,
+            "cargo_name": "",
+            "cargo_qty": 0
+        },
+        {
+            "type": "TenderWagon",
+            "hp": 60,
+            "max_hp": 60,
+            "capacity": 100,
+            "cargo_name": "coal",
+            "cargo_qty": 40
+        },
+        {
+            "type": "TenderWagon",
+            "hp": 60,
+            "max_hp": 60,
+            "capacity": 100,
+            "cargo_name": "",
+            "cargo_qty": 0
+        },
+        {
+            "type": "MerchandiseWagon",
+            "hp": 40,
+            "max_hp": 40,
+            "capacity": 20,
+            "cargo_name": "",
+            "cargo_qty": 0
+        }
+    ]
+}

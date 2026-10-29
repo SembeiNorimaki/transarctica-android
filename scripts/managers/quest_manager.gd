@@ -14,7 +14,7 @@ signal quests_updated
 signal quest_offered(quest: Quest) # its intro dialog should be shown
 signal quest_outro_requested(quest: Quest) # its outro dialog should be shown
 
-const QUESTS_PATH := "res://data/quests.json"
+const QUESTS_FILE := "quests.json" # in the folder of the campaign being played (see Campaigns)
 const QUESTS_ENABLED := false # false: no quest is offered (for debugging). The data and the saves are not touched.
 
 var quest_database := {} # quest id -> data from quests.json
@@ -39,18 +39,18 @@ func _ready() -> void:
 
 
 #region database
-# populates quest_database from QUESTS_PATH
+# populates quest_database from the quests.json of the campaign being played
 func load_quest_database() -> void:
     quest_database = {}
-    if not FileAccess.file_exists(QUESTS_PATH):
-        push_warning("QuestManager: %s not found, there are no quests" % QUESTS_PATH)
+    var path := Campaigns.path(GameState.campaign_id, QUESTS_FILE)
+    if not FileAccess.file_exists(path):
+        push_warning("QuestManager: %s not found, there are no quests" % path)
         return
-    var file := FileAccess.open(QUESTS_PATH, FileAccess.READ)
-    var json = JSON.parse_string(file.get_as_text())
+    var json = JSON.parse_string(FileAccess.get_file_as_string(path))
     if json is Dictionary:
         quest_database = json
     else:
-        push_error("QuestManager: %s is not a valid JSON object" % QUESTS_PATH)
+        push_error("QuestManager: %s is not a valid JSON object" % path)
 
 # Quests load when a game starts, because GameState emits game_loaded from the menu.
 # Running a single scene for debugging (F6) has no menu, so load them here.
@@ -82,8 +82,8 @@ func _build_quest(quest_id: String) -> Quest:
         objective.description = str(objective_data.get("description", ""))
         objective.target_city = str(objective_data.get("target_city", ""))
         objective.target_resource = str(objective_data.get("target_resource", ""))
-        objective.target_qty = int(objective_data.get("target_qty", 0))
         objective.target_wagon = str(objective_data.get("target_wagon", ""))
+        objective.target_qty = int(objective_data.get("target_qty", 0))
         quest.objectives.append(objective)
     return quest
 #endregion
@@ -236,6 +236,7 @@ func _on_game_saving() -> void:
 
 # Rebuilds the quests from GameState (at start, and after a load)
 func load_from_game_state() -> void:
+    load_quest_database() # the campaign may have changed
     active_quests.clear()
     completed_quests.clear()
     dismissed_quests.clear()
@@ -266,14 +267,6 @@ func load_from_game_state() -> void:
     _refresh_train_objectives()
 #endregion
 
-# Wagons of a type in the player train, counted from the data
-func count_wagons_in_train(wagon_type: String) -> int:
-    var total := 0
-    for wagon in GameState.get_player_train().get("wagons", []):
-        if str(wagon.get("type", "")).to_lower() == wagon_type.to_lower():
-            total += 1
-    return total
-
 # Units of a resource in the player train, counted from the data
 func count_in_train(resource_name: String) -> int:
     var total := 0
@@ -282,6 +275,13 @@ func count_in_train(resource_name: String) -> int:
             total += int(wagon.get("cargo_qty", 0))
     return total
 
+# Wagons of a type in the player train, counted from the data
+func count_wagons_in_train(wagon_type: String) -> int:
+    var total := 0
+    for wagon in GameState.get_player_train().get("wagons", []):
+        if str(wagon.get("type", "")).to_lower() == wagon_type.to_lower():
+            total += 1
+    return total
 
 # "collect_goods" and "own_wagon" objectives follow what the train holds, so refresh them when it changes
 func _refresh_train_objectives() -> void:
@@ -299,6 +299,7 @@ func _refresh_train_objectives() -> void:
         process_event(QuestObjective.TYPE_COLLECT_GOODS, {"resource_name": resource_name, "qty": count_in_train(resource_name)})
     for wagon_type in wagon_types:
         process_event(QuestObjective.TYPE_OWN_WAGON, {"wagon_type": wagon_type, "qty": count_wagons_in_train(wagon_type)})
+
 #region debug
 func _print_progress(quest: Quest, objective: QuestObjective) -> void:
     print("Quest '%s': %s %d/%d%s" % [quest.title, objective.description, objective.current_qty, objective.target_qty, " (done)" if objective.is_completed else ""])
@@ -379,11 +380,11 @@ func _objective_problems(quest_id: String, data: Dictionary) -> Array[String]:
     if type in [QuestObjective.TYPE_DELIVER_GOODS, QuestObjective.TYPE_COLLECT_GOODS]:
         if not ResourceTypes.is_known(resource):
             problems.append("%s targets the unknown resource '%s'" % [where, resource])
-    if type != QuestObjective.TYPE_REACH_CITY and qty <= 0:
-        problems.append("%s needs a target_qty above 0" % where)
     if type == QuestObjective.TYPE_OWN_WAGON:
         var wagon := str(data.get("target_wagon", ""))
         if not WagonTypes.TYPES.has(wagon):
             problems.append("%s targets the unknown wagon '%s'" % [where, wagon])
+    if type != QuestObjective.TYPE_REACH_CITY and qty <= 0:
+        problems.append("%s needs a target_qty above 0" % where)
     return problems
 #endregion
