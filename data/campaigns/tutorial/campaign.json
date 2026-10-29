@@ -1,0 +1,10 @@
+{
+    "name": "Tutorial",
+    "description": "A young orphan, an old cargo train, and a coal mine. Learn the trade.",
+    "map": "world_1",
+    "start_money": 100,
+    "intro": {
+        "text": "You never knew your parents. The coal city took you in, and the railway gave you something to do.\n\nEvery morning, the same run: load coal at the mine, carry it to the foundry, and come back before dark. An old locomotive, a tender and a few wagons are all you own.\n\nBut the foundry is running low on iron, and somebody has to do something about it.",
+        "image": ""
+    }
+}

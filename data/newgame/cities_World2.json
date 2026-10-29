@@ -37,6 +37,11 @@
                 "BuyPrice": 20,
                 "SellPrice": 10,
                 "Quantity": 4
+            },
+            "SteelWagon": {
+                "BuyPrice": 20,
+                "SellPrice": 10,
+                "Quantity": 4
             }
         },
         "Recruits": {

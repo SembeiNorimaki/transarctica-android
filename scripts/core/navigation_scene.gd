@@ -133,6 +133,7 @@ func _wire_signals() -> void:
     hud.menu_pressed.connect(menu_requested.emit)
     hud.event_popup.accepted.connect(_on_event_accepted)
     hud.event_popup.declined.connect(_on_event_declined)
+    hud.camera_follow_toggled.connect(navigation_train_manager.set_camera_follow)
 
     events_manager.event_triggered.connect(_on_event_triggered)
 #endregion
@@ -336,6 +337,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
     elif dragging and (event is InputEventScreenDrag or event is InputEventMouseMotion):
         _drag_distance += event.relative.length()
+        if navigation_train_manager.camera_lock_to_engine:
+            navigation_train_manager.set_camera_follow(false)
+            hud.set_camera_following(false)
         camera_service.pan(event.relative)
 
 func _on_train_reached_city(city_name: String) -> void:

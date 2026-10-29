@@ -7,15 +7,17 @@ extends Node
 
 const MENU_SCENE: PackedScene = preload("res://scenes/core/menu_scene.tscn")
 const NAVIGATION_SCENE: PackedScene = preload("res://scenes/core/navigation_scene.tscn")
+const MUSIC_MAIN: AudioStream = preload("res://assets/audio/music_title.wav")
 
 var _menu: MainMenu
 var _navigation: Node
 
 
 func _ready() -> void:
+    AudioService.play_music(MUSIC_MAIN, 0.0)
     GameMenu.load_requested.connect(_on_ingame_load_requested)
     show_menu()
-
+    
 
 # TODO: to come back to the menu from the game, also free _navigation, and any city or combat
 # scene (SceneService.city_scene / combat_scene), before showing it again.

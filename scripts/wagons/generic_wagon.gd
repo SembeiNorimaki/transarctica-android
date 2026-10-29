@@ -27,8 +27,25 @@ func _ready() -> void:
 
 # Override in wagon variants to show the cargo (crates, coal...).
 func _refresh_visuals() -> void:
-    pass
+    update_sprite()
 
+# The sprite sheet (Sprite2D Hframes) goes: empty, some cargo, full.
+# A sprite with a single image has nothing to switch, so it does nothing.
+func update_sprite() -> void:
+    if sprite == null:
+        return
+    var frame_count := sprite.hframes * sprite.vframes
+    if frame_count <= 1:
+        return
+
+    if cargo_amount <= 0:
+        sprite.frame = 0 # empty
+    elif cargo_amount >= max_cargo_amount:
+        sprite.frame = frame_count - 1 # full
+    else:
+        # Between empty and full. With 3 frames it is always frame 1; with more frames it grows with the load
+        var fraction := float(cargo_amount) / float(max_cargo_amount)
+        sprite.frame = clampi(1 + floori(fraction * (frame_count - 2)), 1, frame_count - 2)
 
 #region data
 # Applies one entry of the train data's "wagons" array plus the WagonTypes entry of its type.

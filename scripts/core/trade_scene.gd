@@ -11,6 +11,9 @@ signal menu_requested
 @onready var wagon_reorder_controller: WagonReorderController = $Managers/WagonReorderController
 @onready var trade_unit_manager: TradeUnitManager = $Managers/TradeUnitManager
 
+# Services
+@onready var camera_service: CameraService = $Services/CameraService
+
 # Containers
 @onready var train_container: Node2D = $TrainContainer
 @onready var trade_resource_container: Node2D = $ResourceContainer
@@ -52,13 +55,25 @@ enum Phase {INTRO, TRADING, OUTRO}
 
 static var _problems_reported := false
 
+# Horizontal extent of the world the camera may show. Set them to the width of the background.
+@export var world_left := 0.0
+@export var world_right := 2400.0
+
 var _phase := Phase.TRADING
 var city_name := ""
-
+var _pressing := false
 var _initialized := false
 
 
 func _ready() -> void:
+    var screen := get_viewport_rect().size
+    camera_service.set_pos(screen * 0.5) # the view starts as it was without a camera
+    # The camera's center may go from half a screen after the left edge to half a screen before the right
+    var half_width := screen.x * 0.5
+    camera_service.set_world_bounds(Rect2(
+            world_left + half_width, screen.y * 0.5,
+            maxf(world_right - world_left - screen.x, 0.0) + 1.0, 1.0))
+
     # Inject before initialize()
     horizontal_train_manager.train_container = train_container
     trade_resource_manager.resource_container = trade_resource_container
@@ -101,7 +116,7 @@ func _ready() -> void:
     wagon_reorder_controller.wagon_dropped.connect(_on_wagon_dropped)
     place.clicked.connect(_on_place_clicked)
     
-    AudioService.play_music(MUSIC_TRADE, 0.0)
+    AudioService.play_music(MUSIC_TRADE, 0.0, false)
 
 
     if OS.is_debug_build() and not _problems_reported:
@@ -305,20 +320,6 @@ func _start_intro() -> void:
     player_train.set_speed(player_train.max_speed) # speed > 0 puts it in Drive, at the top speed: it keeps it
 
 
-func _process(_delta: float) -> void:
-    match _phase:
-        Phase.INTRO:
-            if player_train.global_position.x >= brake_marker.global_position.x:
-                player_train.gear_down() # D -> N: it brakes
-                _phase = Phase.TRADING
-        Phase.OUTRO:
-            # The train node is its FRONT; the back end of the last wagon must be past the right edge
-            var tail_x := player_train.to_global(player_train.last_wagon_position).x
-            if tail_x > get_viewport_rect().size.x:
-                _phase = Phase.TRADING # it only happens once
-                _finish_leaving()
-
-
 func _start_outro() -> void:
     _phase = Phase.OUTRO
     exit_button.disabled = true
@@ -332,6 +333,20 @@ func _finish_leaving() -> void:
         return
     SceneService.leave_city()
 #endregion
+
+func _process(_delta: float) -> void:
+    match _phase:
+        Phase.INTRO:
+            if player_train.global_position.x >= brake_marker.global_position.x:
+                player_train.gear_down() # D -> N: it brakes
+                _phase = Phase.TRADING
+        Phase.OUTRO:
+            var tail_world := player_train.to_global(player_train.last_wagon_position)
+            var tail_x := (get_canvas_transform() * tail_world).x
+            if tail_x > get_viewport_rect().size.x:
+                _phase = Phase.TRADING
+                _finish_leaving()
+
 
 func _on_wagon_dropped(from_index: int, to_index: int) -> void:
     train_inventory.move_wagon(from_index, to_index) # the inventory announces it, and the view follows
@@ -362,3 +377,15 @@ func _print_inventories() -> void:
         var wagon := train_inventory.get_wagon_info(i)
         var cargo: String = wagon.resource_name if wagon.resource_name != "" else "(empty)"
         print("  [%d] %s: %s %d / %d" % [i, wagon.wagon_type, cargo, wagon.qty, wagon.max_capacity])
+
+func _unhandled_input(event: InputEvent) -> void:
+    # Godot also sends a mouse event for every touch. Ignore those, the touch events are used instead.
+    if event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION:
+        return
+
+    if event is InputEventScreenTouch or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
+        _pressing = event.pressed
+    elif _pressing and (event is InputEventScreenDrag or event is InputEventMouseMotion):
+        if _phase != Phase.TRADING or wagon_reorder_controller.is_dragging():
+            return # not while the train comes in or leaves, nor while a wagon is being dragged
+        camera_service.pan(event.relative)

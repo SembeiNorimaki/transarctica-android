@@ -205,6 +205,10 @@ func _on_train_collided(train: NavigationTrain, other_wagon: NavigationWagon) ->
 func _emit_collision(enemy: NavigationTrain) -> void:
     trains_collided.emit(player_train, enemy)
 
+func set_camera_follow(enabled: bool) -> void:
+    camera_lock_to_engine = enabled
+    if enabled and is_instance_valid(player_train) and not player_train.wagons.is_empty():
+        camera_service.set_pos(player_train.wagons[0].global_position)
 
 # Enemies are only drawn while they are on a visible tile
 # func update_enemy_visibility() -> void:

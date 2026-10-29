@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://c67vyy6vrgjy3"]
+
+[ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_lfnwx"]
+[ext_resource type="Texture2D" uid="uid://b4tpv7g8vdnys" path="res://assets/wagons/steel_wagon_atlas.png" id="2_522jd"]
+
+[node name="SteelWagon" unique_id=420343912 instance=ExtResource("1_lfnwx")]
+
+[node name="Sprite2D" parent="." index="0" unique_id=1095718610]
+texture = ExtResource("2_522jd")
+hframes = 3

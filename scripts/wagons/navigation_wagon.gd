@@ -4,8 +4,12 @@ class_name NavigationWagon
 # Signals
 signal tile_changed(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i)
 signal collided(wagon: NavigationWagon, other_wagon: NavigationWagon)
+signal blocked(wagon: NavigationWagon)
+
 
 var grid_service: GridService # injected
+# Injected by the train: (wagon, from_tile, to_tile) -> bool. Without it every move is allowed.
+var can_enter: Callable
 var speed := 0.0
 var orientation := ""
 var heading := Vector2.RIGHT
@@ -67,13 +71,21 @@ func advance(delta: float) -> void:
     var max_step := grid_service.tile_half_size.y * 0.5 # well below a tile's width
     while remaining > 0.0 and speed > 0.0:
         var step := minf(remaining, max_step)
-        position += heading * step
+        var new_pos := position + heading * step
+        var tile := grid_service.world_to_tile(new_pos)
+        if tile == current_tile:
+            position = new_pos
+            remaining -= step
+            continue
+        # Crossing into another tile: ask first, and don't move if it isn't allowed
+        if can_enter.is_valid() and not can_enter.call(self, current_tile, tile):
+            blocked.emit(self)
+            return
+        position = new_pos
         remaining -= step
-        var tile := grid_service.world_to_tile(position)
-        if tile != current_tile:
-            var old := current_tile
-            current_tile = tile
-            tile_changed.emit(self, old, tile) # handler may change orientation or stop
+        var old := current_tile
+        current_tile = tile
+        tile_changed.emit(self, old, tile) # handler may change orientation or stop
 
 func _on_hit_area_entered(area: Area2D) -> void:
     var other := area.get_parent() as NavigationWagon

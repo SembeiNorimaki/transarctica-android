@@ -22,6 +22,7 @@ signal reverse_pressed # left button
 signal gear_pressed # right button
 signal quests_pressed
 signal menu_pressed
+signal camera_follow_toggled(enabled: bool)
 
 # @onready var fuel_bar: ProgressBar = $Root/TopBar/HBoxContainer/FuelBar
 @onready var button_left: Button = $Root/BottomBar/HBoxContainer/ButtonLeft
@@ -29,6 +30,7 @@ signal menu_pressed
 @onready var minimap: Minimap = $Root/Minimap
 @onready var event_popup: EventPopup = $Root/EventPopup
 @onready var top_bar: TopBar = $Root/TopBar
+@onready var button_camera: Button = $Root/ButtonCamera
 
 # One image with two frames side by side: the first is shown while the train is stopped, the
 # second while it is driving. Swap the two images in the file if it looks the wrong way round.
@@ -45,6 +47,7 @@ func _ready() -> void:
     button_right.pressed.connect(gear_pressed.emit)
     top_bar.quests_pressed.connect(quests_pressed.emit)
     top_bar.menu_pressed.connect(menu_pressed.emit)
+    button_camera.toggled.connect(camera_follow_toggled.emit)
 
 # Called when the player train changes gear (or is rebuilt)
 func set_driving(driving: bool) -> void:
@@ -52,6 +55,9 @@ func set_driving(driving: bool) -> void:
         return
     button_right.icon = _icon_drive if driving else _icon_neutral
 
+func set_camera_following(following: bool) -> void:
+    button_camera.set_pressed_no_signal(following)
+    
 func _make_gear_icons() -> void:
     if gear_atlas == null:
         push_warning("NavigationHUD: gear_atlas is not set")

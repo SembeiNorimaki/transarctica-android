@@ -8,6 +8,8 @@ const MIN_ZOOM := 0.25
 const MAX_ZOOM := 6.0
 
 @export var initial_zoom := 1.0
+@export var zoom_enabled := true # wheel and pinch
+@export var horizontal_only := false # the camera never moves vertically
 
 var grid_service: GridService # injected
 var world_bounds := Rect2() # empty rect = unbounded
@@ -61,6 +63,8 @@ func zoom_at_screen_pos(factor: float, screen_pos: Vector2) -> void:
 # --- Input --------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
+    if not zoom_enabled:
+        return
     if event is InputEventMouseButton and event.pressed:
         match event.button_index:
             MOUSE_BUTTON_WHEEL_UP:
@@ -73,6 +77,8 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Internal -----------------------------------------------------------
 
 func _move_to(world_pos: Vector2) -> void:
+    if horizontal_only:
+        world_pos.y = cam.global_position.y
     if world_bounds.has_area():
         world_pos = world_pos.clamp(world_bounds.position, world_bounds.end)
     cam.global_position = world_pos

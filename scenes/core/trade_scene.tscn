@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://c38h40g7yk2nx" path="res://scenes/managers/horizontal_train_manager.tscn" id="6_xmr62"]
 [ext_resource type="Script" uid="uid://brpr1wiygu1w" path="res://scripts/managers/trade_wagon_manager.gd" id="7_2djvw"]
 [ext_resource type="Script" uid="uid://bo4vcuwauepxj" path="res://scripts/inventories/city_inventory.gd" id="7_oh1aj"]
+[ext_resource type="PackedScene" uid="uid://dodp70bgkluj6" path="res://scenes/services/camera_service.tscn" id="7_vv4w2"]
 [ext_resource type="Script" uid="uid://b7xt2vmxgj1lt" path="res://scripts/managers/wagon_reorder_controller.gd" id="8_ciyb7"]
 [ext_resource type="Script" uid="uid://83xnpffg07jw" path="res://scripts/inventories/train_inventory.gd" id="8_jdot1"]
 [ext_resource type="Script" uid="uid://bybumlmye14d" path="res://scripts/managers/trade_unit_manager.gd" id="9_pelun"]
@@ -88,6 +89,8 @@ position = Vector2(1175, 691)
 [node name="TradeService" type="Node" parent="Services" unique_id=1598723754]
 script = ExtResource("4_05ctg")
 
+[node name="CameraService" parent="Services" unique_id=563899428 instance=ExtResource("7_vv4w2")]
+
 [node name="Managers" type="Node" parent="." unique_id=537888426]
 
 [node name="HorizontalTrainManager" parent="Managers" unique_id=60617838 instance=ExtResource("6_xmr62")]
@@ -137,17 +140,10 @@ offset_top = -216.0
 
 [node name="TradeUI" parent="TradeHUD/UI" unique_id=1113789489 instance=ExtResource("17_3xerl")]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
 offset_left = -25.0
 offset_top = -31.0
 offset_right = 25.0
 offset_bottom = 31.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="ExitButton" type="Button" parent="TradeHUD/UI" unique_id=917235037]
 layout_mode = 0

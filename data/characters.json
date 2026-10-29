@@ -2,5 +2,21 @@
     "comrad": {
         "name": "Comrad",
         "portrait": "res://assets/resources/comrad_face.png"
+    },
+    "coal_boss": {
+        "name": "Coal boss",
+        "portrait": "res://assets/resources/comrad_face.png"
+    },
+    "smelter": {
+        "name": "Foundry master",
+        "portrait": "res://assets/resources/comrad_face.png"
+    },
+    "wagon_dealer": {
+        "name": "Wagon dealer",
+        "portrait": "res://assets/resources/comrad_face.png"
+    },
+    "workshop_boss": {
+        "name": "Workshop boss",
+        "portrait": "res://assets/resources/comrad_face.png"
     }
 }

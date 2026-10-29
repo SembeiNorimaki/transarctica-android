@@ -1,0 +1,253 @@
+{
+    "tutorial_1": {
+        "title": "The daily run",
+        "description": "Take coal from the Coal Mine to the Foundry, like every day.",
+        "is_main_quest": true,
+        "intro": {
+            "character": "coal_boss",
+            "text": "Morning, kid. Same as always: load coal here and run it to the Foundry. Don't let the train run dry on the way.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "smelter",
+            "text": "Right on time, as usual. Listen, we are almost out of iron. If we had ore, the furnaces would be roaring again.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "reach_coal_mine",
+                "type": "reach_city",
+                "description": "Go to the Coal Mine",
+                "target_city": "Coal Mine"
+            },
+            {
+                "id": "deliver_coal",
+                "type": "deliver_goods",
+                "description": "Sell 40 coal at the Foundry",
+                "target_city": "Foundry",
+                "target_resource": "coal",
+                "target_qty": 40
+            }
+        ],
+        "rewards": {
+            "money": 60
+        }
+    },
+    "tutorial_2": {
+        "title": "Iron for the furnaces",
+        "description": "The Foundry has no iron ore. Get some at the Iron Mine.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "tutorial_1"
+            ]
+        },
+        "intro": {
+            "character": "smelter",
+            "text": "The Iron Mine is not far. Bring me 20 iron ore and I will pay you well. Coal I have, thanks to you.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "smelter",
+            "text": "Fine ore! The furnaces are lit again. And now that we can make steel, we will need a way to carry it.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "reach_iron_mine",
+                "type": "reach_city",
+                "description": "Go to the Iron Mine",
+                "target_city": "Iron Mine"
+            },
+            {
+                "id": "deliver_ore",
+                "type": "deliver_goods",
+                "description": "Sell 20 iron ore at the Foundry",
+                "target_city": "Foundry",
+                "target_resource": "ironore",
+                "target_qty": 20
+            }
+        ],
+        "rewards": {
+            "money": 150
+        }
+    },
+    "tutorial_3": {
+        "title": "A wagon for steel",
+        "description": "Steel bars need their own wagon. Buy one in Paris.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "tutorial_2"
+            ]
+        },
+        "intro": {
+            "character": "smelter",
+            "text": "Steel bars are too heavy for your coal gondola. Paris sells wagons for them. Go and buy one, you have the money now.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "wagon_dealer",
+            "text": "A fine wagon for a fine young man. Take good care of it.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "reach_paris",
+                "type": "reach_city",
+                "description": "Go to Paris",
+                "target_city": "Paris"
+            },
+            {
+                "id": "own_steel_wagon",
+                "type": "own_wagon",
+                "description": "Buy a steel wagon",
+                "target_wagon": "SteelWagon",
+                "target_qty": 1
+            }
+        ],
+        "rewards": {
+            "money": 50
+        }
+    },
+    "tutorial_4": {
+        "title": "Forging steel",
+        "description": "Bring ore and coal to the Foundry, make steel, and load it on your wagon.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "tutorial_3"
+            ]
+        },
+        "intro": {
+            "character": "smelter",
+            "text": "Now the real work. Bring me ore and coal, and I will show you how steel is made. Then load it on your new wagon.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "smelter",
+            "text": "Beautiful bars. The Workshop will want them.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thanks"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "collect_steel",
+                "type": "collect_goods",
+                "description": "Make steel at the Foundry and carry 10 on your train",
+                "target_resource": "steel",
+                "target_qty": 10
+            }
+        ],
+        "rewards": {
+            "money": 100
+        }
+    },
+    "tutorial_5": {
+        "title": "Steel for the Workshop",
+        "description": "Deliver the steel to the Workshop.",
+        "is_main_quest": true,
+        "conditions": {
+            "completed": [
+                "tutorial_4"
+            ]
+        },
+        "intro": {
+            "character": "smelter",
+            "text": "The Workshop is waiting for steel. Take it there, and mind the rails.",
+            "choices": [
+                {
+                    "id": "accept",
+                    "text": "Accept",
+                    "accept": true
+                },
+                {
+                    "id": "decline",
+                    "text": "Not now"
+                }
+            ]
+        },
+        "outro": {
+            "character": "workshop_boss",
+            "text": "This is just what we needed. You have a future in this business, kid.",
+            "choices": [
+                {
+                    "id": "ok",
+                    "text": "Thank you"
+                }
+            ]
+        },
+        "objectives": [
+            {
+                "id": "deliver_steel",
+                "type": "deliver_goods",
+                "description": "Sell 10 steel at the Workshop",
+                "target_city": "Workshop",
+                "target_resource": "steel",
+                "target_qty": 10
+            }
+        ],
+        "rewards": {
+            "money": 200
+        }
+    }
+}

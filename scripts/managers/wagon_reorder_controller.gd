@@ -60,7 +60,9 @@ func begin_drag(wagon: GenericWagon) -> void:
     _grab_offset = _pointer - wagon.global_position
     _train.set_speed(0.0) # the train stands still while it is rearranged
 
-
+func is_dragging() -> bool:
+    return _dragging
+    
 # The pointer is tracked from the events, so it is already up to date when the press arrives
 # (_input runs before the wagon's own click detection).
 func _input(event: InputEvent) -> void:

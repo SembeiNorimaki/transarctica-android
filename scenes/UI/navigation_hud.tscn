@@ -49,3 +49,12 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_popup")
+
+[node name="ButtonCamera" type="Button" parent="Root" unique_id=1089345830]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 0
+offset_left = 354.0
+offset_top = 916.0
+offset_right = 498.0
+offset_bottom = 1016.0
+text = "FOLLOW CAMERA"

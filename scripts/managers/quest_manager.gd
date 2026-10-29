@@ -30,7 +30,7 @@ func _ready() -> void:
     GameState.money_changed.connect(_on_money_changed)
     GameState.game_saving.connect(_on_game_saving)
     GameState.game_loaded.connect(load_from_game_state)
-    GameState.player_cargo_changed.connect(_refresh_collect_objectives)
+    GameState.player_cargo_changed.connect(_refresh_train_objectives)
 
     if OS.is_debug_build():
         quest_objective_updated.connect(_print_progress)
@@ -83,6 +83,7 @@ func _build_quest(quest_id: String) -> Quest:
         objective.target_city = str(objective_data.get("target_city", ""))
         objective.target_resource = str(objective_data.get("target_resource", ""))
         objective.target_qty = int(objective_data.get("target_qty", 0))
+        objective.target_wagon = str(objective_data.get("target_wagon", ""))
         quest.objectives.append(objective)
     return quest
 #endregion
@@ -137,7 +138,7 @@ func accept_quest(quest_id: String) -> void:
     offered_quests.erase(quest_id)
     quest_accepted.emit(quest)
     quests_updated.emit()
-    _refresh_collect_objectives()
+    _refresh_train_objectives()
     # The player may already be in the target city
     if _current_city != "":
         process_event(QuestObjective.TYPE_REACH_CITY, {"city_name": _current_city})
@@ -262,8 +263,16 @@ func load_from_game_state() -> void:
     if QUESTS_ENABLED:
         check_offers.call_deferred() # a new game offers the quests with no conditions
     quests_updated.emit()
-    _refresh_collect_objectives()
+    _refresh_train_objectives()
 #endregion
+
+# Wagons of a type in the player train, counted from the data
+func count_wagons_in_train(wagon_type: String) -> int:
+    var total := 0
+    for wagon in GameState.get_player_train().get("wagons", []):
+        if str(wagon.get("type", "")).to_lower() == wagon_type.to_lower():
+            total += 1
+    return total
 
 # Units of a resource in the player train, counted from the data
 func count_in_train(resource_name: String) -> int:
@@ -273,16 +282,23 @@ func count_in_train(resource_name: String) -> int:
             total += int(wagon.get("cargo_qty", 0))
     return total
 
-# "collect_goods" objectives follow what the train carries, so refresh them when it changes
-func _refresh_collect_objectives() -> void:
+
+# "collect_goods" and "own_wagon" objectives follow what the train holds, so refresh them when it changes
+func _refresh_train_objectives() -> void:
     var resources := {}
+    var wagon_types := {}
     for quest: Quest in active_quests.values():
         for objective in quest.objectives:
-            if objective.type == QuestObjective.TYPE_COLLECT_GOODS and not objective.is_completed:
+            if objective.is_completed:
+                continue
+            if objective.type == QuestObjective.TYPE_COLLECT_GOODS:
                 resources[objective.target_resource] = true
+            elif objective.type == QuestObjective.TYPE_OWN_WAGON:
+                wagon_types[objective.target_wagon] = true
     for resource_name in resources:
         process_event(QuestObjective.TYPE_COLLECT_GOODS, {"resource_name": resource_name, "qty": count_in_train(resource_name)})
-
+    for wagon_type in wagon_types:
+        process_event(QuestObjective.TYPE_OWN_WAGON, {"wagon_type": wagon_type, "qty": count_wagons_in_train(wagon_type)})
 #region debug
 func _print_progress(quest: Quest, objective: QuestObjective) -> void:
     print("Quest '%s': %s %d/%d%s" % [quest.title, objective.description, objective.current_qty, objective.target_qty, " (done)" if objective.is_completed else ""])
@@ -365,5 +381,9 @@ func _objective_problems(quest_id: String, data: Dictionary) -> Array[String]:
             problems.append("%s targets the unknown resource '%s'" % [where, resource])
     if type != QuestObjective.TYPE_REACH_CITY and qty <= 0:
         problems.append("%s needs a target_qty above 0" % where)
+    if type == QuestObjective.TYPE_OWN_WAGON:
+        var wagon := str(data.get("target_wagon", ""))
+        if not WagonTypes.TYPES.has(wagon):
+            problems.append("%s targets the unknown wagon '%s'" % [where, wagon])
     return problems
 #endregion

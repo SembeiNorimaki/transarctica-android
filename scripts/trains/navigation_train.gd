@@ -75,6 +75,8 @@ func initialize(id_: String, team_: NavigationTrainManager.Team, tile_pos: Vecto
     _place_wagons(tile_pos, ori)
     # Connect AFTER placement so the teleport from (0,0) isn't reported as movement.
     for wagon in wagons:
+        wagon.can_enter = _can_wagon_enter
+        wagon.blocked.connect(_on_wagon_blocked)
         wagon.tile_changed.connect(_on_wagon_tile_changed)
         wagon.setup_collision(team == NavigationTrainManager.Team.PLAYER)
         wagon.collided.connect(_on_wagon_collided)
@@ -186,6 +188,12 @@ func _follow_rail(wagon: NavigationWagon, old_tile: Vector2i, new_tile: Vector2i
         return false
     _face(wagon, new_ori)
     return true
+
+func _can_wagon_enter(_wagon: NavigationWagon, from_tile: Vector2i, to_tile: Vector2i) -> bool:
+    return not rail_service.calculate_new_orientation(to_tile, to_tile - from_tile).is_empty()
+
+func _on_wagon_blocked(_wagon: NavigationWagon) -> void:
+    immediate_stop()
 #endregion
 
 func _on_wagon_collided(_wagon: NavigationWagon, other_wagon: NavigationWagon) -> void:

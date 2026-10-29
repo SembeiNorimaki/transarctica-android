@@ -1,9 +1,9 @@
 {
     "id": "TP0",
     "owner": "Player",
-    "max_speed": 5000,
-    "acceleration": 1000,
-    "deceleration": 1000,
+    "max_speed": 500,
+    "acceleration": 100,
+    "deceleration": 100,
     "wagons": [
         {
             "type": "LocomotiveWagon",

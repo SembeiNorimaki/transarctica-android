@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://hmw62dot4iui" path="res://scripts/core/navigation_scene.gd" id="1_2bgtl"]
 [ext_resource type="PackedScene" uid="uid://cm3taqyltqkqe" path="res://scenes/maps/world_1.tscn" id="2_pcfji"]
-[ext_resource type="Script" uid="uid://byeti0kl0mnwe" path="res://scripts/services/camera_service.gd" id="5_bopww"]
 [ext_resource type="Script" uid="uid://0a0mj3gqcat4" path="res://scripts/services/rail_service.gd" id="5_wk2tj"]
 [ext_resource type="Script" uid="uid://bguuuufn0gbon" path="res://scripts/services/exploration_service.gd" id="6_mqu6x"]
+[ext_resource type="PackedScene" uid="uid://dodp70bgkluj6" path="res://scenes/services/camera_service.tscn" id="6_pcfji"]
 [ext_resource type="Script" uid="uid://jj6wpd6833yn" path="res://scripts/managers/cities_manager.gd" id="7_43f6w"]
 [ext_resource type="Script" uid="uid://b0wjmro28mq80" path="res://scripts/services/grid_service.gd" id="7_wk2tj"]
 [ext_resource type="Script" uid="uid://dqpn1aki2nwea" path="res://scripts/managers/navigation_train_manager.gd" id="8_43f6w"]
@@ -47,10 +47,7 @@ script = ExtResource("5_wk2tj")
 [node name="ExplorationService" type="Node" parent="Services" unique_id=116014921]
 script = ExtResource("6_mqu6x")
 
-[node name="CameraService" type="Node2D" parent="Services" unique_id=1892645610]
-script = ExtResource("5_bopww")
-
-[node name="Camera2D" type="Camera2D" parent="Services/CameraService" unique_id=496061260]
+[node name="CameraService" parent="Services" unique_id=563899428 instance=ExtResource("6_pcfji")]
 
 [node name="Managers" type="Node" parent="." unique_id=230947252]
 
