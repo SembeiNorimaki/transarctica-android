@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bvd66cjhb7em6"]
 
-[ext_resource type="Texture2D" uid="uid://b28xs00ycadsk" path="res://assets/intro.PNG" id="1_1p08u"]
+[ext_resource type="Texture2D" uid="uid://bac2ls6ayfkbn" path="res://assets/intro.PNG" id="1_1p08u"]
 [ext_resource type="Script" uid="uid://1q5gy2nj8ibp" path="res://scripts/UI/intro_screen.gd" id="1_k8arf"]
 [ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="2_k8arf"]
 
@@ -39,16 +39,6 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/line_spacing = 20
 theme_override_fonts/font = ExtResource("2_k8arf")
-theme_override_font_sizes/font_size = 50
-text = "consumed by a runaway greenhouse effect,
-the ravaged earth sought salvation in technology. 
-however, by 2022 it became clear that there was no
-miracle technology that could save the world. 
-when the summit in ottawa ended in april 2022, only
-one scientist remained optimistic: professor john merrick. 
-he proposed exploding thermonuclear devices at both
-poles to surround the world with a layer of opaque
- clouds and thus cool down the world. 
-approved by the united nations in october, the
-operation was slated for december 24, 2022."
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 40
+text = "hola"
+autowrap_mode = 2

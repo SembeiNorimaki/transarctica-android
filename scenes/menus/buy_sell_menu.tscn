@@ -2,9 +2,11 @@
 
 [ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="1_1ipfn"]
 [ext_resource type="PackedScene" uid="uid://bv3w2hsg1tbeh" path="res://scenes/UI/border.tscn" id="1_lvpha"]
+[ext_resource type="Texture2D" uid="uid://d03nb7xwi56to" path="res://assets/resources/resources_120x46.png" id="2_lxosr"]
 
-[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_io20h"]
-size = Vector2(100, 100)
+[sub_resource type="AtlasTexture" id="AtlasTexture_8nlpa"]
+atlas = ExtResource("2_lxosr")
+region = Rect2(0, 0, 120, 46)
 
 [node name="BuySellMenu" type="Control" unique_id=2121969279]
 layout_mode = 3
@@ -38,13 +40,13 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_fonts/font = ExtResource("1_1ipfn")
 theme_override_font_sizes/font_size = 32
-text = "resource name"
+text = "alcohol"
 
 [node name="ResourceImage" type="TextureRect" parent="VBoxContainer" unique_id=1119404772]
+custom_minimum_size = Vector2(240, 92)
 layout_mode = 2
 size_flags_horizontal = 4
-texture = SubResource("PlaceholderTexture2D_io20h")
-stretch_mode = 2
+texture = SubResource("AtlasTexture_8nlpa")
 
 [node name="Label" type="Label" parent="VBoxContainer" unique_id=234336360]
 layout_mode = 2

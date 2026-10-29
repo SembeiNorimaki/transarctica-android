@@ -15,7 +15,7 @@ signal quest_offered(quest: Quest) # its intro dialog should be shown
 signal quest_outro_requested(quest: Quest) # its outro dialog should be shown
 
 const QUESTS_FILE := "quests.json" # in the folder of the campaign being played (see Campaigns)
-const QUESTS_ENABLED := false # false: no quest is offered (for debugging). The data and the saves are not touched.
+const QUESTS_ENABLED := true # false: no quest is offered (for debugging). The data and the saves are not touched.
 
 var quest_database := {} # quest id -> data from quests.json
 var active_quests := {} # quest id -> Quest
@@ -24,6 +24,7 @@ var dismissed_quests: Array[String] = [] # completed quests the player cleared f
 var offered_quests: Array[String] = [] # offered, not accepted yet (the player has not said yes)
 
 var _current_city := "" # the city the player is in right now ("" while navigating)
+var _offers_held := false # true: nothing is offered yet (the intro of a new game is on screen)
 
 func _ready() -> void:
     load_quest_database()
@@ -94,13 +95,24 @@ func _build_quest(quest_id: String) -> Quest:
 # changes. `arrived_city` is the city the player has just arrived in ("" for the other moments), the
 # only moment when a "city" condition is true. A quest that was offered and declined is offered again.
 func check_offers(arrived_city := "") -> void:
-    if not QUESTS_ENABLED:
+    if not QUESTS_ENABLED or _offers_held:
         return
     for quest_id in quest_database:
         if active_quests.has(quest_id) or completed_quests.has(quest_id):
             continue
         if _conditions_met(quest_database[quest_id].get("conditions", {}), arrived_city):
             offer_quest(quest_id)
+
+
+# Call BEFORE a new game starts if its first quests must not appear over the intro...
+func hold_offers() -> void:
+    _offers_held = true
+
+
+# ...and this when the player is ready: the quests that are due are offered now.
+func release_offers() -> void:
+    _offers_held = false
+    check_offers.call_deferred()
 
 
 func _conditions_met(conditions: Dictionary, arrived_city: String) -> bool:

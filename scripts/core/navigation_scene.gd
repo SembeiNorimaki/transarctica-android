@@ -2,6 +2,9 @@ extends Node2D
 class_name NavigationScene
 
 signal menu_requested
+signal loaded # the map is built and the scene is running
+
+var is_loaded := false
 
 # Managers
 @onready var navigation_train_manager: NavigationTrainManager = $Managers/NavigationTrainManager
@@ -71,6 +74,8 @@ func _ready() -> void:
     AudioService.play_music(MUSIC_TRAVEL, 0.0)
     process_mode = Node.PROCESS_MODE_INHERIT
     loading_screen.finish()
+    is_loaded = true
+    loaded.emit()
 
 func _process(_delta: float) -> void:
     var cam := camera_service.cam

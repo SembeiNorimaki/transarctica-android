@@ -27,6 +27,7 @@ grow_vertical = 2
 color = Color(0, 0, 0, 0.13333334)
 
 [node name="CenterContainer" type="CenterContainer" parent="Overlay" unique_id=210230790]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -78,5 +79,4 @@ text = "exit game"
 layout_mode = 2
 
 [node name="SlotsMenu" parent="Overlay" unique_id=515437966 instance=ExtResource("2_q0jvu")]
-visible = false
 layout_mode = 1

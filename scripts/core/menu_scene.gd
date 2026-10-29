@@ -8,8 +8,10 @@ class_name MainMenu
 signal new_game_requested(slot: int)
 signal load_game_requested(slot: int)
 
+@onready var buttons_box: VBoxContainer = $VBoxContainer
 @onready var new_game_button: Button = $VBoxContainer/NewGameButton
 @onready var load_game_button: Button = $VBoxContainer/LoadGameButton
+
 @onready var slots_menu: SlotsMenu = $SlotsMenu
 # Optional: a Label named MessageLabel, for errors
 @onready var message_label: Label = get_node_or_null("%MessageLabel")
@@ -19,7 +21,7 @@ func _ready() -> void:
     new_game_button.pressed.connect(_on_new_game_pressed)
     load_game_button.pressed.connect(_on_load_game_pressed)
     slots_menu.slot_chosen.connect(_on_slot_chosen)
-    slots_menu.closed.connect(_refresh)
+    slots_menu.closed.connect(_on_slots_closed)
     if message_label != null:
         message_label.text = ""
     _refresh()
@@ -39,19 +41,19 @@ func show_message(text: String) -> void:
     else:
         print(text)
 
+func _on_slots_closed() -> void:
+    buttons_box.show()
+    _refresh()
 
 # A new game goes into the first empty slot. If all of them are used, the player picks one to overwrite.
 # (The old save stays on disk until the new game is saved over it.)
 func _on_new_game_pressed() -> void:
+    buttons_box.hide()
     slots_menu.open(SlotsMenu.Mode.NEW_GAME)
-    # var slot = GameState.find_free_slot()
-    # if slot > 0:
-    #     new_game_requested.emit(slot)
-    # else:
-    #     slots_menu.open(SlotsMenu.Mode.NEW_GAME)
 
 
 func _on_load_game_pressed() -> void:
+    buttons_box.hide()
     slots_menu.open(SlotsMenu.Mode.LOAD)
 
 

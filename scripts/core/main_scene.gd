@@ -7,17 +7,17 @@ extends Node
 
 const MENU_SCENE: PackedScene = preload("res://scenes/core/menu_scene.tscn")
 const NAVIGATION_SCENE: PackedScene = preload("res://scenes/core/navigation_scene.tscn")
-const MUSIC_MAIN: AudioStream = preload("res://assets/audio/music_title.wav")
+const INTRO_SCENE: PackedScene = preload("res://scenes/UI/intro_screen.tscn")
+const INTRO_LAYER := 120 # above the loading screen (100), which the navigation scene shows while it builds the map
 
 var _menu: MainMenu
 var _navigation: Node
 
 
 func _ready() -> void:
-    AudioService.play_music(MUSIC_MAIN, 0.0)
     GameMenu.load_requested.connect(_on_ingame_load_requested)
     show_menu()
-    
+
 
 # TODO: to come back to the menu from the game, also free _navigation, and any city or combat
 # scene (SceneService.city_scene / combat_scene), before showing it again.
@@ -33,8 +33,12 @@ func show_menu() -> void:
 
 
 func _on_new_game_requested(slot: int) -> void:
-    if GameState.start_new_game(slot):
-        _start_game()
+    var campaign_id := Campaigns.DEFAULT_ID # TODO: the menu will let the player choose
+    QuestManager.hold_offers() # the first quest must not appear over the intro
+    if GameState.start_new_game(slot, campaign_id):
+        _start_game(Campaigns.get_info(campaign_id)["intro"])
+    else:
+        QuestManager.release_offers()
 
 
 func _on_load_game_requested(slot: int) -> void:
@@ -44,16 +48,52 @@ func _on_load_game_requested(slot: int) -> void:
         _menu.show_message("Could not load slot %d (see the Debugger)" % slot)
 
 
-func _start_game() -> void:
+# `intro` is {text, image} of the campaign (a NEW game). With a text, the intro covers the screen
+# while the game loads, and the player taps to start. A loaded game has no intro: it just starts.
+func _start_game(intro := {}) -> void:
     _menu.queue_free()
     _menu = null
-    QuestUI.show()
-    GameMenu.show()
     var navigation := NAVIGATION_SCENE.instantiate() as NavigationScene
     navigation.name = "NavigationScene"
     navigation.menu_requested.connect(GameMenu.open_menu)
     _navigation = navigation
-    add_child(navigation)
+
+    if str(intro.get("text", "")).is_empty():
+        QuestUI.show()
+        GameMenu.show()
+        add_child(navigation)
+        QuestManager.release_offers() # in case a new game had no intro
+        return
+    await _play_intro(navigation, intro)
+
+
+# The intro is on screen while the navigation scene builds itself. It closes when the text is
+# complete, the game is loaded AND the player taps. The game waits (paused) until then.
+func _play_intro(navigation: NavigationScene, intro: Dictionary) -> void:
+    var screen := INTRO_SCENE.instantiate() as IntroScreen
+    screen.layer = INTRO_LAYER
+    add_child(screen)
+    var image_path := str(intro.get("image", ""))
+    var image: Texture2D = load(image_path) if ResourceLoader.exists(image_path) else null
+    screen.play(str(intro["text"]), image)
+    screen.text_finished.connect(func() -> void:
+        if not navigation.is_loaded:
+            screen.set_prompt("Loading...")) # the text is complete but the game is not ready
+
+    add_child(navigation) # it starts building the map now
+    if not navigation.is_loaded:
+        await navigation.loaded
+    get_tree().paused = true # the trains must not move under the intro
+    if not screen.is_finished():
+        await screen.text_finished
+    screen.set_prompt("Tap to continue")
+    await screen.dismissed
+
+    get_tree().paused = false
+    screen.queue_free()
+    QuestUI.show()
+    GameMenu.show()
+    QuestManager.release_offers() # now the first quest can appear
 
 # Loading from the game menu: the running game is thrown away and built again from the slot,
 # because the trains, the map and the cities are only created when a game starts.

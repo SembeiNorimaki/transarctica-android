@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cg00rv13so7pj"]
 
 [ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_0locc"]
-[ext_resource type="Texture2D" uid="uid://2ia7tvo72e57" path="res://assets/wagons/locomotive_tr.png" id="2_883wn"]
+[ext_resource type="Texture2D" uid="uid://w603d3yknnbk" path="res://assets/wagons/transarctica_trn.png" id="2_r3d8d"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_883wn"]
 size = Vector2(255, 53)
@@ -10,7 +10,7 @@ size = Vector2(255, 53)
 
 [node name="Sprite2D" parent="." index="0" unique_id=1095718610]
 position = Vector2(0, -33)
-texture = ExtResource("2_883wn")
+texture = ExtResource("2_r3d8d")
 
 [node name="Area2D" parent="." index="1" unique_id=389534507]
 position = Vector2(0, 0)

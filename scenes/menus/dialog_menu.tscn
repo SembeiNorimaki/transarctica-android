@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b4j11lbqypfcu"]
 
-[ext_resource type="Script" uid="uid://dwres8yocmwcw" path="res://scripts/menus/dialog_menu.gd" id="1_l6k5x"]
+[ext_resource type="Script" uid="uid://y2d4p27nyrq6" path="res://scripts/menus/dialog_menu.gd" id="1_l6k5x"]
 [ext_resource type="Texture2D" uid="uid://c7ugb2fmesfi3" path="res://assets/resources/comrad_face.png" id="1_mjuyr"]
 [ext_resource type="FontFile" uid="uid://bmsj6yk05nhfv" path="res://assets/transarctica_font.png" id="3_b7g82"]
 
@@ -42,7 +42,7 @@ texture = ExtResource("1_mjuyr")
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_fonts/normal_font = ExtResource("3_b7g82")
-theme_override_font_sizes/normal_font_size = 58
+theme_override_font_sizes/normal_font_size = 32
 text = "hello comrad"
 
 [node name="Buttons" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=2120371068]
