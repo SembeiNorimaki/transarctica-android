@@ -8,6 +8,11 @@ const NEIGHBORS_8: Array[Vector2i] = [
 ]
 const ORIENTATIONS: Array[String] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] # clockwise, tile-space
 
+## How tiles are drawn. Tile coordinates, orientations and neighbors are the same in both:
+## only the tile <-> world conversion changes.
+enum TileProjection { ISOMETRIC, CARTESIAN }
+
+var projection := TileProjection.ISOMETRIC
 var tile_size := Vector2i.ZERO
 var tile_half_size := Vector2.ZERO
 var tile_center_offset := Vector2.ZERO # world position of tile (0,0)'s center
@@ -20,6 +25,9 @@ func set_tile_size(size: Vector2i) -> void:
     tile_half_size = Vector2(size) * 0.5
     tile_center_offset = tile_half_size
 
+func set_projection(value: TileProjection) -> void:
+    projection = value
+
 func set_map_rect(rect: Rect2i) -> void:
     map_rect = rect
 
@@ -29,6 +37,8 @@ func is_inside_map(tile: Vector2i) -> bool:
 
 #region conversions
 func tile_delta_to_world_delta(delta_tile: Vector2) -> Vector2: # Vector2, not Vector2i
+    if projection == TileProjection.CARTESIAN:
+        return delta_tile * Vector2(tile_size)
     return Vector2(
         (delta_tile.x - delta_tile.y) * tile_half_size.x,
         (delta_tile.x + delta_tile.y) * tile_half_size.y
@@ -40,6 +50,8 @@ func tile_to_world(tile: Vector2) -> Vector2:
 func world_to_tilef(world_pos: Vector2) -> Vector2:
     assert(tile_size.x > 0 and tile_size.y > 0, "GridService: tile size not set")
     var p := (world_pos - tile_center_offset) / Vector2(tile_size)
+    if projection == TileProjection.CARTESIAN:
+        return p
     return Vector2(p.x + p.y, p.y - p.x)
 
 func world_to_tile(world_pos: Vector2) -> Vector2i:
