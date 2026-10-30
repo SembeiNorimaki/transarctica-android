@@ -9,7 +9,9 @@ signal wagon_clicked(wagon: GenericWagon)
 const LAYOUT_TIME := 0.15 # seconds the wagons take to slide into their places
 
 var _layout_tween: Tween
-var gear := "N" # "D" drive, "R" reverse, "N" neutral (brakes)
+var gear := "N" # "D" drive (to the right), "R" reverse (to the left), "N" neutral (brakes)
+## Where the train goes when it drives: 1 to the right, -1 to the left. reverse_train() flips it.
+var direction := 1
 var speed := 0.0
 var max_speed := 1500.0
 var acceleration := 1200.0
@@ -112,8 +114,10 @@ func set_bounds(left: float, right: float) -> void:
 func set_speed(speed_: float) -> void:
     if speed_ > 0.0:
         gear = "D"
+        direction = 1
     elif speed_ < 0.0:
         gear = "R"
+        direction = -1
     else:
         gear = "N"
     speed = speed_
@@ -124,6 +128,7 @@ func gear_up() -> void:
         gear = "N"
     elif gear == "N":
         gear = "D"
+        direction = 1
 
 
 func gear_down() -> void:
@@ -131,10 +136,30 @@ func gear_down() -> void:
         gear = "N"
     elif gear == "N":
         gear = "R"
+        direction = -1
 
-# Drive forward, whatever the gear was
+# Drive to the right, whatever the gear was
 func drive() -> void:
     gear = "D"
+    direction = 1
+
+
+func is_driving() -> bool:
+    return gear != "N"
+
+# Start or stop: from neutral it drives (the way `direction` says), otherwise it brakes
+func gear_toggle() -> void:
+    if gear == "N":
+        gear = "D" if direction > 0 else "R"
+    else:
+        gear = "N"
+
+# The other way: left becomes right and the other way round. A train that is driving turns
+# round (it brakes and gathers speed the other way); a stopped one will start the other way.
+func reverse_train() -> void:
+    direction = -direction
+    if gear != "N":
+        gear = "D" if direction > 0 else "R"
 
 # Called every frame by HorizontalTrainManager
 func update(delta: float) -> void:

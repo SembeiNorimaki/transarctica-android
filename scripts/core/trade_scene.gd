@@ -110,6 +110,8 @@ func _ready() -> void:
     
     hud.quests_pressed.connect(QuestUI.toggle_panel)
     hud.menu_pressed.connect(GameMenu.open_menu)
+    hud.reverse_pressed.connect(_on_reverse_button_pressed)
+    hud.gear_pressed.connect(_on_gear_button_pressed)
     
     exit_button.pressed.connect(_on_exit_button_pressed)
     player_train.wagon_clicked.connect(_on_wagon_clicked)
@@ -301,12 +303,16 @@ func _on_wagon_resource_amount_changed(wagon_index: int, resource_name: String, 
 
 
 #region UI callbacks
-func _on_right_button_pressed() -> void:
-    horizontal_train_manager.player_train_gear_up()
+# The bottom buttons work as in the navigation scene: the right one starts and stops the train, the
+# left one reverses it. Not while the train comes in or leaves: it drives by itself then.
+func _on_gear_button_pressed() -> void:
+    if _phase == Phase.TRADING:
+        horizontal_train_manager.player_train_gear_toggle()
 
 
-func _on_left_button_pressed() -> void:
-    horizontal_train_manager.player_train_gear_down()
+func _on_reverse_button_pressed() -> void:
+    if _phase == Phase.TRADING:
+        horizontal_train_manager.player_train_reverse()
 
 
 func _on_exit_button_pressed() -> void:

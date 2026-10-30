@@ -133,6 +133,7 @@ func _wire_signals() -> void:
     
     hud.reverse_pressed.connect(navigation_train_manager.player_train_reverse)
     hud.gear_pressed.connect(navigation_train_manager.player_train_gear_toggle)
+    hud.camera_follow_toggled.connect(navigation_train_manager.set_camera_follow)
     hud.quests_pressed.connect(QuestUI.toggle_panel)
     hud.menu_pressed.connect(menu_requested.emit)
     hud.event_popup.accepted.connect(_on_event_accepted)

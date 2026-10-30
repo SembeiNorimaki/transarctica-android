@@ -85,6 +85,17 @@ func player_train_gear_up() -> void:
 func player_train_gear_down() -> void:
     if is_instance_valid(player_train):
         player_train.gear_down()
+
+
+# Same as in the navigation scene: one button starts and stops the train, the other reverses it
+func player_train_gear_toggle() -> void:
+    if is_instance_valid(player_train):
+        player_train.gear_toggle()
+
+
+func player_train_reverse() -> void:
+    if is_instance_valid(player_train):
+        player_train.reverse_train()
 #endregion
 
 
