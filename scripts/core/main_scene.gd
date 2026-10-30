@@ -10,12 +10,23 @@ const NAVIGATION_SCENE: PackedScene = preload("res://scenes/core/navigation_scen
 const INTRO_SCENE: PackedScene = preload("res://scenes/UI/intro_screen.tscn")
 const INTRO_LAYER := 120 # above the loading screen (100), which the navigation scene shows while it builds the map
 
+# The debug buttons of the menu run one of these scenes on its own (to test them, e.g. from the phone)
+const TRADE_SCENE: PackedScene = preload("res://scenes/core/trade_scene.tscn")
+const COMBAT1_SCENE: PackedScene = preload("res://scenes/core/combat_scene_test.tscn")
+const COMBAT2_SCENE: PackedScene = preload("res://scenes/core/combat_scene3.tscn")
+const DEBUG_CITY := "Paris"
+
+@onready var debug_layer: CanvasLayer = $DebugLayer
+@onready var debug_back_button: Button = $DebugLayer/BackButton
+
 var _menu: MainMenu
 var _navigation: Node
+var _debug_scene: Node
 
 
 func _ready() -> void:
     GameMenu.load_requested.connect(_on_ingame_load_requested)
+    debug_back_button.pressed.connect(_close_debug_scene)
     show_menu()
 
 
@@ -30,6 +41,43 @@ func show_menu() -> void:
     _menu.size = get_viewport().get_visible_rect().size
     _menu.new_game_requested.connect(_on_new_game_requested)
     _menu.load_game_requested.connect(_on_load_game_requested)
+    _menu.debug_scene_requested.connect(_on_debug_scene_requested)
+
+
+#region debug scenes
+# Runs a scene on its own, over the data of the campaign as it starts (no game is started). The
+# "back to menu" button frees it and shows the menu again.
+func _on_debug_scene_requested(scene_id: String) -> void:
+    var packed: PackedScene
+    match scene_id:
+        "trade":
+            packed = TRADE_SCENE
+        "combat1":
+            packed = COMBAT1_SCENE
+        "combat2":
+            packed = COMBAT2_SCENE
+        _:
+            push_error("MainScene: unknown debug scene '%s'" % scene_id)
+            return
+    _menu.queue_free()
+    _menu = null
+    _debug_scene = packed.instantiate()
+    add_child(_debug_scene)
+    if _debug_scene is TradeScene: # a trade scene is told which city it is in (by SceneService in the game)
+        (_debug_scene as TradeScene).initialize(DEBUG_CITY)
+    debug_layer.show()
+
+
+func _close_debug_scene() -> void:
+    debug_layer.hide()
+    if is_instance_valid(_debug_scene):
+        remove_child(_debug_scene)
+        _debug_scene.queue_free()
+    _debug_scene = null
+    get_tree().paused = false
+    Engine.time_scale = 1.0 # a real time battle may have been paused
+    show_menu()
+#endregion
 
 
 func _on_new_game_requested(slot: int) -> void:

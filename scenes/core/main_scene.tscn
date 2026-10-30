@@ -13,3 +13,22 @@ visible = false
 [node name="NinePatchRect" parent="BorderLayer" unique_id=1605977615 instance=ExtResource("2_v13ds")]
 
 [node name="RoundedCorners" parent="." unique_id=459706801 instance=ExtResource("4_a046c")]
+
+[node name="DebugLayer" type="CanvasLayer" parent="."]
+layer = 200
+visible = false
+
+[node name="BackButton" type="Button" parent="DebugLayer"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -110.0
+offset_right = 150.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 40
+text = "back to menu"

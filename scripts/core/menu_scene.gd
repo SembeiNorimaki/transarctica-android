@@ -7,10 +7,16 @@ class_name MainMenu
 
 signal new_game_requested(slot: int)
 signal load_game_requested(slot: int)
+## A debug button: the scene to run on its own. "trade", "combat1" (turn based test map) or "combat2" (square map).
+signal debug_scene_requested(scene_id: String)
 
 @onready var buttons_box: VBoxContainer = $VBoxContainer
 @onready var new_game_button: Button = $VBoxContainer/NewGameButton
 @onready var load_game_button: Button = $VBoxContainer/LoadGameButton
+
+@onready var debug_trade_button: Button = $VBoxContainer/DebugTradeButton
+@onready var debug_combat1_button: Button = $VBoxContainer/DebugCombat1Button
+@onready var debug_combat2_button: Button = $VBoxContainer/DebugCombat2Button
 
 @onready var slots_menu: SlotsMenu = $SlotsMenu
 # Optional: a Label named MessageLabel, for errors
@@ -20,6 +26,9 @@ signal load_game_requested(slot: int)
 func _ready() -> void:
     new_game_button.pressed.connect(_on_new_game_pressed)
     load_game_button.pressed.connect(_on_load_game_pressed)
+    debug_trade_button.pressed.connect(debug_scene_requested.emit.bind("trade"))
+    debug_combat1_button.pressed.connect(debug_scene_requested.emit.bind("combat1"))
+    debug_combat2_button.pressed.connect(debug_scene_requested.emit.bind("combat2"))
     slots_menu.slot_chosen.connect(_on_slot_chosen)
     slots_menu.closed.connect(_on_slots_closed)
     if message_label != null:

@@ -51,6 +51,27 @@ theme_override_fonts/font = ExtResource("3_aauao")
 theme_override_font_sizes/font_size = 80
 text = "load game"
 
+[node name="DebugTradeButton" type="Button" parent="VBoxContainer" unique_id=2001]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_aauao")
+theme_override_font_sizes/font_size = 56
+text = "debug trade"
+
+[node name="DebugCombat1Button" type="Button" parent="VBoxContainer" unique_id=2002]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_aauao")
+theme_override_font_sizes/font_size = 56
+text = "debug combat1"
+
+[node name="DebugCombat2Button" type="Button" parent="VBoxContainer" unique_id=2003]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_aauao")
+theme_override_font_sizes/font_size = 56
+text = "debug combat2"
+
 [node name="SlotsMenu" parent="." unique_id=515437966 instance=ExtResource("3_ob5dd")]
 visible = false
 layout_mode = 1
