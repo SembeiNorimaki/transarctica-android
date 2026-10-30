@@ -25,7 +25,7 @@ func get_mode_name() -> String:
     return "Real time"
 
 func get_status_text() -> String:
-    return "%s%s" % [get_mode_name(), " | PAUSED" if paused else ""]
+    return "%s%s%s" % [get_mode_name(), " | PAUSED" if paused else "", " | battle over" if battle_over else ""]
 
 func start() -> void:
     _apply_time_scale()
@@ -47,7 +47,7 @@ func _apply_time_scale() -> void:
 
 
 func _process(delta: float) -> void:
-    if not auto_engage or paused:
+    if not auto_engage or paused or battle_over:
         return
     _engage_timer += delta
     if _engage_timer < engage_interval:

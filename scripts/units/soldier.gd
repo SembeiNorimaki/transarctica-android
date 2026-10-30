@@ -106,17 +106,28 @@ func place_at(new_tile: Vector2i, orientation := "S") -> void:
     refresh_labels()
 
 func face(orientation: String) -> void:
-    if orientation == "" or orientation == facing:
+    if orientation == "":
         return
+    var changed := orientation != facing
     facing = orientation
-    if sprite != null:
-        sprite.play(StringName(facing))
-    refresh_labels()
-    facing_changed.emit(self)
+    _update_sprite_direction()
+    if changed:
+        refresh_labels()
+        facing_changed.emit(self)
 
 func face_towards(target_tile: Vector2i) -> void:
     face(grid_service.get_orientation(tile, target_tile))
 #endregion
+
+
+# The sprite looks where the soldier faces on SCREEN, which depends on the projection
+func _update_sprite_direction() -> void:
+    if sprite == null:
+        return
+    var direction := facing
+    if grid_service != null and grid_service.tile_size.x > 0:
+        direction = grid_service.orientation_to_screen_direction(facing)
+    sprite.play(StringName(direction))
 
 
 #region orders

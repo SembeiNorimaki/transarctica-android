@@ -9,6 +9,8 @@ class_name BattleUnitManager
 signal selection_changed(soldier: Soldier) # null: nothing is selected
 signal soldier_spawned(soldier: Soldier)
 signal soldier_died(soldier: Soldier)
+## The soldier left the battle alive (it boarded its train): it is gone from `soldiers`.
+signal soldier_removed(soldier: Soldier)
 signal shot_resolved(attacker: Soldier, target: Soldier, damage: int, cover: int)
 
 const SOLDIER_SCENE: PackedScene = preload("res://scenes/units/soldier.tscn")
@@ -43,19 +45,26 @@ func setup() -> void:
 
 
 #region deploying
-## Puts a new soldier on a free tile. Returns null (with a warning) if it can't.
+## Puts a new soldier of this type on a free tile. Returns null (with a warning) if it can't.
 func spawn(team: String, unit_type: String, tile: Vector2i, facing := "S") -> Soldier:
     if not UnitTypes.exists(unit_type):
         push_warning("BattleUnitManager: unknown unit type '%s'" % unit_type)
         return null
-    if not occupancy_service.is_free(tile, TileOccupancyService.LAYER_ALL):
-        push_warning("BattleUnitManager: tile %s is not free for a %s" % [tile, unit_type])
-        return null
     var data := UnitTypes.make_unit(unit_type)
+    var unit_id := "%s%d" % [team.left(1), _next_number]
+    _next_number += 1
+    return spawn_unit(team, unit_id, data, tile, facing)
+
+## Puts the soldier described by `data` (see UnitTypes.make_unit; hp and so on are kept) on a free
+## tile. Returns null (with a warning) if it can't.
+func spawn_unit(team: String, unit_id: String, data: Dictionary, tile: Vector2i, facing := "S") -> Soldier:
+    if not occupancy_service.is_free(tile, TileOccupancyService.LAYER_ALL):
+        push_warning("BattleUnitManager: tile %s is not free for %s" % [tile, unit_id])
+        return null
+    data = data.duplicate()
     data["team"] = team
     var soldier := SOLDIER_SCENE.instantiate() as Soldier
-    soldier.setup("%s%d" % [team.left(1), _next_number], data)
-    _next_number += 1
+    soldier.setup(unit_id, data)
     soldier.grid_service = grid_service
     soldier.can_step = _can_soldier_step
     soldier.step_started.connect(_on_step_started)
@@ -67,6 +76,18 @@ func spawn(team: String, unit_type: String, tile: Vector2i, facing := "S") -> So
     soldiers.append(soldier)
     soldier_spawned.emit(soldier)
     return soldier
+
+## The soldier leaves the battle alive (it went back on its train). It is freed.
+func remove_soldier(soldier: Soldier) -> void:
+    if not soldiers.has(soldier):
+        return
+    soldiers.erase(soldier)
+    _profiles.erase(soldier)
+    occupancy_service.remove(soldier)
+    if selected == soldier:
+        select(null)
+    soldier_removed.emit(soldier)
+    soldier.queue_free()
 
 ## Deploys the soldiers of CombatMapManager.get_spawns(). Facing: the player's face north-east,
 ## the enemy's south-west, so they look at each other on a map laid out corner to corner.

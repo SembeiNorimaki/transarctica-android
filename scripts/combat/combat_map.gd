@@ -3,24 +3,28 @@ class_name CombatMap
 # The battlefield as the designer paints it, one TileMapLayer per kind of thing:
 #   Ground   : the terrain of each tile (custom data "terrain", see TerrainTypes)
 #   Objects  : crates, containers... standing on a tile (custom data "object_type")
-#   WallsSE  : walls, fences, windows and doors between a tile and its x+1 neighbor,
-#              painted on the SE side of the tile (custom data "edge_type", "edge_open")
-#   WallsSW  : the same between a tile and its y+1 neighbor, painted on the SW side
+#   WallsX   : walls, fences, windows and doors between a tile and its x+1 neighbor
+#              (custom data "edge_type", "edge_open"). Drawn on the east side of the tile
+#              (south-east on an isometric map).
+#   WallsY   : the same between a tile and its y+1 neighbor. Drawn on the south side of the tile
+#              (south-west on an isometric map).
 #   Spawns   : markers where soldiers start (custom data "spawn_team", "spawn_type")
 #   Fog      : drawn by FogManager over everything (unexplored, explored; visible = no tile)
 # Each border between two tiles belongs to exactly one wall layer cell, so a tile can have walls on
-# all its sides. To put a wall on the NE or NW side of a tile, paint it in the neighbor.
+# all its sides. To put a wall on the north or west side of a tile, paint it in the neighbor.
 #
 # This node only reads and draws: it never creates services or soldiers. CombatMapManager reads it
-# and fills the services. All layers share the same tile size and are isometric (diamond down).
+# and fills the services. All layers share the same tile size. The map can be ISOMETRIC (diamond
+# down) or SQUARE (cartesian): it is the TileSet's tile shape that says which, and nothing else
+# changes. combat_map.tscn is the isometric one, combat_map_square.tscn the square one.
 #
 # The map is Y-sorted, so a unit that is added as a child of this node (a UnitContainer) is drawn
 # behind the walls and objects in front of it, and in front of those behind it.
 
 @onready var ground: TileMapLayer = $Ground
 @onready var objects: TileMapLayer = $Objects
-@onready var walls_se: TileMapLayer = $WallsSE
-@onready var walls_sw: TileMapLayer = $WallsSW
+@onready var walls_x: TileMapLayer = $WallsX
+@onready var walls_y: TileMapLayer = $WallsY
 @onready var spawns: TileMapLayer = $Spawns
 @onready var fog: TileMapLayer = $Fog
 
@@ -29,11 +33,21 @@ var _wall_tiles := {}
 
 
 func _ready() -> void:
-    _wall_tiles = _index_wall_tiles(walls_se)
+    _wall_tiles = _index_wall_tiles(walls_x)
 
 
 func get_tile_size() -> Vector2i:
     return ground.tile_set.tile_size
+
+## How the tiles are drawn, from the ground TileSet: isometric or square.
+func get_projection() -> GridService.TileProjection:
+    if ground.tile_set.tile_shape == TileSet.TILE_SHAPE_SQUARE:
+        return GridService.TileProjection.CARTESIAN
+    return GridService.TileProjection.ISOMETRIC
+
+## Where the center of tile (0, 0) is drawn, in this node's coordinates.
+func get_origin_offset() -> Vector2:
+    return ground.map_to_local(Vector2i.ZERO)
 
 ## The tiles of the battlefield: the area the ground covers.
 func get_map_rect() -> Rect2i:
@@ -53,8 +67,8 @@ func read_objects() -> Array[Dictionary]:
 ## [{"a": Vector2i, "b": Vector2i, "type": String, "open": bool}] for each wall, fence, window or door.
 func read_edges() -> Array[Dictionary]:
     var result: Array[Dictionary] = []
-    _read_wall_layer(walls_se, Vector2i(1, 0), result)
-    _read_wall_layer(walls_sw, Vector2i(0, 1), result)
+    _read_wall_layer(walls_x, Vector2i(1, 0), result)
+    _read_wall_layer(walls_y, Vector2i(0, 1), result)
     return result
 
 ## [{"tile": Vector2i, "team": String, "unit_type": String}] for each spawn marker.
@@ -103,13 +117,13 @@ func _read_wall_layer(layer: TileMapLayer, side: Vector2i, into: Array[Dictionar
 func _wall_cell(a: Vector2i, b: Vector2i) -> Dictionary:
     var d := b - a
     if d == Vector2i(1, 0):
-        return {"layer": walls_se, "cell": a}
+        return {"layer": walls_x, "cell": a}
     if d == Vector2i(-1, 0):
-        return {"layer": walls_se, "cell": b}
+        return {"layer": walls_x, "cell": b}
     if d == Vector2i(0, 1):
-        return {"layer": walls_sw, "cell": a}
+        return {"layer": walls_y, "cell": a}
     if d == Vector2i(0, -1):
-        return {"layer": walls_sw, "cell": b}
+        return {"layer": walls_y, "cell": b}
     return {}
 
 func _index_wall_tiles(layer: TileMapLayer) -> Dictionary:

@@ -1,0 +1,26 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/combat/sq_walls_x.png" id="1_a23ev"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_71040"]
+texture = ExtResource("1_a23ev")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+0:0/0/custom_data_0 = "wall"
+1:0/0 = 0
+1:0/0/custom_data_0 = "fence"
+2:0/0 = 0
+2:0/0/custom_data_0 = "window"
+3:0/0 = 0
+3:0/0/custom_data_0 = "door"
+4:0/0 = 0
+4:0/0/custom_data_0 = "door"
+4:0/0/custom_data_1 = true
+
+[resource]
+tile_size = Vector2i(64, 64)
+custom_data_layer_0/name = "edge_type"
+custom_data_layer_0/type = 4
+custom_data_layer_1/name = "edge_open"
+custom_data_layer_1/type = 1
+sources/0 = SubResource("TileSetAtlasSource_71040")

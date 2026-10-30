@@ -65,6 +65,13 @@ func orientation_to_delta(ori: String) -> Vector2i:
 func orientation_to_heading(ori: String) -> Vector2:
     return tile_delta_to_world_delta(Vector2(orientation_to_delta(ori))).normalized()
 
+## The direction a tile-space orientation points to ON SCREEN, as one of ORIENTATIONS ("N" is up).
+## The same on a cartesian map; on an isometric one "N" (tile y - 1) points up and to the right, so it
+## gives "NE". Use it to pick a sprite direction.
+func orientation_to_screen_direction(ori: String) -> String:
+    var heading := orientation_to_heading(ori)
+    return ORIENTATIONS[posmod(roundi(atan2(heading.x, -heading.y) / (TAU / 8.0)), 8)]
+
 ## World-space bounds of the whole map (tile edges, not centers). Feed to CameraService.set_world_bounds().
 func get_world_bounds() -> Rect2:
     var a := Vector2(map_rect.position) - Vector2(0.5, 0.5)

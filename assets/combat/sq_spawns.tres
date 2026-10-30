@@ -1,0 +1,33 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/combat/sq_spawns.png" id="1_ionyi"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_7xsvo"]
+texture = ExtResource("1_ionyi")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+0:0/0/custom_data_0 = "player"
+0:0/0/custom_data_1 = "liquidator"
+1:0/0 = 0
+1:0/0/custom_data_0 = "player"
+1:0/0/custom_data_1 = "pioneer"
+2:0/0 = 0
+2:0/0/custom_data_0 = "player"
+2:0/0/custom_data_1 = "redops"
+3:0/0 = 0
+3:0/0/custom_data_0 = "enemy"
+3:0/0/custom_data_1 = "liquidator"
+4:0/0 = 0
+4:0/0/custom_data_0 = "enemy"
+4:0/0/custom_data_1 = "pioneer"
+5:0/0 = 0
+5:0/0/custom_data_0 = "enemy"
+5:0/0/custom_data_1 = "redops"
+
+[resource]
+tile_size = Vector2i(64, 64)
+custom_data_layer_0/name = "spawn_team"
+custom_data_layer_0/type = 4
+custom_data_layer_1/name = "spawn_type"
+custom_data_layer_1/type = 4
+sources/0 = SubResource("TileSetAtlasSource_7xsvo")

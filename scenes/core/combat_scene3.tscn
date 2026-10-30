@@ -1,0 +1,204 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://cv8a8cybhlibk" path="res://scripts/core/combat_scene3.gd" id="scene"]
+[ext_resource type="Script" uid="uid://b0wjmro28mq80" path="res://scripts/services/grid_service.gd" id="GridService"]
+[ext_resource type="Script" uid="uid://con8sxgh1hofp" path="res://scripts/grid/terrain_service.gd" id="TerrainService"]
+[ext_resource type="Script" uid="uid://d21eyt11j1p5u" path="res://scripts/grid/edge_occupancy_service.gd" id="EdgeOccupancyService"]
+[ext_resource type="Script" uid="uid://2fpo5b7djvmu" path="res://scripts/grid/tile_occupancy_service.gd" id="TileOccupancyService"]
+[ext_resource type="Script" uid="uid://bqkksgi08vhf6" path="res://scripts/grid/vision_service.gd" id="VisionService"]
+[ext_resource type="Script" uid="uid://cqxlrn2lj1pir" path="res://scripts/grid/pathfinding_service.gd" id="PathfindingService"]
+[ext_resource type="Script" uid="uid://crg30p3nruyu2" path="res://scripts/grid/cover_service.gd" id="CoverService"]
+[ext_resource type="Script" uid="uid://rr8kc6v15xta" path="res://scripts/grid/visibility_service.gd" id="VisibilityService"]
+[ext_resource type="Script" uid="uid://s6yx8u7k8xa8" path="res://scripts/combat/combat_map_manager.gd" id="CombatMapManager"]
+[ext_resource type="Script" uid="uid://jhc8oe407f01" path="res://scripts/combat/battle_unit_manager.gd" id="BattleUnitManager"]
+[ext_resource type="Script" uid="uid://dtcatxttwgnl" path="res://scripts/combat/combat_input_manager.gd" id="CombatInputManager"]
+[ext_resource type="Script" uid="uid://cuvyu7tv21dsq" path="res://scripts/combat/fog_manager.gd" id="FogManager"]
+[ext_resource type="Script" uid="uid://b5dwo7ch7xvbo" path="res://scripts/combat/turn_manager.gd" id="TurnManager"]
+[ext_resource type="Script" uid="uid://de376lmpw5tq3" path="res://scripts/combat/path_overlay.gd" id="PathOverlay"]
+[ext_resource type="PackedScene" uid="uid://dodp70bgkluj6" path="res://scenes/services/camera_service.tscn" id="camera"]
+[ext_resource type="PackedScene" path="res://scenes/maps/combat_map_square.tscn" id="map"]
+[ext_resource type="Script" uid="uid://cyw0lnsjbi0r8" path="res://scripts/combat/deployment_manager.gd" id="DeploymentManager"]
+[ext_resource type="Script" uid="uid://c0ek0f2hvi608" path="res://scripts/combat/ai/combat_ai.gd" id="CombatAI"]
+[ext_resource type="Script" uid="uid://d370kvhw4pjra" path="res://scripts/combat/ai/train_ai.gd" id="TrainAI"]
+[ext_resource type="Script" uid="uid://bmxbao7617ku" path="res://scripts/combat/ai/unit_ai.gd" id="UnitAI"]
+[ext_resource type="Script" uid="uid://c5w0m7tpqb863" path="res://scripts/managers/horizontal_train_manager.gd" id="HorizontalTrainManager"]
+[ext_resource type="Script" uid="uid://c6wueomnghw5t" path="res://scripts/menus/barracks_menu.gd" id="BarracksMenu"]
+[ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="train"]
+
+[node name="CombatScene3" type="Node2D"]
+script = ExtResource("scene")
+
+[node name="Services" type="Node" parent="."]
+
+[node name="GridService" type="Node" parent="Services"]
+script = ExtResource("GridService")
+
+[node name="TerrainService" type="Node" parent="Services"]
+script = ExtResource("TerrainService")
+
+[node name="EdgeOccupancyService" type="Node" parent="Services"]
+script = ExtResource("EdgeOccupancyService")
+
+[node name="TileOccupancyService" type="Node" parent="Services"]
+script = ExtResource("TileOccupancyService")
+
+[node name="VisionService" type="Node" parent="Services"]
+script = ExtResource("VisionService")
+
+[node name="PathfindingService" type="Node" parent="Services"]
+script = ExtResource("PathfindingService")
+
+[node name="CoverService" type="Node" parent="Services"]
+script = ExtResource("CoverService")
+
+[node name="VisibilityService" type="Node" parent="Services"]
+script = ExtResource("VisibilityService")
+
+[node name="CameraService" parent="Services" instance=ExtResource("camera")]
+initial_zoom = 1.0
+
+[node name="Managers" type="Node" parent="."]
+
+[node name="CombatMapManager" type="Node" parent="Managers"]
+script = ExtResource("CombatMapManager")
+
+[node name="BattleUnitManager" type="Node" parent="Managers"]
+script = ExtResource("BattleUnitManager")
+
+[node name="CombatInputManager" type="Node" parent="Managers"]
+script = ExtResource("CombatInputManager")
+
+[node name="FogManager" type="Node" parent="Managers"]
+script = ExtResource("FogManager")
+
+[node name="TurnManager" type="Node" parent="Managers"]
+script = ExtResource("TurnManager")
+auto_pass_computer_turns = false
+
+[node name="DeploymentManager" type="Node" parent="Managers"]
+script = ExtResource("DeploymentManager")
+
+[node name="HorizontalTrainManager" type="Node" parent="Managers"]
+script = ExtResource("HorizontalTrainManager")
+
+[node name="CombatMap" parent="." instance=ExtResource("map")]
+
+[node name="UnitContainer" type="Node2D" parent="CombatMap"]
+y_sort_enabled = true
+
+[node name="Overlays" type="Node2D" parent="CombatMap"]
+z_index = 10
+
+[node name="PathOverlay" type="Node2D" parent="CombatMap/Overlays"]
+script = ExtResource("PathOverlay")
+
+[node name="TrainContainer" type="Node2D" parent="."]
+
+[node name="PlayerTrain" parent="TrainContainer" instance=ExtResource("train")]
+position = Vector2(700, 866)
+
+[node name="EnemyTrain" parent="TrainContainer" instance=ExtResource("train")]
+position = Vector2(1300, -36)
+
+[node name="AI" type="Node" parent="."]
+
+[node name="CombatAI" type="Node" parent="AI"]
+script = ExtResource("CombatAI")
+
+[node name="TrainAI" type="Node" parent="AI/CombatAI"]
+script = ExtResource("TrainAI")
+
+[node name="UnitAI" type="Node" parent="AI/CombatAI"]
+script = ExtResource("UnitAI")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="InfoLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 900.0
+offset_bottom = 38.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 18
+
+[node name="Buttons" type="HBoxContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 48.0
+offset_right = 900.0
+offset_bottom = 92.0
+
+[node name="DoorsButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Doors"
+
+[node name="FogButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Fog"
+
+[node name="PathsButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "All paths"
+
+[node name="EndTurnButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "End turn"
+
+[node name="PauseButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Pause"
+
+[node name="BoardButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Board"
+
+[node name="ModeLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 100.0
+offset_right = 900.0
+offset_bottom = 126.0
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 18
+
+[node name="AiLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 132.0
+offset_right = 1200.0
+offset_bottom = 158.0
+theme_override_colors/font_color = Color(1, 0.55, 0.5, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 18
+
+[node name="OutcomeLabel" type="Label" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -40.0
+offset_right = 500.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BarracksMenu" type="HBoxContainer" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -112.0
+offset_right = 540.0
+offset_bottom = -16.0
+grow_vertical = 0
+script = ExtResource("BarracksMenu")
+

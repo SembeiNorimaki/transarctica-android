@@ -11,6 +11,11 @@ class_name CombatFlowManager
 signal status_changed
 ## An order was not given. `reason` is a short text for the player.
 signal command_refused(soldier: Soldier, reason: String)
+## The battle is decided: nobody can be commanded any more (see end_battle).
+signal battle_ended
+
+## true once end_battle() was called.
+var battle_over := false
 
 # Injected by the scene
 var battle_unit_manager: BattleUnitManager
@@ -41,7 +46,11 @@ func get_status_text() -> String:
 
 ## May this soldier be given an order now?
 func can_command(soldier: Soldier) -> bool:
-    return soldier.is_alive()
+    return soldier.is_alive() and not battle_over
+
+## May this team do things now (deploy soldiers from its train...)? Not for a soldier: for the team.
+func can_team_act(_team: String) -> bool:
+    return not battle_over
 
 ## The part of the path this soldier is allowed to walk now (the whole path if there is no limit).
 func limit_move(_soldier: Soldier, path: Array[Vector2i]) -> Array[Vector2i]:
@@ -59,6 +68,15 @@ func can_attack(_soldier: Soldier, _move_cost := 0.0) -> bool:
 func _on_soldier_spawned(_soldier: Soldier) -> void:
     pass
 #endregion
+
+
+## Nobody can be commanded from now on.
+func end_battle() -> void:
+    if battle_over:
+        return
+    battle_over = true
+    battle_ended.emit()
+    status_changed.emit()
 
 
 func refuse(soldier: Soldier, reason: String) -> void:

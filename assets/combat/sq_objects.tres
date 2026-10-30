@@ -1,0 +1,19 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/combat/sq_objects.png" id="1_gant3"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tgn0r"]
+texture = ExtResource("1_gant3")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+0:0/0/custom_data_0 = "crate"
+1:0/0 = 0
+1:0/0/custom_data_0 = "container"
+2:0/0 = 0
+2:0/0/custom_data_0 = "barrel"
+
+[resource]
+tile_size = Vector2i(64, 64)
+custom_data_layer_0/name = "object_type"
+custom_data_layer_0/type = 4
+sources/0 = SubResource("TileSetAtlasSource_tgn0r")

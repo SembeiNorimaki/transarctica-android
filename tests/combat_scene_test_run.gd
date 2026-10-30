@@ -63,7 +63,9 @@ func _test_loading() -> void:
     var g := scene.grid_service
     eq(g.tile_size, Vector2i(64, 32), "grid tile size from the map")
     eq(g.map_rect, Rect2i(0, 0, 16, 12), "map rect from the ground layer")
-    eq(g.tile_to_world(Vector2(0, 0)), Vector2.ZERO, "tile (0,0) is at the map origin")
+    for tile in [Vector2i(0, 0), Vector2i(5, 3), Vector2i(15, 11), Vector2i(2, 9)]:
+        eq(g.tile_to_world(Vector2(tile)), scene.combat_map.ground.map_to_local(tile), "tile %s is where the map draws it" % tile)
+        eq(g.world_to_tile(scene.combat_map.ground.map_to_local(tile)), tile, "and back")
     eq(scene.terrain_service.get_type(Vector2i(6, 2)), "rock", "terrain read from the ground layer")
     eq(scene.terrain_service.get_type(Vector2i(0, 5)), "road", "road")
     eq(scene.terrain_service.get_type(Vector2i(0, 0)), "grass", "grass")
@@ -233,14 +235,14 @@ func _test_doors() -> void:
     scene.combat_map_manager.toggle_all_doors()
     ok(edge.is_open, "door opened")
     ok(not scene.edge_service.is_move_blocked(door_a, door_b), "open door lets through")
-    eq(scene.combat_map.walls_sw.get_cell_atlas_coords(door_a), Vector2i(4, 0), "door tile redrawn open")
-    eq(scene.combat_map.walls_se.get_cell_atlas_coords(Vector2i(5, 8)), Vector2i(4, 0), "west door redrawn open")
+    eq(scene.combat_map.walls_y.get_cell_atlas_coords(door_a), Vector2i(4, 0), "door tile redrawn open")
+    eq(scene.combat_map.walls_x.get_cell_atlas_coords(Vector2i(5, 8)), Vector2i(4, 0), "west door redrawn open")
     scene.combat_map_manager.toggle_all_doors()
     ok(not edge.is_open, "door closed again")
-    eq(scene.combat_map.walls_sw.get_cell_atlas_coords(door_a), Vector2i(3, 0), "door tile redrawn closed")
+    eq(scene.combat_map.walls_y.get_cell_atlas_coords(door_a), Vector2i(3, 0), "door tile redrawn closed")
     # a destroyed wall disappears from the map
     scene.edge_service.damage(Vector2i(6, 5), Vector2i(6, 6), 999)
-    eq(scene.combat_map.walls_sw.get_cell_atlas_coords(Vector2i(6, 5)), Vector2i(-1, -1), "destroyed wall erased")
+    eq(scene.combat_map.walls_y.get_cell_atlas_coords(Vector2i(6, 5)), Vector2i(-1, -1), "destroyed wall erased")
     # walking through the open door
     scene.combat_map_manager.toggle_all_doors()
     var path := scene.pathfinding_service.find_path(Vector2i(7, 4), Vector2i(7, 7))

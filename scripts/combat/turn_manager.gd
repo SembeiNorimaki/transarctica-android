@@ -15,6 +15,11 @@ signal turn_ended(team: String)
 @export var teams: Array[String] = [Soldier.TEAM_PLAYER, Soldier.TEAM_ENEMY]
 ## Teams the player does not command.
 @export var computer_teams: Array[String] = [Soldier.TEAM_ENEMY]
+## true: a computer team's turn passes by itself after `computer_turn_delay` (there is no AI yet).
+## false: an AI plays it and calls end_turn() when done (see CombatAI); `computer_turn_timeout`
+## ends the turn anyway if the AI never does.
+@export var auto_pass_computer_turns := true
+@export var computer_turn_timeout := 30.0
 ## The turn ends by itself when nobody of the team can do anything any more.
 @export var auto_end_turn := true
 @export var computer_turn_delay := 0.8
@@ -34,6 +39,8 @@ func get_mode_name() -> String:
     return "Turn based"
 
 func get_status_text() -> String:
+    if battle_over:
+        return "%s | battle over" % get_mode_name()
     if not _started:
         return get_mode_name()
     return "%s | turn %d | %s%s" % [get_mode_name(), turn_number, current_team, " (computer)" if is_computer_turn() else ""]
@@ -53,15 +60,16 @@ func is_computer_turn() -> bool:
 #region the flow
 ## The current team is done. The turn passes when its soldiers have finished what they are doing.
 func end_turn() -> void:
-    if _started:
+    if _started and not battle_over:
         _end_requested = true
 
 func _process(delta: float) -> void:
-    if not _started:
+    if not _started or battle_over:
         return
     if is_computer_turn():
         _computer_timer += delta
-        if _computer_timer >= computer_turn_delay:
+        var limit := computer_turn_delay if auto_pass_computer_turns else computer_turn_timeout
+        if _computer_timer >= limit:
             _end_requested = true
     elif auto_end_turn and not _end_requested and _team_is_out_of_actions():
         _end_requested = true
@@ -107,7 +115,12 @@ func _team_is_out_of_actions() -> bool:
 
 #region rules
 func can_command(soldier: Soldier) -> bool:
-    return _started and soldier.is_alive() and soldier.team == current_team and not is_computer_turn() and not _end_requested
+    # Only the team whose turn it is acts. Who gives the orders (the player, an AI) is not its business:
+    # the player can only select his own soldiers
+    return _started and not battle_over and soldier.is_alive() and soldier.team == current_team and not _end_requested
+
+func can_team_act(team: String) -> bool:
+    return _started and not battle_over and team == current_team and not _end_requested
 
 func limit_move(soldier: Soldier, path: Array[Vector2i]) -> Array[Vector2i]:
     var allowed: Array[Vector2i] = []

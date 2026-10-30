@@ -48,9 +48,9 @@ func toggle_all_doors() -> void:
 
 
 func _setup_grid() -> void:
-    grid_service.set_projection(GridService.TileProjection.ISOMETRIC)
+    grid_service.set_projection(combat_map.get_projection())
     grid_service.set_tile_size(combat_map.get_tile_size())
-    grid_service.tile_center_offset = Vector2.ZERO # tile (0, 0) is drawn at the map's origin
+    grid_service.tile_center_offset = combat_map.get_origin_offset()
     grid_service.set_map_rect(combat_map.get_map_rect())
     occupancy_service.bounds = combat_map.get_map_rect()
 

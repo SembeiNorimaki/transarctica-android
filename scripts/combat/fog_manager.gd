@@ -46,6 +46,7 @@ func setup() -> void:
     visibility_service.visibility_changed.connect(_on_visibility_changed)
     battle_unit_manager.soldier_spawned.connect(_watch)
     battle_unit_manager.soldier_died.connect(_on_soldier_died)
+    battle_unit_manager.soldier_removed.connect(_on_soldier_died)
     if edge_service != null:
         edge_service.edge_changed.connect(func(_a: Vector2i, _b: Vector2i) -> void: _dirty = true)
     if terrain_service != null:
