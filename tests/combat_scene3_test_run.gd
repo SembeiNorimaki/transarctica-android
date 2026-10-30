@@ -675,6 +675,22 @@ func _test_overlays() -> void:
     await get_tree().process_frame
     await get_tree().process_frame
     ok(scene.vision_overlay.get_probe_text().begins_with("line of sight"), "the probe says what the line does")
+    # the trace: a straight run of tiles, and what cut it
+    var t := vision.trace_line_of_sight(Vector2i(13, 0), Vector2i(13, 3))
+    eq(t["line"], [Vector2i(13, 0), Vector2i(13, 1), Vector2i(13, 2), Vector2i(13, 3)] as Array[Vector2i], "the Bresenham line is the column of tiles")
+    eq(t["cause"], "edge", "a wall cuts it")
+    eq([t["crossed_from"], t["crossed_to"]], [Vector2i(13, 1), Vector2i(13, 2)], "at the border the line could not cross")
+    t = vision.trace_line_of_sight(Vector2i(8, 0), Vector2i(8, 5))
+    eq(t["cause"], "tile", "a rock cuts it")
+    eq(t["crossed_from"], Vector2i(8, 3), "it is the rock")
+    t = vision.trace_line_of_sight(Vector2i(8, 0), Vector2i(8, 2))
+    eq([t["cut"], t["cause"]], [-1, ""], "open ground: clear")
+    # a line that is not straight: a shallow one steps sideways now and then, and crosses what is there
+    t = vision.trace_line_of_sight(Vector2i(10, 0), Vector2i(15, 2))
+    eq(t["line"].size(), 6, "a shallow line has one tile per column")
+    for i in range(1, t["line"].size()):
+        var step: Vector2i = t["line"][i] - t["line"][i - 1]
+        ok(absi(step.x) <= 1 and absi(step.y) <= 1 and step != Vector2i.ZERO, "consecutive tiles of a line are neighbors")
     scene.vision_overlay.set_probe(Vector2i(8, 5))
     ok(scene.vision_overlay.get_probe_text() != "", "the probe has a text")
     eq(g.get_tile_outline(Vector2i(2, 3)).size(), 5, "a tile outline is a closed polygon")

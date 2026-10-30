@@ -1,14 +1,18 @@
 extends Node2D
 class_name VisionOverlay
-# Debug overlay: the lines of sight that decide what the selected soldier sees. For every tile of
-# its field of view (the cone, plus the circle of awareness all around) it draws the Bresenham line
-# VisionService traces from the soldier to the tile:
-#   green : the part of the line that is seen
-#   red   : the part hidden behind a wall, a closed door, a window or something that blocks sight
-#   X     : the place where the line is cut
-# Tiles that are seen are tinted green, tiles in the field of view that are hidden red.
-# Also: the line to the tile under the pointer (`probe`) is drawn thick, with the tiles it crosses.
-# It only reads: it is the same VisionService call that the fog of war uses.
+# Debug overlay: how line of sight is worked out for the selected soldier. For EVERY tile it
+# evaluates (its field of view: the cone plus the circle of awareness all around) it shows the
+# Bresenham line VisionService traces from the soldier to the tile (see
+# VisionService.trace_line_of_sight):
+#   a dot on the centre of each tile of the line (the tiles Bresenham picks),
+#   a straight line from the soldier to the tile,
+#   green when the line crosses nothing that blocks view and the tile is seen;
+#   when it is cut, green up to the cut and red after it, and the place is marked:
+#     a thick red bar on the BORDER the line could not cross (wall, closed door, window, fence...),
+#     or a red X on the TILE that blocks sight (rock, container...).
+# Seen tiles are tinted green, tiles of the field of view that are hidden red.
+# The line to the tile under the pointer (`probe`) is drawn thick with its tiles outlined.
+# It only reads: it is the same VisionService trace the fog of war uses.
 
 const SEEN := Color(0.25, 1.0, 0.35)
 const HIDDEN := Color(1.0, 0.25, 0.2)
@@ -53,11 +57,12 @@ func get_probe_text() -> String:
     var soldier := battle_unit_manager.selected
     if soldier == null or not has_probe or not grid_service.is_inside_map(probe):
         return ""
-    var cut := vision_service.get_line_block_index(soldier.tile, probe)
-    if cut == -1:
-        return "line of sight to %s: clear" % probe
-    var line := vision_service.get_line(soldier.tile, probe)
-    return "line of sight to %s: cut before %s" % [probe, line[cut]]
+    var trace := vision_service.trace_line_of_sight(soldier.tile, probe)
+    if trace["cut"] == -1:
+        return "line of sight to %s: clear (%d tiles)" % [probe, trace["line"].size()]
+    if trace["cause"] == "edge":
+        return "line of sight to %s: cut, it crosses a blocking edge between %s and %s" % [probe, trace["crossed_from"], trace["crossed_to"]]
+    return "line of sight to %s: cut by the blocking tile %s" % [probe, trace["crossed_from"]]
 
 
 func _process(_delta: float) -> void:
@@ -88,43 +93,77 @@ func _draw() -> void:
     if has_probe and grid_service.is_inside_map(probe) and probe != origin:
         _draw_probe(origin)
 
+
 func _draw_line_of_sight(origin: Vector2i, target: Vector2i, awareness_only: bool) -> void:
-    var line := vision_service.get_line(origin, target)
-    var cut := vision_service.get_line_block_index(origin, target)
-    var seen_count := line.size() if cut == -1 else cut
-    var tint := SEEN if cut == -1 else HIDDEN
+    var trace := vision_service.trace_line_of_sight(origin, target)
+    var line: Array[Vector2i] = trace["line"]
+    var cut: int = trace["cut"]
+    var seen := cut == -1
+    var tint := SEEN if seen else HIDDEN
     tint.a = 0.10
     draw_colored_polygon(grid_service.get_tile_outline(target, 0.96).slice(0, 4), tint)
     var seen_color := AWARE if awareness_only else SEEN
-    seen_color.a = 0.45
+    seen_color.a = 0.5
     var hidden_color := HIDDEN
-    hidden_color.a = 0.45
-    var points := PackedVector2Array()
-    for i in line.size():
-        points.append(grid_service.tile_to_world(Vector2(line[i])))
-    if seen_count >= 2:
-        draw_polyline(points.slice(0, seen_count), seen_color, 1.5, true)
-    if cut != -1:
-        draw_polyline(points.slice(cut - 1), hidden_color, 1.5, true)
-        _draw_cross(points[cut - 1].lerp(points[cut], 0.5), hidden_color)
+    hidden_color.a = 0.5
+    var start := grid_service.tile_to_world(Vector2(origin))
+    var end := grid_service.tile_to_world(Vector2(target))
+    if seen:
+        draw_line(start, end, seen_color, 1.5, true)
+    else:
+        # The straight line, split where the line of tiles is cut
+        var split := start.lerp(end, (float(cut) - 0.5) / float(line.size() - 1))
+        draw_line(start, split, seen_color, 1.5, true)
+        draw_line(split, end, hidden_color, 1.5, true)
+        _draw_cut(trace, HIDDEN, 3.0)
+    for i in range(1, line.size() - 1): # the tiles Bresenham picked
+        var dot := seen_color if seen or i < cut else hidden_color
+        dot.a = 0.9
+        draw_circle(grid_service.tile_to_world(Vector2(line[i])), 2.0, dot)
+
 
 func _draw_probe(origin: Vector2i) -> void:
-    var line := vision_service.get_line(origin, probe)
-    var cut := vision_service.get_line_block_index(origin, probe)
+    var trace := vision_service.trace_line_of_sight(origin, probe)
+    var line: Array[Vector2i] = trace["line"]
+    var cut: int = trace["cut"]
     for i in line.size():
-        var seen := cut == -1 or i < cut
-        var color := PROBE if seen else HIDDEN
+        var color := PROBE if cut == -1 or i < cut else HIDDEN
         color.a = 0.9
         draw_polyline(grid_service.get_tile_outline(line[i], 0.5), color, 2.0)
-    var points := PackedVector2Array()
-    for tile in line:
-        points.append(grid_service.tile_to_world(Vector2(tile)))
-    var limit := points.size() if cut == -1 else cut
-    if limit >= 2:
-        draw_polyline(points.slice(0, limit), PROBE, 4.0, true)
-    if cut != -1:
-        draw_polyline(points.slice(cut - 1), HIDDEN, 4.0, true)
-        _draw_cross(points[cut - 1].lerp(points[cut], 0.5), HIDDEN, 8.0)
+    var start := grid_service.tile_to_world(Vector2(origin))
+    var end := grid_service.tile_to_world(Vector2(probe))
+    if cut == -1:
+        draw_line(start, end, PROBE, 4.0, true)
+    else:
+        var split := start.lerp(end, (float(cut) - 0.5) / float(line.size() - 1))
+        draw_line(start, split, PROBE, 4.0, true)
+        draw_line(split, end, HIDDEN, 4.0, true)
+        _draw_cut(trace, HIDDEN, 6.0)
+
+
+# Marks what cut the line: the border it could not cross, or the tile that blocks sight
+func _draw_cut(trace: Dictionary, color: Color, width: float) -> void:
+    var a: Vector2i = trace["crossed_from"]
+    var b: Vector2i = trace["crossed_to"]
+    if trace["cause"] == "tile":
+        _draw_cross(grid_service.tile_to_world(Vector2(a)), color, 6.0)
+        return
+    var shared := _shared_corners(a, b)
+    if shared.size() == 2: # the border between two neighbors: a bar along it
+        draw_line(shared[0], shared[1], color, width)
+    else: # a diagonal step crosses at the corner
+        _draw_cross(grid_service.tile_to_world(Vector2(a)).lerp(grid_service.tile_to_world(Vector2(b)), 0.5), color, 6.0)
+
+# The corners two tiles have in common: two for tiles that share a side, one for diagonal tiles
+func _shared_corners(a: Vector2i, b: Vector2i) -> Array[Vector2]:
+    var result: Array[Vector2] = []
+    var corners_b := grid_service.get_tile_outline(b).slice(0, 4)
+    for corner in grid_service.get_tile_outline(a).slice(0, 4):
+        for other in corners_b:
+            if corner.distance_to(other) < 1.0:
+                result.append(corner)
+                break
+    return result
 
 func _draw_cross(at: Vector2, color: Color, size := 5.0) -> void:
     draw_line(at + Vector2(-size, -size), at + Vector2(size, size), color, 2.0)

@@ -83,19 +83,38 @@ func has_line_of_sight(from: Vector2i, to: Vector2i) -> bool:
     return get_line_block_index(from, to) == -1
 
 ## Where the line of sight from `from` to `to` is cut: the index, in get_line(from, to), of the
-## first tile that is NOT seen. -1 if the whole line is seen. Walking the line, a wall (or a door,
-## window...) between two tiles hides the tile behind it; a blocking tile is seen itself, but hides
-## the ones after it. For debugging overlays: has_line_of_sight is this == -1.
+## first tile that is NOT seen. -1 if the whole line is seen. See trace_line_of_sight.
 func get_line_block_index(from: Vector2i, to: Vector2i) -> int:
-    if from == to:
-        return -1
+    return trace_line_of_sight(from, to)["cut"]
+
+## The line of sight, step by step. A tile is seen when the Bresenham line (get_line) between the
+## viewer and the tile crosses nothing that blocks view. The line is a row of tiles; going from
+## one to the next it crosses the border between them (or, in a diagonal step, the corner), and:
+##   - an EDGE on that border (wall, closed door, window...) that blocks sight stops the line
+##     (a diagonal passes if at least one of the two ways round its corner is open);
+##   - a tile that blocks sight (rock, a container...) is itself seen, but hides what is behind it.
+## Returns {"line": Array[Vector2i] from `from` to `to`,
+##          "cut": index in `line` of the first tile not seen, -1 if all are seen,
+##          "cause": "" (clear), "edge" or "tile",
+##          "crossed_from", "crossed_to": for "edge", the two tiles whose border the line could not
+##              cross; for "tile", both are the tile that blocks}
+func trace_line_of_sight(from: Vector2i, to: Vector2i) -> Dictionary:
     var line := get_line(from, to)
+    var trace := {"line": line, "cut": -1, "cause": "", "crossed_from": from, "crossed_to": from}
     for i in range(1, line.size()):
         if edge_service != null and edge_service.is_view_blocked(line[i - 1], line[i]):
-            return i
+            trace["cut"] = i
+            trace["cause"] = "edge"
+            trace["crossed_from"] = line[i - 1]
+            trace["crossed_to"] = line[i]
+            return trace
         if i < line.size() - 1 and _tile_blocks_vision(line[i]):
-            return i + 1
-    return -1
+            trace["cut"] = i + 1
+            trace["cause"] = "tile"
+            trace["crossed_from"] = line[i]
+            trace["crossed_to"] = line[i]
+            return trace
+    return trace
 
 ## Tiles a unit at `origin` sees: inside the cone, inside the map, with line of sight.
 func get_visible_tiles(origin: Vector2i, orientation: String, view_angle: float, view_range: int) -> Array[Vector2i]:
