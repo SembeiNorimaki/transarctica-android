@@ -55,6 +55,7 @@ func setup(city: CityInventory, train: TrainInventory, train_view: HorizontalTra
     _city.city_resource_amount_changed.connect(_on_city_resource_amount_changed)
     _city.city_wagon_amount_changed.connect(_on_city_wagon_amount_changed)
     _city.city_recruit_amount_changed.connect(_on_city_recruit_amount_changed)
+    _city.city_prices_changed.connect(_on_city_prices_changed)
     _train.wagon_resource_amount_changed.connect(_on_wagon_resource_amount_changed)
     _train.unit_added.connect(_on_unit_added)
     _train.wagon_removed.connect(_on_wagon_indices_changed)
@@ -164,6 +165,12 @@ func _on_city_resource_amount_changed(_resource_name: String, _qty: int) -> void
     _refresh_production_menu()
 
 
+# The economy changed a price: what the open menus show (and what can be afforded) follows
+func _on_city_prices_changed(_resource_name: String) -> void:
+    _refresh_buy_menu()
+    _refresh_sell_menu()
+
+
 func _on_wagon_resource_amount_changed(_wagon_index: int, _resource_name: String, _qty: int) -> void:
     _refresh_buy_menu()
     _refresh_sell_menu()
@@ -217,6 +224,7 @@ func _refresh_buy_menu() -> void:
     if resource_name == "":
         return
     buy_menu.set_qty(_city.get_available_qty(resource_name))
+    buy_menu.set_price(_city.get_buy_price(resource_name)) # the economy may have changed it
     buy_menu.set_can_buy(TradeService.max_buyable(_city, _train, resource_name) > 0)
 
 
@@ -233,6 +241,7 @@ func _refresh_sell_menu() -> void:
     var qty := _train.get_wagon_resource_qty(index)
     if qty > 0:
         sell_menu.set_qty(qty)
+        sell_menu.set_price(_city.get_sell_price(_train.get_wagon_current_resource(index)))
         sell_menu.set_can_sell(TradeService.max_sellable_from_wagon(_city, _train, index) > 0)
     elif can_sell_wagon:
         # emptied: only the wagon itself can be sold now

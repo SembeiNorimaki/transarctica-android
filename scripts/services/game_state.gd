@@ -51,6 +51,10 @@ var _explored := {} # map name -> explored tiles, encoded by ExplorationService
 var _quests_state := {}
 var _events_state := {} # map name -> {"x,y": true} for the events already done
 var _flags := {} # story flags set by events: name -> true
+# The world economy (see GlobalEconomyManager). Saved inside cities.json:
+#   {"day": int, "base": {resource: float}, "indices": {resource: float}, "shocks": [{resource, factor, days}]}
+# "indices" is what the prices use: "base" (what the world's stock calls for) times the shocks.
+var _economy_state := {}
 
 var current_slot := DEBUG_SLOT # the main menu will set this
 var campaign_id := Campaigns.DEFAULT_ID # the story being played. It is saved with the game
@@ -60,6 +64,7 @@ var campaign_id := Campaigns.DEFAULT_ID # the story being played. It is saved wi
 signal money_changed(money: int)
 signal player_wagon_added(index: int, wagon_data: Dictionary)
 signal player_cargo_changed
+signal economy_changed # the day or the price indices changed
 signal game_saving # emitted before the state is written: scenes should flush their runtime state into GameState
 signal game_loaded # emitted after a load: scenes should rebuild themselves from GameState
 
@@ -239,6 +244,54 @@ func change_city_recruits(city_name: String, unit_type: String, delta: int) -> b
     return true
 #endregion
 
+# The stock a city wants of a resource (the economy's "normal"). Saved with the city.
+func set_city_target(city_name: String, resource_name: String, target: int) -> bool:
+    var trade_resources: Dictionary = _cities_state.get(city_name, {}).get("TradeResources", {})
+    if not trade_resources.has(resource_name):
+        push_error("GameState: city '%s' has no resource '%s'" % [city_name, resource_name])
+        return false
+    trade_resources[resource_name]["Target"] = maxi(target, 0)
+    return true
+
+
+#region economy
+func get_economy_day() -> int:
+    return int(_economy_state.get("day", 0))
+
+func set_economy_day(day: int) -> void:
+    _economy_state["day"] = maxi(day, 0)
+    economy_changed.emit()
+
+# What every price of this resource is multiplied by, in the whole world (1 = nothing special)
+func get_price_index(resource_name: String) -> float:
+    return float(_economy_state.get("indices", {}).get(resource_name.to_lower(), 1.0))
+
+# The index without the shocks: what the world's stock calls for
+func get_base_price_index(resource_name: String) -> float:
+    return float(_economy_state.get("base", {}).get(resource_name.to_lower(), 1.0))
+
+# The two index tables as saved (copies): resource -> float
+func get_economy_base() -> Dictionary:
+    return _economy_state.get("base", {}).duplicate()
+
+func get_economy_effective() -> Dictionary:
+    return _economy_state.get("indices", {}).duplicate()
+
+func set_price_indices(base: Dictionary, effective: Dictionary) -> void:
+    _economy_state["base"] = base
+    _economy_state["indices"] = effective
+    economy_changed.emit()
+
+# The active shocks: [{resource: String ("" = every resource), factor: float, days: int}]
+func get_price_shocks() -> Array:
+    return _economy_state.get("shocks", []).duplicate(true)
+
+func set_price_shocks(shocks: Array) -> void:
+    _economy_state["shocks"] = shocks
+    economy_changed.emit()
+#endregion
+
+
 func change_city_goods(city_name: String, resource_name: String, delta: int) -> bool:
     var trade_resources: Dictionary = _cities_state.get(city_name, {}).get("TradeResources", {})
     if not trade_resources.has(resource_name):
@@ -343,6 +396,7 @@ func start_new_game(slot: int, new_campaign_id := Campaigns.DEFAULT_ID) -> bool:
     _load_campaign_data()
     _events_state = {}
     _flags = {}
+    _economy_state = {}
     game_loaded.emit() # before money_changed, like in load_game
     money_changed.emit(_player_money)
     return true
@@ -431,7 +485,7 @@ func save_game(slot := -1) -> bool:
         city_ids[str(id)] = _cities_by_id[id]
 
     var files := {
-        FILE_CITIES: {"version": SAVE_VERSION, "cities": _cities_state, "city_ids": city_ids},
+        FILE_CITIES: {"version": SAVE_VERSION, "cities": _cities_state, "city_ids": city_ids, "economy": _economy_state},
         FILE_PLAYER: {
             "version": SAVE_VERSION,
             "saved_at": Time.get_datetime_string_from_system(),
@@ -532,7 +586,9 @@ func load_game(slot := -1) -> bool:
 
     if cities.is_empty():
         _load_initial_cities(Campaigns.path(campaign_id, FILE_CAMPAIGN_CITIES)) # no cities.json: the cities start as in a new game
+        _economy_state = {}
     else:
+        _economy_state = cities.get("economy", {}) # an older save has none: day 0, every index 1
         _cities_state = cities["cities"]
         _cities_by_id = {}
         for id in cities["city_ids"]:
@@ -572,6 +628,8 @@ func _validate_player(data: Dictionary) -> String:
 func _validate_cities(data: Dictionary) -> String:
     if not (data.get("cities") is Dictionary and data.get("city_ids") is Dictionary):
         return "cities.json needs 'cities' and 'city_ids' objects"
+    if data.has("economy") and not (data["economy"] is Dictionary):
+        return "'economy' in cities.json must be an object"
     for id in data["city_ids"]:
         if not str(id).is_valid_int():
             return "city id '%s' is not a number" % id

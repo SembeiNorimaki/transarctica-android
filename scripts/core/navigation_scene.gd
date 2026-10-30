@@ -10,6 +10,7 @@ var is_loaded := false
 @onready var navigation_train_manager: NavigationTrainManager = $Managers/NavigationTrainManager
 @onready var cities_manager: CitiesManager = $Managers/CitiesManager
 @onready var fuel_manager: FuelManager = $Managers/FuelManager
+@onready var global_economy_manager: GlobalEconomyManager = $Managers/GlobalEconomyManager # days pass while travelling
 
 # Services
 @onready var grid_service: GridService = $Services/GridService

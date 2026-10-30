@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://cke7jrixhqf0x" path="res://scenes/trade_resources/crate_resource.tscn" id="17_xmr62"]
 [ext_resource type="PackedScene" uid="uid://drfi68tnm8em0" path="res://scenes/UI/top_bar.tscn" id="18_vca0f"]
 [ext_resource type="PackedScene" uid="uid://bosf8j47x84il" path="res://scenes/UI/bottom_bar.tscn" id="19_vv4w2"]
+[ext_resource type="Script" path="res://scripts/managers/city_economy_manager.gd" id="city_economy_mgr"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rxsxr"]
 texture = ExtResource("3_vv4w2")
@@ -106,6 +107,9 @@ script = ExtResource("8_ciyb7")
 
 [node name="TradeUnitManager" type="Node" parent="Managers" unique_id=411619303]
 script = ExtResource("9_pelun")
+
+[node name="CityEconomyManager" type="Node" parent="Managers"]
+script = ExtResource("city_economy_mgr")
 
 [node name="Inventories" type="Node" parent="." unique_id=1052194190]
 

@@ -14,6 +14,7 @@
 [ext_resource type="Script" uid="uid://rn2y28iu7pn7" path="res://scripts/managers/fuel_manager.gd" id="10_rjhdy"]
 [ext_resource type="PackedScene" uid="uid://8nkr012q8af6" path="res://scenes/UI/navigation_hud.tscn" id="13_6eg84"]
 [ext_resource type="PackedScene" uid="uid://b64pm4dy8e4jd" path="res://scenes/UI/loading_screen.tscn" id="14_pcfji"]
+[ext_resource type="Script" path="res://scripts/managers/global_economy_manager.gd" id="global_economy_mgr"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rjhdy"]
 texture = ExtResource("10_1aqif")
@@ -62,6 +63,9 @@ script = ExtResource("10_rjhdy")
 
 [node name="EventsManager" type="Node" parent="Managers" unique_id=89250090]
 script = ExtResource("10_6eg84")
+
+[node name="GlobalEconomyManager" type="Node" parent="Managers"]
+script = ExtResource("global_economy_mgr")
 
 [node name="TrainContainer" type="Node2D" parent="." unique_id=1572720261]
 

@@ -15,10 +15,15 @@ class_name CityInventory
 #
 # resources example:
 # {
-#     "Oil": {"qty": 3, "buy_price": 5, "sell_price": 4, "max_capacity": 999},
+#     "Oil": {"qty": 3, "buy_price": 5, "sell_price": 4, "max_capacity": 999,
+#             "base_buy": 5.2, "base_sell": 4.1, "target": 3},
 # }
+# base_buy / base_sell: the price when the city has exactly its target stock (nominal x factor, not
+# rounded). buy_price / sell_price are what the player pays now: the CityEconomyManager keeps them up
+# to date as the stock changes (set_prices). target: the stock the city wants (see PriceModel).
 
 signal city_resource_amount_changed(resource_name: String, qty: int)
+signal city_prices_changed(resource_name: String) # CityEconomyManager changed them (see set_prices)
 signal city_wagon_amount_changed(wagon_type: String, qty: int)
 signal city_recruit_amount_changed(unit_type: String, qty: int)
 
@@ -72,13 +77,20 @@ func load_from_game_state(city_name_: String) -> bool:
         # a side the place doesn't offer has price 0 (Buys: the player can't buy; Sells: can't sell)
         var buy_price := 0 if mode == MODE_BUYS else roundi(nominal_buy * buy_factor)
         var sell_price := 0 if mode == MODE_SELLS else roundi(nominal_sell * sell_factor)
-        initialize_resource(
-            resource_name,
-            int(data.get("Quantity", 0)),
-            buy_price,
-            sell_price,
-            int(data.get("MaxCapacity", DEFAULT_MAX_CAPACITY)),
-            mode)
+        var qty := int(data.get("Quantity", 0))
+        var max_capacity := int(data.get("MaxCapacity", DEFAULT_MAX_CAPACITY))
+        initialize_resource(resource_name, qty, buy_price, sell_price, max_capacity, mode)
+        var info: Dictionary = resources[resource_name]
+        info["base_buy"] = 0.0 if mode == MODE_BUYS else nominal_buy * buy_factor
+        info["base_sell"] = 0.0 if mode == MODE_SELLS else nominal_sell * sell_factor
+        # The stock the city wants. A city's data may say it ("Target"); otherwise it is the stock it
+        # starts with, or half its capacity if it starts with none (a city that only buys, like a
+        # foundry's iron ore). It is saved with the city, so it stays the same as the stock changes.
+        if data.has("Target"):
+            info["target"] = maxi(int(data["Target"]), 0)
+        else:
+            info["target"] = qty if qty > 0 else info["max_capacity"] / 2
+            GameState.set_city_target(city_name, resource_name, info["target"])
     
     # read wagons
     wagons.clear()
@@ -122,7 +134,10 @@ func initialize_resource(resource_name: String, qty: int, buy_price: int, sell_p
         "buy_price": buy_price,
         "sell_price": sell_price,
         "max_capacity": maxi(max_capacity, qty), # the initial stock always fits
-        "mode": mode
+        "mode": mode,
+        "base_buy": float(buy_price),
+        "base_sell": float(sell_price),
+        "target": qty,
     }
 #endregion
 
@@ -167,6 +182,21 @@ func get_buy_price(resource_name: String) -> int:
 
 func get_sell_price(resource_name: String) -> int:
     return resources.get(resource_name, {}).get("sell_price", 0)
+
+
+# The stock the city wants of it, and how many units short it is (0 when it has enough)
+func get_target(resource_name: String) -> int:
+    return resources.get(resource_name, {}).get("target", 0)
+
+func get_demand(resource_name: String) -> int:
+    return maxi(get_target(resource_name) - get_available_qty(resource_name), 0)
+
+# The prices when the stock is the target (see the header)
+func get_base_buy_price(resource_name: String) -> float:
+    return resources.get(resource_name, {}).get("base_buy", 0.0)
+
+func get_base_sell_price(resource_name: String) -> float:
+    return resources.get(resource_name, {}).get("base_sell", 0.0)
 
 
 # Free space for this resource (was get_storage_capacity)
@@ -232,6 +262,19 @@ func _read_amounts(data: Dictionary, recipe_name: String) -> Dictionary:
             return {}
         result[resource_name] = qty
     return result
+
+# The CityEconomyManager says what the player pays and gets now. Prices are derived from the stock,
+# so they are not saved. Returns true if something changed.
+func set_prices(resource_name: String, buy_price: int, sell_price: int) -> bool:
+    if not resources.has(resource_name):
+        return false
+    var info: Dictionary = resources[resource_name]
+    if info["buy_price"] == buy_price and info["sell_price"] == sell_price:
+        return false
+    info["buy_price"] = buy_price
+    info["sell_price"] = sell_price
+    city_prices_changed.emit(resource_name)
+    return true
 
 # Adds units to the city's stock. Returns false, changing nothing, if it doesn't fit.
 func add_resource_amount(resource_name: String, qty: int) -> bool:

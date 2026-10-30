@@ -58,6 +58,11 @@ func set_qty(qty: int) -> void:
     qty_label.text = str(qty)
 
 
+# The price changed while the menu is open (the economy reacts to every trade)
+func set_price(price: int) -> void:
+    price_label.text = str(price)
+
+
 func set_can_sell(value: bool) -> void:
     sell1_button.disabled = not value
 

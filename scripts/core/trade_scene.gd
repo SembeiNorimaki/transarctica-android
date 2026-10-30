@@ -10,6 +10,7 @@ signal menu_requested
 @onready var trade_wagon_manager: TradeWagonManager = $Managers/TradeWagonManager
 @onready var wagon_reorder_controller: WagonReorderController = $Managers/WagonReorderController
 @onready var trade_unit_manager: TradeUnitManager = $Managers/TradeUnitManager
+@onready var city_economy_manager: CityEconomyManager = $Managers/CityEconomyManager
 
 # Services
 @onready var camera_service: CameraService = $Services/CameraService
@@ -90,6 +91,7 @@ func _ready() -> void:
     city_inventory.city_resource_amount_changed.connect(_on_city_resource_amount_changed)
     city_inventory.city_wagon_amount_changed.connect(_on_city_wagon_amount_changed)
     city_inventory.city_recruit_amount_changed.connect(_on_city_recruit_amount_changed)
+    city_inventory.city_prices_changed.connect(_on_city_prices_changed)
     
     train_inventory.wagon_resource_amount_changed.connect(_on_wagon_resource_amount_changed)
     train_inventory.wagon_added.connect(_on_wagon_added)
@@ -178,6 +180,7 @@ func _load_train() -> void:
 func _load_city_resources() -> void:
     if not city_inventory.load_from_game_state(city_name):
         return
+    city_economy_manager.setup(city_inventory) # the prices of today, before the resources show them
 
     for resource_name in city_inventory.get_resource_names():
         # The manager logs an error if the resource can't be created (no free slot, duplicate...)
@@ -290,6 +293,14 @@ func _update_all_wagon_prices() -> void:
 
 func _on_city_resource_amount_changed(resource_name: String, qty: int) -> void:
     trade_resource_manager.set_resource_qty(resource_name, qty)
+
+
+# The economy changed a price: the resource's label, and the sell price shown on the wagons
+func _on_city_prices_changed(resource_name: String) -> void:
+    var resource := trade_resource_manager.get_resource(resource_name)
+    if resource != null:
+        resource.set_prices(city_inventory.get_buy_price(resource_name), city_inventory.get_sell_price(resource_name))
+    _update_all_wagon_prices()
 
 
 func _on_wagon_resource_amount_changed(wagon_index: int, resource_name: String, qty: int) -> void:
