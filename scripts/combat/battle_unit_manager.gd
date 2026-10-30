@@ -25,6 +25,8 @@ var occupancy_service: TileOccupancyService
 var pathfinding_service: PathfindingService
 var vision_service: VisionService
 var cover_service: CoverService
+## Decides what orders are allowed (see TurnManager and RtsManager). Optional: without it, anything goes.
+var flow_manager: CombatFlowManager
 
 var soldiers: Array[Soldier] = []
 var selected: Soldier = null
@@ -90,6 +92,8 @@ func select(soldier: Soldier) -> void:
 ## the selected soldier; an empty tile is where the selected soldier walks.
 func handle_tile_tap(tile: Vector2i) -> void:
     var tapped := occupancy_service.get_first_at(tile, TileOccupancyService.LAYER_UNIT) as Soldier
+    if tapped != null and not tapped.visible:
+        tapped = null # hidden in the fog: the player doesn't know it is there
     if tapped != null:
         if tapped.team == player_team:
             select(null if tapped == selected else tapped)
@@ -99,28 +103,43 @@ func handle_tile_tap(tile: Vector2i) -> void:
         command_move(selected, tile)
 
 func command_move(soldier: Soldier, tile: Vector2i) -> bool:
-    var path := pathfinding_service.find_path(soldier.tile, tile, _profile_of(soldier))
+    if not _may_command(soldier):
+        return false
+    var path := pathfinding_service.find_path(soldier.tile, tile, get_profile(soldier))
     if path.size() < 2:
         soldier.show_event("no path")
         return false
+    if flow_manager != null:
+        var allowed := flow_manager.limit_move(soldier, path)
+        if allowed.size() < 2:
+            flow_manager.refuse(soldier, "no AP")
+            return false
+        path = allowed # the flow may let it walk only part of the way
     soldier.order_move(path)
     return true
 
 ## Shoots from where it stands if the target is in range and in sight, otherwise walks towards the
 ## target until it is, then shoots.
 func command_attack(soldier: Soldier, target: Soldier) -> bool:
-    if target.team == soldier.team or not target.is_alive():
+    if target.team == soldier.team or not target.is_alive() or not _may_command(soldier):
         return false
     if can_shoot(soldier, soldier.tile, target):
+        if flow_manager != null and not flow_manager.can_attack(soldier):
+            flow_manager.refuse(soldier, "no AP")
+            return false
         soldier.order_attack(target)
         return true
-    var profile := _profile_of(soldier)
+    var profile := get_profile(soldier)
     profile.goal_may_be_occupied = true
     var path := pathfinding_service.find_path(soldier.tile, target.tile, profile)
+    profile.goal_may_be_occupied = false
     for i in path.size():
         if can_shoot(soldier, path[i], target):
             var walk: Array[Vector2i] = []
             walk.assign(path.slice(0, i + 1))
+            if flow_manager != null and not flow_manager.can_attack(soldier, flow_manager.get_move_cost(soldier, walk)):
+                flow_manager.refuse(soldier, "no AP")
+                return false
             soldier.order_move(walk, target)
             return true
     soldier.show_event("can't reach")
@@ -134,15 +153,24 @@ func can_shoot(soldier: Soldier, from_tile: Vector2i, target: Soldier) -> bool:
 #endregion
 
 
-func _profile_of(soldier: Soldier) -> MoveProfile:
+## The movement rules of this soldier (it never blocks itself).
+func get_profile(soldier: Soldier) -> MoveProfile:
     if not _profiles.has(soldier):
         var profile := MoveProfile.new()
         profile.ignore = soldier
         _profiles[soldier] = profile
     return _profiles[soldier]
 
+func _may_command(soldier: Soldier) -> bool:
+    if not soldier.is_alive():
+        return false
+    if flow_manager != null and not flow_manager.can_command(soldier):
+        flow_manager.refuse(soldier, "not now")
+        return false
+    return true
+
 func _can_soldier_step(soldier: Soldier, from: Vector2i, to: Vector2i) -> bool:
-    return pathfinding_service.can_step(from, to, _profile_of(soldier))
+    return pathfinding_service.can_step(from, to, get_profile(soldier))
 
 func _on_step_started(soldier: Soldier, _from: Vector2i, to: Vector2i) -> void:
     occupancy_service.move(soldier, to)

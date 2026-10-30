@@ -10,6 +10,7 @@ class_name Soldier
 
 signal clicked(soldier: Soldier)
 signal action_changed(soldier: Soldier, action: StringName)
+signal facing_changed(soldier: Soldier)
 signal step_started(soldier: Soldier, from_tile: Vector2i, to_tile: Vector2i)
 signal step_finished(soldier: Soldier, tile: Vector2i)
 signal attack_fired(soldier: Soldier, target: Soldier)
@@ -44,6 +45,10 @@ var weapon_type := ""
 var move_speed := 3.0 # tiles per second
 var view_range := 8 # tiles
 var view_angle := 120.0 # degrees
+var max_action_points := 8.0
+## Action points left this turn. Only used (and shown) in turn based combat: see TurnManager.
+var action_points := 0.0
+var show_action_points := false
 
 var tile := Vector2i.ZERO # the tile it stands on, or is walking to
 var facing := "N" # one of GridService.ORIENTATIONS
@@ -85,6 +90,7 @@ func setup(id: String, data: Dictionary) -> void:
         move_speed = float(stats["move_speed"])
         view_range = int(stats["view_range"])
         view_angle = float(stats["view_angle"])
+        max_action_points = float(stats["max_ap"])
     if is_node_ready():
         _update_color()
         refresh_labels()
@@ -106,6 +112,7 @@ func face(orientation: String) -> void:
     if sprite != null:
         sprite.play(StringName(facing))
     refresh_labels()
+    facing_changed.emit(self)
 
 func face_towards(target_tile: Vector2i) -> void:
     face(grid_service.get_orientation(tile, target_tile))
@@ -144,6 +151,27 @@ func order_stop() -> void:
 
 
 #region status
+## The tiles it is going to walk, in order, from the one it is walking to now. Empty if it is not moving.
+func get_path_ahead() -> Array[Vector2i]:
+    if state_machine != null and state_machine.current_state is UnitMoveState:
+        return (state_machine.current_state as UnitMoveState).get_path_ahead()
+    return []
+
+## Who it is going to shoot, or is shooting. null if nobody.
+func get_attack_target() -> Soldier:
+    if state_machine == null:
+        return null
+    if state_machine.current_state is UnitMoveState:
+        return (state_machine.current_state as UnitMoveState).get_target()
+    if state_machine.current_state is UnitAttackState:
+        return (state_machine.current_state as UnitAttackState).get_target()
+    return null
+
+func set_action_points(value: float, show := true) -> void:
+    action_points = value
+    show_action_points = show
+    refresh_labels()
+
 func is_alive() -> bool:
     return hp > 0
 
@@ -189,6 +217,8 @@ func refresh_labels() -> void:
     if state_machine != null and state_machine.current_state is UnitState:
         state_text = (state_machine.current_state as UnitState).describe()
     status_label.text = "%s | %s | %s" % [state_text, tile, facing]
+    if show_action_points:
+        status_label.text += " | AP %.1f/%.1f" % [action_points, max_action_points]
 
 ## A short message above the soldier that fades away ("-20", "blocked"...).
 func show_event(text: String) -> void:

@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://yvhnjp5tolj6" path="res://scripts/combat/combat_map.gd" id="script"]
+[ext_resource type="TileSet" path="res://assets/combat/combat_fog.tres" id="ts_fog"]
 [ext_resource type="TileSet" path="res://assets/combat/combat_ground.tres" id="ts_ground"]
 [ext_resource type="TileSet" path="res://assets/combat/combat_objects.tres" id="ts_objects"]
 [ext_resource type="TileSet" path="res://assets/combat/combat_walls_se.tres" id="ts_se"]
@@ -35,3 +36,7 @@ tile_set = ExtResource("ts_objects")
 z_index = -5
 tile_map_data = PackedByteArray("AAABAAEAAAABAAAAAAACAAEAAAAAAAAAAAABAAIAAAACAAAAAAAOAAoAAAAEAAAAAAANAAoAAAADAAAAAAAOAAkAAAADAAAAAAA=")
 tile_set = ExtResource("ts_spawns")
+
+[node name="Fog" type="TileMapLayer" parent="."]
+z_index = 20
+tile_set = ExtResource("ts_fog")

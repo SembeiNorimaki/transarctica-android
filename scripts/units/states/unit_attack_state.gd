@@ -42,5 +42,9 @@ func update(delta: float) -> void:
         change_to(&"IdleState")
 
 
+func get_target() -> Soldier:
+    return _target if is_instance_valid(_target) else null
+
+
 func describe() -> String:
     return "ATTACKING %s" % (_target.unit_id if is_instance_valid(_target) else "-")

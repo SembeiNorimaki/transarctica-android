@@ -21,6 +21,7 @@ func _run() -> void:
     _test_vision()
     _test_cover()
     _test_pathfinding()
+    _test_visibility()
     print("%d checks, %d failed" % [_checks, _failed])
     print("ALL PASSED" if _failed == 0 else "FAILED")
     quit(1 if _failed > 0 else 0)
@@ -414,3 +415,47 @@ func _test_pathfinding() -> void:
     for n in [mover, enemy, wall_unit, house]:
         n.free()
     _free_world(w)
+
+
+func _test_visibility() -> void:
+    var v := VisibilityService.new()
+    var events := []
+    v.visibility_changed.connect(func(team: String, shown: Array[Vector2i], hidden: Array[Vector2i]) -> void: events.append([team, shown.size(), hidden.size()]))
+    var explored_events := []
+    v.tiles_explored.connect(func(team: String, tiles: Array[Vector2i]) -> void: explored_events.append([team, tiles.size()]))
+    var a := Node.new()
+    var b := Node.new()
+    var enemy := Node.new()
+    var area_a: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)]
+    var area_b: Array[Vector2i] = [Vector2i(2, 0), Vector2i(3, 0)]
+    eq(v.get_state("red", Vector2i(0, 0)), VisibilityService.State.UNEXPLORED, "unexplored at first")
+    v.set_viewer(a, "red", area_a)
+    eq(v.get_state("red", Vector2i(1, 0)), VisibilityService.State.VISIBLE, "visible")
+    eq(events[0], ["red", 3, 0], "three tiles shown")
+    eq(explored_events[0], ["red", 3], "three tiles explored")
+    v.set_viewer(b, "red", area_b)
+    eq(events[1], ["red", 1, 0], "only the new tile is shown")
+    v.set_viewer(a, "red", [Vector2i(0, 0)] as Array[Vector2i])
+    eq(events[2], ["red", 0, 1], "tile 1,0 hidden; tile 2,0 still seen by b")
+    ok(v.is_visible("red", Vector2i(2, 0)), "a tile seen by someone else stays visible")
+    eq(v.get_state("red", Vector2i(1, 0)), VisibilityService.State.EXPLORED, "hidden after being seen: explored")
+    ok(v.is_explored("red", Vector2i(1, 0)) and not v.is_visible("red", Vector2i(1, 0)), "explored not visible")
+    var explored_before := explored_events.size()
+    v.set_viewer(a, "red", area_a)
+    eq(explored_events.size(), explored_before, "seeing explored tiles again is not exploring")
+    v.remove_viewer(b)
+    ok(v.is_visible("red", Vector2i(2, 0)), "still seen by a")
+    ok(not v.is_visible("red", Vector2i(3, 0)) and v.is_explored("red", Vector2i(3, 0)), "b's own tile fell back to explored")
+    # teams are separate
+    v.set_viewer(enemy, "blue", [Vector2i(0, 0)] as Array[Vector2i])
+    ok(v.is_visible("blue", Vector2i(0, 0)) and not v.is_visible("blue", Vector2i(1, 0)), "blue sees its own tile only")
+    eq(v.get_visible_tiles("red").size(), 3, "red visible list")
+    eq(v.get_explored_tiles("red").size(), 4, "red explored list")
+    # a viewer changing team
+    v.set_viewer(enemy, "red", [Vector2i(9, 9)] as Array[Vector2i])
+    ok(not v.is_visible("blue", Vector2i(0, 0)) and v.is_visible("red", Vector2i(9, 9)), "viewer moved to another team")
+    v.clear()
+    ok(not v.is_visible("red", Vector2i(0, 0)) and not v.is_explored("red", Vector2i(0, 0)), "clear forgets everything")
+    ok(not v.has_viewer(a), "no viewers after clear")
+    for n in [a, b, enemy, v]:
+        n.free()

@@ -55,6 +55,26 @@ func update(delta: float) -> void:
         _next()
 
 
+## The tiles still to walk, from the one being walked to now (a new order not started yet included).
+func get_path_ahead() -> Array[Vector2i]:
+    var result: Array[Vector2i] = []
+    if _index < _path.size():
+        result.append(_path[_index])
+    if not _pending.is_empty():
+        var pending: Array[Vector2i] = _pending["path"]
+        for i in range(1, pending.size()):
+            result.append(pending[i])
+    else:
+        for i in range(_index + 1, _path.size()):
+            result.append(_path[i])
+    return result
+
+## Who is attacked on arrival, or null.
+func get_target() -> Soldier:
+    var target: Soldier = _pending["then_attack"] if not _pending.is_empty() else _then_attack
+    return target if is_instance_valid(target) else null
+
+
 func describe() -> String:
     if _index < _path.size():
         return "MOVING -> %s" % _path[-1]

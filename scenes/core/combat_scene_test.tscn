@@ -8,9 +8,13 @@
 [ext_resource type="Script" uid="uid://bqkksgi08vhf6" path="res://scripts/grid/vision_service.gd" id="VisionService"]
 [ext_resource type="Script" uid="uid://cqxlrn2lj1pir" path="res://scripts/grid/pathfinding_service.gd" id="PathfindingService"]
 [ext_resource type="Script" uid="uid://crg30p3nruyu2" path="res://scripts/grid/cover_service.gd" id="CoverService"]
+[ext_resource type="Script" uid="None" path="res://scripts/grid/visibility_service.gd" id="VisibilityService"]
 [ext_resource type="Script" uid="uid://s6yx8u7k8xa8" path="res://scripts/combat/combat_map_manager.gd" id="CombatMapManager"]
 [ext_resource type="Script" uid="uid://jhc8oe407f01" path="res://scripts/combat/battle_unit_manager.gd" id="BattleUnitManager"]
 [ext_resource type="Script" uid="uid://dtcatxttwgnl" path="res://scripts/combat/combat_input_manager.gd" id="CombatInputManager"]
+[ext_resource type="Script" uid="None" path="res://scripts/combat/fog_manager.gd" id="FogManager"]
+[ext_resource type="Script" uid="None" path="res://scripts/combat/turn_manager.gd" id="TurnManager"]
+[ext_resource type="Script" uid="None" path="res://scripts/combat/path_overlay.gd" id="PathOverlay"]
 [ext_resource type="PackedScene" uid="uid://dodp70bgkluj6" path="res://scenes/services/camera_service.tscn" id="camera"]
 [ext_resource type="PackedScene" path="res://scenes/maps/combat_map.tscn" id="map"]
 
@@ -40,6 +44,9 @@ script = ExtResource("PathfindingService")
 [node name="CoverService" type="Node" parent="Services"]
 script = ExtResource("CoverService")
 
+[node name="VisibilityService" type="Node" parent="Services"]
+script = ExtResource("VisibilityService")
+
 [node name="CameraService" parent="Services" instance=ExtResource("camera")]
 initial_zoom = 2.0
 
@@ -54,10 +61,22 @@ script = ExtResource("BattleUnitManager")
 [node name="CombatInputManager" type="Node" parent="Managers"]
 script = ExtResource("CombatInputManager")
 
+[node name="FogManager" type="Node" parent="Managers"]
+script = ExtResource("FogManager")
+
+[node name="TurnManager" type="Node" parent="Managers"]
+script = ExtResource("TurnManager")
+
 [node name="CombatMap" parent="." instance=ExtResource("map")]
 
 [node name="UnitContainer" type="Node2D" parent="CombatMap"]
 y_sort_enabled = true
+
+[node name="Overlays" type="Node2D" parent="CombatMap"]
+z_index = 10
+
+[node name="PathOverlay" type="Node2D" parent="CombatMap/Overlays"]
+script = ExtResource("PathOverlay")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
@@ -70,9 +89,38 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 18
 
-[node name="DoorsButton" type="Button" parent="HUD"]
+[node name="Buttons" type="HBoxContainer" parent="HUD"]
 offset_left = 16.0
 offset_top = 48.0
-offset_right = 176.0
+offset_right = 900.0
 offset_bottom = 92.0
-text = "Open / close doors"
+
+[node name="DoorsButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Doors"
+
+[node name="FogButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Fog"
+
+[node name="PathsButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "All paths"
+
+[node name="EndTurnButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "End turn"
+
+[node name="PauseButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Pause"
+
+[node name="ModeLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 100.0
+offset_right = 900.0
+offset_bottom = 126.0
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 18

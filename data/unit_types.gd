@@ -19,7 +19,8 @@ const TYPES := {
 #   move_speed : tiles per second
 #   view_range : tiles
 #   view_angle : degrees, the width of the vision cone
-const DEFAULT_COMBAT := {"move_speed": 3.0, "view_range": 8, "view_angle": 120.0}
+#   max_ap     : action points per turn in turn based combat (a step on flat ground costs 1)
+const DEFAULT_COMBAT := {"move_speed": 3.0, "view_range": 8, "view_angle": 120.0, "max_ap": 8.0}
 
 
 static func combat_stats(unit_type: String) -> Dictionary:

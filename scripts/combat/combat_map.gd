@@ -7,6 +7,7 @@ class_name CombatMap
 #              painted on the SE side of the tile (custom data "edge_type", "edge_open")
 #   WallsSW  : the same between a tile and its y+1 neighbor, painted on the SW side
 #   Spawns   : markers where soldiers start (custom data "spawn_team", "spawn_type")
+#   Fog      : drawn by FogManager over everything (unexplored, explored; visible = no tile)
 # Each border between two tiles belongs to exactly one wall layer cell, so a tile can have walls on
 # all its sides. To put a wall on the NE or NW side of a tile, paint it in the neighbor.
 #
@@ -21,6 +22,7 @@ class_name CombatMap
 @onready var walls_se: TileMapLayer = $WallsSE
 @onready var walls_sw: TileMapLayer = $WallsSW
 @onready var spawns: TileMapLayer = $Spawns
+@onready var fog: TileMapLayer = $Fog
 
 # (edge_type, open) -> atlas coords in the wall tilesets, built once
 var _wall_tiles := {}

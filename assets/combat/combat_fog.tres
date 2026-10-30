@@ -1,0 +1,16 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tilesets/imgs/fow64.png" id="1_vt1cp"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_d3sqf"]
+texture = ExtResource("1_vt1cp")
+texture_region_size = Vector2i(64, 32)
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+
+[resource]
+tile_shape = 1
+tile_layout = 5
+tile_size = Vector2i(64, 32)
+sources/0 = SubResource("TileSetAtlasSource_d3sqf")
