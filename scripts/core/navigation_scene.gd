@@ -10,7 +10,8 @@ var is_loaded := false
 @onready var navigation_train_manager: NavigationTrainManager = $Managers/NavigationTrainManager
 @onready var cities_manager: CitiesManager = $Managers/CitiesManager
 @onready var fuel_manager: FuelManager = $Managers/FuelManager
-@onready var global_economy_manager: GlobalEconomyManager = $Managers/GlobalEconomyManager # days pass while travelling
+@onready var global_economy_manager: GlobalEconomyManager = $Managers/GlobalEconomyManager
+@onready var game_clock: GameClock = $Managers/GameClock # time passes on the map, not in a city or a fight
 
 # Services
 @onready var grid_service: GridService = $Services/GridService
@@ -132,6 +133,8 @@ func _wire_signals() -> void:
 
     rail_service.rail_changed.connect(_on_rail_changed)
     
+    game_clock.day_passed.connect(func(_day: int) -> void: global_economy_manager.run_day())
+
     hud.reverse_pressed.connect(navigation_train_manager.player_train_reverse)
     hud.gear_pressed.connect(navigation_train_manager.player_train_gear_toggle)
     hud.camera_follow_toggled.connect(navigation_train_manager.set_camera_follow)

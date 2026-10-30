@@ -52,9 +52,10 @@ var _quests_state := {}
 var _events_state := {} # map name -> {"x,y": true} for the events already done
 var _flags := {} # story flags set by events: name -> true
 # The world economy (see GlobalEconomyManager). Saved inside cities.json:
-#   {"day": int, "base": {resource: float}, "indices": {resource: float}, "shocks": [{resource, factor, days}]}
+#   {"base": {resource: float}, "indices": {resource: float}, "shocks": [{resource, factor, days}]}
 # "indices" is what the prices use: "base" (what the world's stock calls for) times the shocks.
 var _economy_state := {}
+var _game_minutes := 0 # the time of the game: minutes since 1 Jan 2100, 00:00 (see GameCalendar, GameClock)
 
 var current_slot := DEBUG_SLOT # the main menu will set this
 var campaign_id := Campaigns.DEFAULT_ID # the story being played. It is saved with the game
@@ -64,7 +65,8 @@ var campaign_id := Campaigns.DEFAULT_ID # the story being played. It is saved wi
 signal money_changed(money: int)
 signal player_wagon_added(index: int, wagon_data: Dictionary)
 signal player_cargo_changed
-signal economy_changed # the day or the price indices changed
+signal economy_changed # the price indices or shocks changed
+signal game_time_changed(minutes: int)
 signal game_saving # emitted before the state is written: scenes should flush their runtime state into GameState
 signal game_loaded # emitted after a load: scenes should rebuild themselves from GameState
 
@@ -254,13 +256,25 @@ func set_city_target(city_name: String, resource_name: String, target: int) -> b
     return true
 
 
+#region time
+func get_game_minutes() -> int:
+    return _game_minutes
+
+# Days since 1 Jan 2100
+func get_game_day() -> int:
+    return GameCalendar.day_of(_game_minutes)
+
+func add_game_minutes(delta: int) -> void:
+    if delta <= 0:
+        return
+    _game_minutes += delta
+    game_time_changed.emit(_game_minutes)
+#endregion
+
+
 #region economy
 func get_economy_day() -> int:
-    return int(_economy_state.get("day", 0))
-
-func set_economy_day(day: int) -> void:
-    _economy_state["day"] = maxi(day, 0)
-    economy_changed.emit()
+    return get_game_day()
 
 # What every price of this resource is multiplied by, in the whole world (1 = nothing special)
 func get_price_index(resource_name: String) -> float:
@@ -397,6 +411,7 @@ func start_new_game(slot: int, new_campaign_id := Campaigns.DEFAULT_ID) -> bool:
     _events_state = {}
     _flags = {}
     _economy_state = {}
+    _game_minutes = 0
     game_loaded.emit() # before money_changed, like in load_game
     money_changed.emit(_player_money)
     return true
@@ -496,6 +511,7 @@ func save_game(slot := -1) -> bool:
             "units": _units_state,
             "events": _events_state,
             "flags": _flags,
+            "game_minutes": _game_minutes,
         },
         FILE_ENEMIES: {"version": SAVE_VERSION, "enemies": _enemies_state},
         FILE_QUESTS: {"version": SAVE_VERSION, "quests": _quests_state},
@@ -578,6 +594,7 @@ func load_game(slot := -1) -> bool:
     _explored = player.get("explored", {})
     _events_state = player.get("events", {})
     _flags = player.get("flags", {})
+    _game_minutes = maxi(int(player.get("game_minutes", 0)), 0) # an older save starts on 1 Jan 2100
 
     if player.get("units") is Dictionary:
         _units_state = player["units"]
@@ -599,6 +616,7 @@ func load_game(slot := -1) -> bool:
 
     game_loaded.emit() # before money_changed, so quests are rebuilt before they react to the money
     money_changed.emit(_player_money)
+    game_time_changed.emit(_game_minutes)
     return true
 
 

@@ -312,42 +312,36 @@ func _test_save_data() -> void:
     world.add_shock("fish", 1.4, 9)
     # what save_game writes to cities.json comes back from JSON with floats for numbers
     var state: Dictionary = JSON.parse_string(JSON.stringify({
-        "day": GameState.get_economy_day(), "base": GameState.get_economy_base(),
+        "base": GameState.get_economy_base(),
         "indices": GameState.get_economy_effective(), "shocks": GameState.get_price_shocks()}))
     eq(GameState._validate_cities({"cities": {}, "city_ids": {}, "economy": state}), "", "a save with an economy is valid")
     eq(GameState._validate_cities({"cities": {}, "city_ids": {}}), "", "so is one from before the economy")
     ok(GameState._validate_cities({"cities": {}, "city_ids": {}, "economy": 3}) != "", "an economy that is not an object is refused")
-    var day := GameState.get_economy_day()
     var fish := GameState.get_price_index("fish")
     GameState._economy_state = state
-    eq(GameState.get_economy_day(), day, "the day survives a save")
     ok(is_equal_approx(GameState.get_price_index("fish"), fish), "so do the indices")
     eq(GameState.get_price_shocks().size(), 1, "and the shocks")
     world.advance_day() # the shock's days were floats in JSON
     eq(GameState.get_price_shocks()[0]["days"], 8, "a shock goes on counting after a load")
     GameState._economy_state = {}
-    eq(GameState.get_economy_day(), 0, "a game with no economy starts at day 0")
     eq(GameState.get_price_index("fish"), 1.0, "with every index at 1")
     world.free()
 
 
 func _test_timer() -> void:
+    # the GameClock's days make the economy live a day each, as the navigation scene wires them
     _fresh_game()
-    await get_tree().process_frame
-    get_tree().paused = false # a new game starts its quests, which pause the game on their dialog
     var world := GlobalEconomyManager.new()
-    world.seconds_per_day = 0.4
+    var clock := GameClock.new()
+    clock.enabled = false # moved by hand
     var days := []
-    world.day_passed.connect(func(d: int) -> void: days.append(d))
-    add_child(world)
-    await seconds(1.3)
-    ok(days.size() >= 2 and days[0] == 1 and days[1] == 2, "days pass with time (%s)" % [days])
-    world.enabled = false
-    var stopped := GameState.get_economy_day()
-    await seconds(0.9)
-    eq(GameState.get_economy_day(), stopped, "and stop when it is disabled")
-    world.queue_free()
-    await get_tree().process_frame
+    clock.day_passed.connect(func(d: int) -> void: days.append(d))
+    clock.day_passed.connect(func(_d: int) -> void: world.run_day())
+    clock.advance_minutes(GameCalendar.MINUTES_PER_DAY * 2 + 5)
+    eq(days, [1, 2], "two midnights, two economy days")
+    eq(world.get_day(), 2, "the economy is on day 2")
+    clock.free()
+    world.free()
 
 
 func _test_trade_scene() -> void:

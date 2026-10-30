@@ -1,8 +1,8 @@
 extends Node
 class_name GlobalEconomyManager
-# The economy of the whole world. It lives in the navigation scene, so time passes while the player
-# travels (and not in a city or a fight, where that scene is suspended). It:
-#   - counts the days: one every `seconds_per_day` of travel (or advance_day() by hand)
+# The economy of the whole world. It lives in the navigation scene, next to the GameClock, which
+# calls run_day() at every midnight (so no day passes in a city or a fight, where that scene is
+# suspended). A day, for the economy, is a day of the game's calendar. It:
 #   - makes every city live a day (CityEconomyManager.daily_update), so their stocks and prices
 #     move even where the player is not
 #   - keeps one price index per resource, which multiplies its price in every city: it follows
@@ -13,30 +13,16 @@ class_name GlobalEconomyManager
 #
 # The data lives in GameState (saved with the game); this node only runs the rules.
 
-signal day_passed(day: int)
+signal day_passed(day: int) # the economy has lived that day
 signal indices_changed
 
 @export var enabled := true
-## Seconds of travel in a day. 0 or less: days only pass with advance_day().
-@export var seconds_per_day := 60.0
 ## Passed to every CityEconomyManager.
 @export_range(0.0, 1.0) var city_recovery_rate := 0.1
 ## Part of the way to what the world's stock calls for that the base index moves each day.
 @export_range(0.0, 1.0) var index_follow_rate := 0.2
 ## Random change of the base index each day (a fraction of its value, either way).
 @export_range(0.0, 0.2) var noise := 0.02
-
-var _elapsed := 0.0
-
-
-func _process(delta: float) -> void:
-    if not enabled or seconds_per_day <= 0.0:
-        return
-    _elapsed += delta
-    while _elapsed >= seconds_per_day:
-        _elapsed -= seconds_per_day
-        advance_day()
-
 
 func get_day() -> int:
     return GameState.get_economy_day()
@@ -49,8 +35,14 @@ func advance_days(count: int) -> void:
     for i in count:
         advance_day()
 
+# A day of the calendar passes, and the economy lives it (for tests and for the game's own use:
+# the clock calls run_day() instead, as it moves the time itself)
 func advance_day() -> void:
-    GameState.set_economy_day(GameState.get_economy_day() + 1)
+    GameState.add_game_minutes(GameCalendar.MINUTES_PER_DAY)
+    run_day()
+
+# The economy lives one day: the cities, the world indices, the shocks
+func run_day() -> void:
     var totals := _cities_live_a_day()
     _update_base_indices(totals)
     _tick_shocks()

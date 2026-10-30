@@ -25,6 +25,14 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 24
 
+[node name="DateLabel" type="Label" parent="HBoxContainer"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_phfas")
+theme_override_font_sizes/font_size = 32
+text = "1 jan 2100, 00h00"
+vertical_alignment = 1
+
 [node name="Spacer" type="Control" parent="HBoxContainer" unique_id=1629634289]
 layout_mode = 2
 size_flags_horizontal = 3
