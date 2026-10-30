@@ -5,7 +5,7 @@ class_name CombatScene3
 # soldiers. They start aboard: the player lets them off by tapping them in the barracks menu, the
 # enemy's are managed by the AI (see CombatAI, TrainAI and UnitAI).
 #
-# Everything is a node of the scene file. Like in CombatSceneTest, the Managers node has exactly one
+# Real time by default. Like in CombatSceneTest, the Managers node has exactly one
 # TurnManager (turn based) or RtsManager (real time). The AI plays either way.
 #
 # Controls, besides those of CombatSceneBase: tap a soldier in the barracks menu to get it off the

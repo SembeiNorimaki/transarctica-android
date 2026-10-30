@@ -1,6 +1,6 @@
 extends Node
 # Headless test of CombatScene3: a square (and an isometric) map with two trains, deploying and
-# boarding soldiers, 8 direction movement, and the AIs (CombatAI, TrainAI, UnitAI) in turn based
+# boarding soldiers, 8 direction movement, and the AIs (CombatAI, TrainAI, UnitAI) in turn based or real time
 # and real time combat.
 # It is a scene (not a -s script) because the scenes it tests use autoloads, which only exist
 # when the project runs a scene.
@@ -47,15 +47,14 @@ func _new_scene(rts: bool, ai: bool, iso := false) -> void:
         await get_tree().process_frame
     var s: CombatScene3 = load("res://scenes/core/combat_scene3.tscn").instantiate()
     var managers := s.get_node("Managers")
-    if rts:
-        var turn_manager := managers.get_node("TurnManager")
-        managers.remove_child(turn_manager)
-        turn_manager.free()
-        var rts_manager := RtsManager.new()
-        rts_manager.name = "RtsManager"
-        managers.add_child(rts_manager)
-    else:
-        (managers.get_node("TurnManager") as TurnManager).auto_pass_computer_turns = not ai
+    if not rts: # the scene is real time: swap its RtsManager for a TurnManager
+        var rts_manager := managers.get_node("RtsManager")
+        managers.remove_child(rts_manager)
+        rts_manager.free()
+        var turn_manager := TurnManager.new()
+        turn_manager.name = "TurnManager"
+        turn_manager.auto_pass_computer_turns = not ai
+        managers.add_child(turn_manager)
     s.get_node("AI/CombatAI").enabled = ai
     if iso:
         _make_iso(s)
@@ -129,9 +128,9 @@ func _test_loading() -> void:
     await _new_scene(false, false)
     var g := scene.grid_service
     eq(g.projection, GridService.TileProjection.CARTESIAN, "the map is square")
-    eq(g.tile_size, Vector2i(64, 64), "square tiles")
+    eq(g.tile_size, Vector2i(32, 32), "square tiles")
     eq(g.map_rect, Rect2i(0, 0, 24, 12), "map rect")
-    eq(g.tile_center_offset, Vector2(32, 32), "origin offset of a square map")
+    eq(g.tile_center_offset, Vector2(16, 16), "origin offset of a square map")
     for tile in [Vector2i(0, 0), Vector2i(5, 3), Vector2i(23, 11), Vector2i(9, 7)]:
         eq(g.tile_to_world(Vector2(tile)), scene.combat_map.ground.map_to_local(tile), "tile %s is where the map draws it" % tile)
         eq(g.world_to_tile(scene.combat_map.ground.map_to_local(tile)), tile, "and back")
@@ -158,7 +157,9 @@ func _test_loading() -> void:
     eq(enemy_door, Vector2i(15, 0), "the enemy's door is in front of its barracks, top row")
     eq(scene.deployment_manager.get_entry_facing(PLAYER), "N", "player soldiers face the map")
     eq(scene.deployment_manager.get_entry_facing(ENEMY), "S", "enemy soldiers face the map")
-    ok(scene.flow_manager is TurnManager, "turn based by default")
+    var raw: Node = load("res://scenes/core/combat_scene3.tscn").instantiate()
+    ok(raw.get_node("Managers").get_child_count() > 0 and raw.get_node_or_null("Managers/RtsManager") != null and raw.get_node_or_null("Managers/TurnManager") == null, "real time by default (the scene has an RtsManager)")
+    raw.free()
     ok(scene.barracks_menu.get_child_count() == BarracksMenu.SLOT_COUNT, "barracks menu has its slots")
     ok(not scene.outcome_label.visible, "no outcome yet")
     eq(scene.outcome, "", "battle goes on")
@@ -696,6 +697,6 @@ func _test_overlays() -> void:
     eq(g.get_tile_outline(Vector2i(2, 3)).size(), 5, "a tile outline is a closed polygon")
     ok(g.get_tile_outline(Vector2i(2, 3))[0] == g.get_tile_outline(Vector2i(2, 3))[4], "closed")
     var square := g.get_tile_outline(Vector2i(0, 0))
-    eq(square[1].x - square[0].x, 64.0, "a square tile is 64 wide")
+    eq(square[1].x - square[0].x, 32.0, "a square tile is 32 wide")
     scene.nav_graph_overlay.queue_redraw()
     await get_tree().process_frame

@@ -13,7 +13,7 @@
 [ext_resource type="Script" uid="uid://jhc8oe407f01" path="res://scripts/combat/battle_unit_manager.gd" id="BattleUnitManager"]
 [ext_resource type="Script" uid="uid://dtcatxttwgnl" path="res://scripts/combat/combat_input_manager.gd" id="CombatInputManager"]
 [ext_resource type="Script" uid="uid://cuvyu7tv21dsq" path="res://scripts/combat/fog_manager.gd" id="FogManager"]
-[ext_resource type="Script" uid="uid://b5dwo7ch7xvbo" path="res://scripts/combat/turn_manager.gd" id="TurnManager"]
+[ext_resource type="Script" uid="uid://dtqnwe3qg1p0p" path="res://scripts/combat/rts_manager.gd" id="RtsManager"]
 [ext_resource type="Script" uid="uid://de376lmpw5tq3" path="res://scripts/combat/path_overlay.gd" id="PathOverlay"]
 [ext_resource type="PackedScene" uid="uid://dodp70bgkluj6" path="res://scenes/services/camera_service.tscn" id="camera"]
 [ext_resource type="PackedScene" path="res://scenes/maps/combat_map_square.tscn" id="map"]
@@ -73,9 +73,8 @@ script = ExtResource("CombatInputManager")
 [node name="FogManager" type="Node" parent="Managers"]
 script = ExtResource("FogManager")
 
-[node name="TurnManager" type="Node" parent="Managers"]
-script = ExtResource("TurnManager")
-auto_pass_computer_turns = false
+[node name="RtsManager" type="Node" parent="Managers"]
+script = ExtResource("RtsManager")
 
 [node name="DeploymentManager" type="Node" parent="Managers"]
 script = ExtResource("DeploymentManager")
@@ -107,10 +106,10 @@ script = ExtResource("NavGraphOverlay")
 [node name="TrainContainer" type="Node2D" parent="."]
 
 [node name="PlayerTrain" parent="TrainContainer" instance=ExtResource("train")]
-position = Vector2(700, 866)
+position = Vector2(492, 482)
 
 [node name="EnemyTrain" parent="TrainContainer" instance=ExtResource("train")]
-position = Vector2(1300, -36)
+position = Vector2(804, -36)
 
 [node name="AI" type="Node" parent="."]
 
