@@ -80,15 +80,22 @@ func get_line(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 ## Can `from` see `to`? Walls, doors, terrain and entities in between are checked; the two end
 ## tiles never block themselves. Does not look at range or facing.
 func has_line_of_sight(from: Vector2i, to: Vector2i) -> bool:
+    return get_line_block_index(from, to) == -1
+
+## Where the line of sight from `from` to `to` is cut: the index, in get_line(from, to), of the
+## first tile that is NOT seen. -1 if the whole line is seen. Walking the line, a wall (or a door,
+## window...) between two tiles hides the tile behind it; a blocking tile is seen itself, but hides
+## the ones after it. For debugging overlays: has_line_of_sight is this == -1.
+func get_line_block_index(from: Vector2i, to: Vector2i) -> int:
     if from == to:
-        return true
+        return -1
     var line := get_line(from, to)
     for i in range(1, line.size()):
-        if i < line.size() - 1 and _tile_blocks_vision(line[i]):
-            return false
         if edge_service != null and edge_service.is_view_blocked(line[i - 1], line[i]):
-            return false
-    return true
+            return i
+        if i < line.size() - 1 and _tile_blocks_vision(line[i]):
+            return i + 1
+    return -1
 
 ## Tiles a unit at `origin` sees: inside the cone, inside the map, with line of sight.
 func get_visible_tiles(origin: Vector2i, orientation: String, view_angle: float, view_range: int) -> Array[Vector2i]:

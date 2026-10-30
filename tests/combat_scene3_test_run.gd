@@ -62,7 +62,6 @@ func _new_scene(rts: bool, ai: bool, iso := false) -> void:
     get_tree().root.add_child(s)
     await get_tree().process_frame
     await get_tree().process_frame
-    get_tree().paused = false # the campaign's first quest dialog (an autoload) pauses the game on the first frame
     scene = s
 
 # The painted cells of the square map, with the isometric tile sets (the tiles are in the same order)
@@ -76,7 +75,13 @@ func _speed(value: float) -> void:
     (scene.flow_manager as RtsManager).game_speed = value
 
 
+# QuestManager asks the running scene for this (a test is the scene here): no quests are loaded
+func skips_quests_when_debugging() -> bool:
+    return true
+
+
 func _run() -> void:
+    await _test_quests_skipped()
     await _test_loading()
     await _test_deploy_and_move()
     await _test_boarding()
@@ -88,6 +93,7 @@ func _run() -> void:
     await _test_combat_ai_turns()
     await _test_retreat_and_flee()
     await _test_isometric()
+    await _test_overlays()
     await _test_modes_and_errors()
     print("%d checks, %d failed" % [_checks, _failed])
     print("ALL PASSED" if _failed == 0 else "FAILED")
@@ -569,3 +575,111 @@ func _test_modes_and_errors() -> void:
     ok(scene.end_turn_button.visible == false and scene.pause_button.visible, "real time HUD")
     ok(scene.deployment_manager.deploy("nobody", "x") == null, "an unknown team can't deploy")
     ok(scene.deployment_manager.get_aboard("nobody").is_empty(), "and has nobody aboard")
+
+
+func _test_quests_skipped() -> void:
+    # The first frames of the game: a debug scene must not get a quest dialog that pauses it
+    for i in 5:
+        await get_tree().process_frame
+    ok(not get_tree().paused, "the game is not paused by a quest dialog")
+    ok(QuestManager.active_quests.is_empty() and QuestManager.offered_quests.is_empty(), "no quest was loaded or offered")
+
+
+func _test_overlays() -> void:
+    await _new_scene(false, false)
+    var g := scene.grid_service
+    ok(scene.vision_overlay is VisionOverlay and scene.nav_graph_overlay is NavGraphOverlay, "both overlays are in the scene")
+    ok(not scene.vision_overlay.visible and not scene.nav_graph_overlay.visible, "hidden until asked for")
+    scene.sight_button.pressed.emit()
+    scene.graph_button.pressed.emit()
+    ok(scene.vision_overlay.visible and scene.nav_graph_overlay.visible, "the buttons show them")
+    scene.sight_button.pressed.emit()
+    ok(not scene.vision_overlay.visible, "and hide them")
+    scene.sight_button.pressed.emit()
+
+    # --- the navigation graph
+    var graph := scene.nav_graph_overlay
+    var ps := scene.pathfinding_service
+    var profile := MoveProfile.new()
+    profile.blocked_by = TileOccupancyService.LAYER_STRUCTURE | TileOccupancyService.LAYER_OBSTACLE
+    var inconsistent := 0
+    var asymmetric := 0
+    var nodes := 0
+    for y in 12:
+        for x in 24:
+            var a := Vector2i(x, y)
+            if not graph.get_connections(a).is_empty():
+                nodes += 1
+            for offset in GridService.NEIGHBORS_8:
+                var b := a + offset
+                var reason := ps.get_step_block_reason(a, b, profile)
+                if ps.can_step(a, b, profile) != (reason == ""):
+                    inconsistent += 1
+                if g.is_inside_map(b) and graph._is_node(a) and graph._is_node(b) \
+                        and ps.can_step(a, b, profile) != ps.can_step(b, a, profile):
+                    asymmetric += 1
+    eq(inconsistent, 0, "get_step_block_reason agrees with can_step on every step of the map")
+    eq(asymmetric, 0, "the graph is symmetric: if A connects to B, B connects to A")
+    ok(nodes > 200, "most tiles are nodes")
+    eq(graph.get_connections(Vector2i(19, 1)).size(), 8, "an open tile connects to its 8 neighbors")
+    eq(graph.get_connections(Vector2i(0, 0)).size(), 3, "a corner of the map has 3")
+    ok(graph.get_connections(Vector2i(10, 8)).is_empty(), "deep water is not a node")
+    ok(not graph.get_connections(Vector2i(5, 8)).has(Vector2i(6, 8)), "nobody connects to a rock")
+    ok(graph.get_connections(Vector2i(14, 3)).is_empty(), "a tile with a crate is not a node")
+    ok(not graph.get_connections(Vector2i(14, 2)).has(Vector2i(14, 3)), "and nobody connects to it")
+    eq(graph.get_missing_reason(Vector2i(13, 2), Vector2i(13, 1)), "wall", "a wall of the building cuts the connection")
+    ok(not graph.get_connections(Vector2i(13, 2)).has(Vector2i(13, 1)), "so it is not in the graph")
+    eq(graph.get_missing_reason(Vector2i(14, 1), Vector2i(14, 2)), "wall", "a window can't be walked through")
+    eq(graph.get_missing_reason(Vector2i(7, 8), Vector2i(8, 8)), "wall", "nor a fence")
+    eq(graph.get_missing_reason(Vector2i(15, 5), Vector2i(15, 4)), "wall", "a closed door is a wall")
+    eq(graph.get_missing_reason(Vector2i(12, 1), Vector2i(13, 2)), "wall", "a diagonal across the wall's corner is cut (wall)")
+    eq(graph.get_missing_reason(Vector2i(9, 5), Vector2i(10, 4)), "", "ground next to a rock is fine")
+    eq(graph.get_missing_reason(Vector2i(9, 4), Vector2i(8, 3)), "tile", "a rock is not a tile to enter")
+    eq(graph.get_missing_reason(Vector2i(9, 2), Vector2i(8, 3)), "tile", "(the rock again, from the other side)")
+    eq(graph.get_missing_reason(Vector2i(7, 4), Vector2i(8, 5)), "corner", "a diagonal past a rock cuts its corner")
+    ok(not graph.get_connections(Vector2i(7, 4)).has(Vector2i(8, 5)), "and is not in the graph")
+    scene.combat_map_manager.set_all_doors_open(true)
+    eq(graph.get_missing_reason(Vector2i(15, 5), Vector2i(15, 4)), "", "an open door joins the nodes")
+    ok(graph.get_connections(Vector2i(15, 4)).has(Vector2i(15, 5)), "and appears in the graph")
+    # soldiers are not part of the map's graph
+    var soldier := scene.deployment_manager.deploy(PLAYER, "p_u0")
+    ok(graph.get_connections(Vector2i(4, 10)).has(Vector2i(5, 11)), "a soldier standing on a tile doesn't remove it from the graph")
+    # the edge costs
+    ok(ps.step_cost(Vector2i(0, 0), Vector2i(1, 1), profile) > ps.step_cost(Vector2i(0, 0), Vector2i(1, 0), profile), "diagonals cost more")
+
+    # --- the sight lines
+    var vision := scene.vision_service
+    eq(vision.get_line_block_index(Vector2i(5, 5), Vector2i(5, 5)), -1, "a tile sees itself")
+    eq(vision.get_line_block_index(Vector2i(8, 0), Vector2i(8, 2)), -1, "open ground: the whole line is seen")
+    eq(vision.get_line_block_index(Vector2i(8, 0), Vector2i(8, 3)), -1, "the rock itself is seen")
+    eq(vision.get_line_block_index(Vector2i(8, 0), Vector2i(8, 5)), 4, "the line is cut right behind the rock")
+    eq(vision.get_line_block_index(Vector2i(13, 0), Vector2i(13, 3)), 2, "a wall cuts the line where it is crossed")
+    eq(vision.get_line_block_index(Vector2i(14, 0), Vector2i(14, 3)), -1, "a window lets the sight through")
+    scene.combat_map_manager.set_all_doors_open(false)
+    eq(vision.get_line_block_index(Vector2i(15, 6), Vector2i(15, 3)), 2, "a closed door hides the room")
+    scene.combat_map_manager.set_all_doors_open(true)
+    eq(vision.get_line_block_index(Vector2i(15, 6), Vector2i(15, 3)), -1, "an open door doesn't")
+    var mismatches := 0
+    for y in 12:
+        for x in 24:
+            var target := Vector2i(x, y)
+            if vision.has_line_of_sight(Vector2i(5, 5), target) != (vision.get_line_block_index(Vector2i(5, 5), target) == -1):
+                mismatches += 1
+            if vision.get_line_block_index(Vector2i(5, 5), target) >= vision.get_line(Vector2i(5, 5), target).size():
+                mismatches += 1
+    eq(mismatches, 0, "the block index agrees with has_line_of_sight and is inside the line")
+
+    # --- drawing: the overlays draw for a selected soldier without errors, for both outlines
+    scene.battle_unit_manager.select(soldier)
+    scene.vision_overlay.set_probe(Vector2i(5, 6))
+    await get_tree().process_frame
+    await get_tree().process_frame
+    ok(scene.vision_overlay.get_probe_text().begins_with("line of sight"), "the probe says what the line does")
+    scene.vision_overlay.set_probe(Vector2i(8, 5))
+    ok(scene.vision_overlay.get_probe_text() != "", "the probe has a text")
+    eq(g.get_tile_outline(Vector2i(2, 3)).size(), 5, "a tile outline is a closed polygon")
+    ok(g.get_tile_outline(Vector2i(2, 3))[0] == g.get_tile_outline(Vector2i(2, 3))[4], "closed")
+    var square := g.get_tile_outline(Vector2i(0, 0))
+    eq(square[1].x - square[0].x, 64.0, "a square tile is 64 wide")
+    scene.nav_graph_overlay.queue_redraw()
+    await get_tree().process_frame

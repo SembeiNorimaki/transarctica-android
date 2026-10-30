@@ -33,6 +33,8 @@ class_name CombatSceneBase
 @onready var combat_map: CombatMap = $CombatMap
 @onready var unit_container: Node2D = $CombatMap/UnitContainer
 @onready var path_overlay: PathOverlay = $CombatMap/Overlays/PathOverlay
+@onready var vision_overlay: VisionOverlay = $CombatMap/Overlays/VisionOverlay
+@onready var nav_graph_overlay: NavGraphOverlay = $CombatMap/Overlays/NavGraphOverlay
 
 # UI
 @onready var info_label: Label = $HUD/InfoLabel
@@ -40,6 +42,8 @@ class_name CombatSceneBase
 @onready var doors_button: Button = $HUD/Buttons/DoorsButton
 @onready var fog_button: Button = $HUD/Buttons/FogButton
 @onready var paths_button: Button = $HUD/Buttons/PathsButton
+@onready var sight_button: Button = $HUD/Buttons/SightButton
+@onready var graph_button: Button = $HUD/Buttons/GraphButton
 @onready var end_turn_button: Button = $HUD/Buttons/EndTurnButton
 @onready var pause_button: Button = $HUD/Buttons/PauseButton
 
@@ -47,7 +51,14 @@ class_name CombatSceneBase
 var flow_manager: CombatFlowManager
 
 
+## QuestManager asks (by the name of this method) when the scene runs on its own, for debugging:
+## a battle has no use for quests, so none are loaded and no quest dialog pauses the game.
+func skips_quests_when_debugging() -> bool:
+    return true
+
+
 func _ready() -> void:
+    _hide_quest_ui_when_standalone.call_deferred() # deferred: current_scene is set after _ready
     flow_manager = _find_flow_manager()
     _inject()
     combat_map_manager.setup()
@@ -67,6 +78,8 @@ func _ready() -> void:
     doors_button.pressed.connect(combat_map_manager.toggle_all_doors)
     fog_button.pressed.connect(func() -> void: fog_manager.enabled = not fog_manager.enabled)
     paths_button.pressed.connect(func() -> void: path_overlay.show_all_paths = not path_overlay.show_all_paths)
+    sight_button.pressed.connect(func() -> void: vision_overlay.visible = not vision_overlay.visible)
+    graph_button.pressed.connect(func() -> void: nav_graph_overlay.visible = not nav_graph_overlay.visible)
     end_turn_button.pressed.connect(_on_end_turn_pressed)
     pause_button.pressed.connect(_on_pause_pressed)
 
@@ -162,9 +175,32 @@ func _inject() -> void:
     path_overlay.grid_service = grid_service
     path_overlay.battle_unit_manager = battle_unit_manager
 
+    vision_overlay.grid_service = grid_service
+    vision_overlay.vision_service = vision_service
+    vision_overlay.battle_unit_manager = battle_unit_manager
+    vision_overlay.edge_service = edge_service
+    vision_overlay.awareness_range = fog_manager.awareness_range
+    vision_overlay.setup()
+
+    nav_graph_overlay.grid_service = grid_service
+    nav_graph_overlay.pathfinding_service = pathfinding_service
+    nav_graph_overlay.terrain_service = terrain_service
+    nav_graph_overlay.occupancy_service = occupancy_service
+    nav_graph_overlay.edge_service = edge_service
+    nav_graph_overlay.setup()
+
     combat_input_manager.grid_service = grid_service
     combat_input_manager.camera_service = camera_service
     combat_input_manager.world = combat_map
+
+
+# The quest list of the campaign is not wanted when the scene runs by itself
+func _hide_quest_ui_when_standalone() -> void:
+    if get_tree().current_scene != self:
+        return
+    var quest_ui := get_node_or_null("/root/QuestUI")
+    if quest_ui != null:
+        quest_ui.hide()
 
 
 #region HUD
@@ -190,6 +226,7 @@ func _on_pause_pressed() -> void:
 func _on_tile_hovered(tile: Vector2i) -> void:
     if not grid_service.is_inside_map(tile):
         return
+    vision_overlay.set_probe(tile)
     var text := "tile %s  %s (cost %s)" % [tile, terrain_service.get_type(tile), terrain_service.get_cost(tile)]
     var state: String = ["unexplored", "explored", "visible"][visibility_service.get_state(fog_manager.local_team, tile)]
     text += "  %s" % state
@@ -198,6 +235,8 @@ func _on_tile_hovered(tile: Vector2i) -> void:
             text += "  | %s" % object.type
         elif (object as Soldier).visible:
             text += "  | %s" % (object as Soldier).unit_id
+    if vision_overlay.visible and vision_overlay.get_probe_text() != "":
+        text += "  | " + vision_overlay.get_probe_text()
     info_label.text = text
 
 func _on_selection_changed(soldier: Soldier) -> void:

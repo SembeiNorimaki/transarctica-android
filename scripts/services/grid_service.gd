@@ -87,6 +87,20 @@ func get_world_bounds() -> Rect2:
 #endregion
 
 
+## The corners of a tile (closed polygon: the first point is repeated at the end), as drawn on
+## screen: a diamond on an isometric map, a square on a cartesian one. `scale` shrinks it.
+func get_tile_outline(tile: Vector2i, scale := 1.0) -> PackedVector2Array:
+    var center := tile_to_world(Vector2(tile))
+    var half := tile_half_size * scale
+    if projection == TileProjection.CARTESIAN:
+        return PackedVector2Array([
+            center + Vector2(-half.x, -half.y), center + Vector2(half.x, -half.y),
+            center + Vector2(half.x, half.y), center + Vector2(-half.x, half.y), center + Vector2(-half.x, -half.y)])
+    return PackedVector2Array([
+        center + Vector2(0, -half.y), center + Vector2(half.x, 0),
+        center + Vector2(0, half.y), center + Vector2(-half.x, 0), center + Vector2(0, -half.y)])
+
+
 func get_neighbors(tile: Vector2i, diagonals := true) -> Array[Vector2i]:
     var result: Array[Vector2i] = []
     for offset in (NEIGHBORS_8 if diagonals else NEIGHBORS_4):

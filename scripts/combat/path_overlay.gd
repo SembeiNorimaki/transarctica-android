@@ -59,22 +59,8 @@ func _draw_path(soldier: Soldier, color: Color, width: float) -> void:
         draw_circle(points[i], width, color)
     _draw_tile_marker(ahead[-1], color, width)
 
-# The outline of a tile: a diamond on an isometric map, a square on a cartesian one
 func _draw_tile_marker(tile: Vector2i, color: Color, width: float) -> void:
-    var center := grid_service.tile_to_world(Vector2(tile))
-    var half := grid_service.tile_half_size * 0.8
-    var corners: PackedVector2Array
-    if grid_service.projection == GridService.TileProjection.CARTESIAN:
-        corners = PackedVector2Array([
-            center + Vector2(-half.x, -half.y), center + Vector2(half.x, -half.y),
-            center + Vector2(half.x, half.y), center + Vector2(-half.x, half.y), center + Vector2(-half.x, -half.y),
-        ])
-    else:
-        corners = PackedVector2Array([
-            center + Vector2(0, -half.y), center + Vector2(half.x, 0),
-            center + Vector2(0, half.y), center + Vector2(-half.x, 0), center + Vector2(0, -half.y),
-        ])
-    draw_polyline(corners, color, width * 0.6, true)
+    draw_polyline(grid_service.get_tile_outline(tile, 0.8), color, width * 0.6, true)
 
 func _draw_target(soldier: Soldier, selected: bool) -> void:
     var target := soldier.get_attack_target()

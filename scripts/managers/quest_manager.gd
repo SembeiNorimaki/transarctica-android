@@ -54,10 +54,11 @@ func load_quest_database() -> void:
         push_error("QuestManager: %s is not a valid JSON object" % path)
 
 # Quests load when a game starts, because GameState emits game_loaded from the menu.
-# Running a single scene for debugging (F6) has no menu, so load them here.
+# Running a single scene for debugging (F6) has no menu, so load them here, unless the scene says
+# it has no use for quests (a combat scene being tried on its own: skips_quests_when_debugging()).
 func _load_when_debugging() -> void:
     var scene := get_tree().current_scene
-    if scene != null and not scene.has_method("show_menu"):
+    if scene != null and not scene.has_method("show_menu") and not scene.has_method("skips_quests_when_debugging"):
         load_from_game_state()
         
 # Builds a quest from its database entry, without any progress. Null if it doesn't exist.

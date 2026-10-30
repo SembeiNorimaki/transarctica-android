@@ -36,6 +36,28 @@ func can_step(from: Vector2i, to: Vector2i, profile: MoveProfile, is_goal := fal
                 return false
     return true
 
+## Why a step is not allowed, for debugging overlays. "" if it is (the same answer as can_step).
+##   "tile"   : the tile entered is outside the map, not walkable, or occupied
+##   "height" : too steep
+##   "wall"   : an edge (wall, closed door, window, fence...) on the border crossed
+##   "corner" : a diagonal step that would cut the corner of something
+func get_step_block_reason(from: Vector2i, to: Vector2i, profile: MoveProfile, is_goal := false) -> String:
+    if not _can_stand(to, profile, is_goal):
+        return "tile"
+    if terrain_service != null and profile.max_step_height >= 0:
+        if absi(terrain_service.get_elevation(to) - terrain_service.get_elevation(from)) > profile.max_step_height:
+            return "height"
+    if edge_service != null and edge_service.is_move_blocked(from, to):
+        return "wall"
+    var d := to - from
+    if d.x != 0 and d.y != 0:
+        for corner in [from + Vector2i(d.x, 0), from + Vector2i(0, d.y)]:
+            if terrain_service != null and not terrain_service.is_walkable(corner):
+                return "corner"
+            if occupancy_service != null and occupancy_service.is_occupied(corner, profile.corner_blocked_by, profile.ignore):
+                return "corner"
+    return ""
+
 ## Cost of the step (assumes can_step is true).
 func step_cost(from: Vector2i, to: Vector2i, profile: MoveProfile) -> float:
     var cost := 1.0 if terrain_service == null else terrain_service.get_cost(to)

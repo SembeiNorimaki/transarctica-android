@@ -41,6 +41,7 @@ func _run() -> void:
     await _test_fog()
     await _test_move()
     await _test_path_overlay()
+    await _test_overlays()
     await _test_attack()
     await _test_doors()
     await _test_death()
@@ -50,6 +51,42 @@ func _run() -> void:
     print("%d checks, %d failed" % [_checks, _failed])
     print("ALL PASSED" if _failed == 0 else "FAILED")
     quit(1 if _failed > 0 else 0)
+
+
+func _test_overlays() -> void:
+    ok(scene.vision_overlay is VisionOverlay and scene.nav_graph_overlay is NavGraphOverlay, "both overlays are in the isometric scene too")
+    ok(not scene.vision_overlay.visible and not scene.nav_graph_overlay.visible, "hidden until asked for")
+    scene.sight_button.pressed.emit()
+    scene.graph_button.pressed.emit()
+    ok(scene.vision_overlay.visible and scene.nav_graph_overlay.visible, "the buttons show them")
+    var g := scene.grid_service
+    var ps := scene.pathfinding_service
+    var profile := MoveProfile.new()
+    profile.blocked_by = TileOccupancyService.LAYER_STRUCTURE | TileOccupancyService.LAYER_OBSTACLE
+    var inconsistent := 0
+    for y in 12:
+        for x in 16:
+            for offset in GridService.NEIGHBORS_8:
+                var a := Vector2i(x, y)
+                if ps.can_step(a, a + offset, profile) != (ps.get_step_block_reason(a, a + offset, profile) == ""):
+                    inconsistent += 1
+    eq(inconsistent, 0, "step reasons agree with can_step on the isometric map")
+    eq(scene.nav_graph_overlay.get_missing_reason(Vector2i(6, 5), Vector2i(6, 6)), "wall", "a wall cuts the graph")
+    eq(scene.nav_graph_overlay.get_missing_reason(Vector2i(6, 2), Vector2i(7, 2)), "tile", "a rock is not a node")
+    var outline := g.get_tile_outline(Vector2i(3, 3))
+    eq(outline.size(), 5, "an isometric tile outline is a closed diamond")
+    eq(outline[0].x, outline[2].x, "pointing up and down")
+    var soldier := _soldier("player", "pioneer")
+    scene.battle_unit_manager.select(soldier)
+    scene.vision_overlay.set_probe(soldier.tile + Vector2i(2, 0))
+    scene.vision_overlay.queue_redraw()
+    scene.nav_graph_overlay.queue_redraw()
+    await process_frame
+    await process_frame
+    ok(scene.vision_overlay.get_probe_text() != "", "the sight probe works on an isometric map")
+    scene.battle_unit_manager.select(null)
+    scene.sight_button.pressed.emit()
+    scene.graph_button.pressed.emit()
 
 
 func _soldier(team: String, unit_type: String) -> Soldier:

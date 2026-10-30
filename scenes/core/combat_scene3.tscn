@@ -24,6 +24,8 @@
 [ext_resource type="Script" uid="uid://c5w0m7tpqb863" path="res://scripts/managers/horizontal_train_manager.gd" id="HorizontalTrainManager"]
 [ext_resource type="Script" uid="uid://c6wueomnghw5t" path="res://scripts/menus/barracks_menu.gd" id="BarracksMenu"]
 [ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="train"]
+[ext_resource type="Script" uid="uid://bts2pu8sooii4" path="res://scripts/combat/vision_overlay.gd" id="VisionOverlay"]
+[ext_resource type="Script" uid="uid://dh4sur3qrpgfl" path="res://scripts/combat/nav_graph_overlay.gd" id="NavGraphOverlay"]
 
 [node name="CombatScene3" type="Node2D"]
 script = ExtResource("scene")
@@ -92,6 +94,16 @@ z_index = 10
 [node name="PathOverlay" type="Node2D" parent="CombatMap/Overlays"]
 script = ExtResource("PathOverlay")
 
+[node name="VisionOverlay" type="Node2D" parent="CombatMap/Overlays"]
+z_index = 25
+visible = false
+script = ExtResource("VisionOverlay")
+
+[node name="NavGraphOverlay" type="Node2D" parent="CombatMap/Overlays"]
+z_index = 25
+visible = false
+script = ExtResource("NavGraphOverlay")
+
 [node name="TrainContainer" type="Node2D" parent="."]
 
 [node name="PlayerTrain" parent="TrainContainer" instance=ExtResource("train")]
@@ -139,6 +151,14 @@ text = "Fog"
 [node name="PathsButton" type="Button" parent="HUD/Buttons"]
 layout_mode = 2
 text = "All paths"
+
+[node name="SightButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Sight lines"
+
+[node name="GraphButton" type="Button" parent="HUD/Buttons"]
+layout_mode = 2
+text = "Nav graph"
 
 [node name="EndTurnButton" type="Button" parent="HUD/Buttons"]
 layout_mode = 2
