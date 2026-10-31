@@ -84,6 +84,15 @@ func toggle_resource(resource_name: String) -> void:
     _refresh_buy_menu()
 
 
+# A resource on a sell placeholder: the sell menu of the first wagon that carries it
+func toggle_sell_resource(resource_name: String) -> void:
+    for index in _train_view.wagons.size():
+        if _train.get_wagon_current_resource(index) == resource_name and _train.get_wagon_resource_qty(index) > 0:
+            toggle_player_wagon(_train_view.wagons[index])
+            return
+    refused.emit("The train doesn't carry %s." % resource_name)
+
+
 # A wagon of the player's train: the sell menu
 func toggle_player_wagon(wagon: GenericWagon) -> void:
     production_menu.close()

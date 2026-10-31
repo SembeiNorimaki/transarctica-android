@@ -33,9 +33,16 @@ signal menu_requested
 @onready var trade_ui: TradeUI = $TradeHUD/UI/TradeUI
 @onready var exit_button: Button = $TradeHUD/UI/ExitButton
 
-@onready var resource_slots: Node2D = $ResourceSlots
+@onready var map_root: Node2D = $MapRoot
 @onready var place: TradePlace = $Place
 @onready var brake_marker: Marker2D = $TrainBrakeStart
+
+# The map of each kind of place (the "Type" of the place in the data)
+const TRADE_MAPS := {
+    "City": preload("res://scenes/maps/trade_city.tscn"),
+    "Industry": preload("res://scenes/maps/trade_industry.tscn"),
+    "Depot": preload("res://scenes/maps/trade_depot.tscn"),
+}
 
 const MUSIC_TRADE: AudioStream = preload("res://assets/audio/city1.wav")
 
@@ -60,6 +67,7 @@ static var _problems_reported := false
 @export var world_left := 0.0
 @export var world_right := 2400.0
 
+var trade_map: TradeMap # the map of the place, in MapRoot (the scene has the city one to look at in the editor)
 var _phase := Phase.TRADING
 var city_name := ""
 var _pressing := false
@@ -81,7 +89,6 @@ func _ready() -> void:
     trade_wagon_manager.wagon_container = wagon_container
     trade_unit_manager.unit_container = unit_container
     
-    _set_resource_slots()
     wagon_reorder_controller.setup(player_train)
 
     trade_ui.setup(city_inventory, train_inventory, player_train, trade_resource_manager, trade_wagon_manager, trade_unit_manager)
@@ -107,6 +114,7 @@ func _ready() -> void:
     trade_ui.refused.connect(trade_failed.emit)
     
     trade_resource_manager.resource_clicked.connect(trade_ui.toggle_resource)
+    trade_resource_manager.sell_resource_clicked.connect(trade_ui.toggle_sell_resource)
     trade_wagon_manager.wagon_clicked.connect(trade_ui.toggle_city_wagon)
     trade_unit_manager.unit_clicked.connect(trade_ui.toggle_city_unit)
     
@@ -134,18 +142,27 @@ func _ready() -> void:
         initialize(DEBUG_CITY_NAME)
 
 
-# Optional: the Marker2D children of a "ResourceSlots" node define where the resources go.
-# Without that node, the manager's default positions are used.
-func _set_resource_slots() -> void:
-    # var markers := get_node_or_null("ResourceSlots")
-    var markers := resource_slots
-    if markers == null:
-        return
-    var slots: Array[Vector2] = []
-    for marker in markers.get_children():
-        if marker is Node2D:
-            slots.append(trade_resource_container.to_local((marker as Node2D).global_position))
-    trade_resource_manager.set_slot_positions(slots)
+# The map of the place: the one of its kind replaces the one in the scene. The placeholders of the
+# map say where the resources go, and its Place marker where the building stands.
+func _load_map(place_type: String) -> void:
+    if not TRADE_MAPS.has(place_type):
+        push_warning("TradeScene: no map for the place type '%s', using the city's" % place_type)
+        place_type = "City"
+    for child in map_root.get_children():
+        map_root.remove_child(child)
+        child.queue_free()
+    trade_map = TRADE_MAPS[place_type].instantiate() as TradeMap
+    map_root.add_child(trade_map)
+
+    var buy_slots: Array[Vector2] = []
+    for position in trade_map.get_buy_positions():
+        buy_slots.append(trade_resource_container.to_local(position))
+    var sell_slots: Array[Vector2] = []
+    for position in trade_map.get_sell_positions():
+        sell_slots.append(trade_resource_container.to_local(position))
+    trade_resource_manager.set_slot_positions(buy_slots, sell_slots)
+    place.position = trade_map.get_place_position()
+    place.scale = trade_map.get_place_scale()
 
 
 #region initialize
@@ -181,14 +198,23 @@ func _load_city_resources() -> void:
     if not city_inventory.load_from_game_state(city_name):
         return
     city_economy_manager.setup(city_inventory) # the prices of today, before the resources show them
+    _load_map(city_inventory.place_type)
 
     for resource_name in city_inventory.get_resource_names():
-        # The manager logs an error if the resource can't be created (no free slot, duplicate...)
-        trade_resource_manager.spawn_resource(
-            resource_name,
-            city_inventory.get_available_qty(resource_name),
-            city_inventory.get_buy_price(resource_name),
-            city_inventory.get_sell_price(resource_name))
+        # What the player can buy goes to the buy placeholders, what it can sell to the sell ones, and
+        # what it can do both with to both. The manager logs an error if a node can't be created.
+        var sides: Array[int] = [] # TradeResource.Side
+        if city_inventory.can_player_buy(resource_name):
+            sides.append(TradeResource.Side.BUY)
+        if city_inventory.can_player_sell(resource_name):
+            sides.append(TradeResource.Side.SELL)
+        for side in sides:
+            trade_resource_manager.spawn_resource(
+                resource_name,
+                city_inventory.get_available_qty(resource_name),
+                city_inventory.get_buy_price(resource_name),
+                city_inventory.get_sell_price(resource_name),
+                side)
 
 func _load_city_wagons() -> void:
     for wagon_type in city_inventory.get_wagon_types():
@@ -297,9 +323,7 @@ func _on_city_resource_amount_changed(resource_name: String, qty: int) -> void:
 
 # The economy changed a price: the resource's label, and the sell price shown on the wagons
 func _on_city_prices_changed(resource_name: String) -> void:
-    var resource := trade_resource_manager.get_resource(resource_name)
-    if resource != null:
-        resource.set_prices(city_inventory.get_buy_price(resource_name), city_inventory.get_sell_price(resource_name))
+    trade_resource_manager.set_resource_prices(resource_name, city_inventory.get_buy_price(resource_name), city_inventory.get_sell_price(resource_name))
     _update_all_wagon_prices()
 
 

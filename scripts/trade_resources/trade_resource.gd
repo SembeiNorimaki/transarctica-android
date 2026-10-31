@@ -7,11 +7,17 @@ class_name TradeResource
 
 signal clicked(resource: TradeResource)
 
+## Which side of the trade this node stands for. A resource the place sells (the player buys it) is
+## shown on the buy placeholders; one the place buys, on the sell placeholders; one it does both
+## with, once on each.
+enum Side {BUY, SELL}
+
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var qty_label: Label = $QtyLabel
 @onready var price_label: Label = $PriceLabel
 
 var resource_type := ""
+var side: int = Side.BUY # a Side
 var qty := 0
 var buy_price := 0 # what the player pays for 1 unit
 var sell_price := 0 # what the city pays the player for 1 unit
@@ -26,6 +32,11 @@ func set_resource_type(t: String) -> void:
     resource_type = t
     if not ResourceTypes.is_known(t) or ResourceTypes.frame_for(t) < 0:
         push_warning("TradeResource: no sprite for resource '%s'" % t)
+    _refresh()
+
+
+func set_side(value: int) -> void:
+    side = value
     _refresh()
 
 
@@ -46,8 +57,9 @@ func _refresh() -> void:
         return
 
     qty_label.text = str(qty)
-    # What the player pays. 0: this place doesn't sell it (it only buys it).
-    price_label.text = str(buy_price) if buy_price > 0 else "-"
+    # BUY side: what the player pays (0: this place doesn't sell it). SELL side: what the place pays.
+    var shown := buy_price if side == Side.BUY else sell_price
+    price_label.text = str(shown) if shown > 0 else "-"
 
     var frame: int = ResourceTypes.frame_for(resource_type)
     if frame >= 0:
