@@ -58,12 +58,17 @@ func spawn(team: String, unit_type: String, tile: Vector2i, facing := "S") -> So
 ## Puts the soldier described by `data` (see UnitTypes.make_unit; hp and so on are kept) on a free
 ## tile. Returns null (with a warning) if it can't.
 func spawn_unit(team: String, unit_id: String, data: Dictionary, tile: Vector2i, facing := "S") -> Soldier:
-    if not occupancy_service.is_free(tile, TileOccupancyService.LAYER_ALL):
+    var footprint := UnitTypes.get_footprint(str(data.get("unit_type", "")))
+    if not occupancy_service.is_footprint_free(tile, footprint, TileOccupancyService.LAYER_ALL):
         push_warning("BattleUnitManager: tile %s is not free for %s" % [tile, unit_id])
         return null
     data = data.duplicate()
     data["team"] = team
-    var soldier := SOLDIER_SCENE.instantiate() as Soldier
+    var scene := SOLDIER_SCENE
+    var scene_path := UnitTypes.get_scene_path(str(data.get("unit_type", "")))
+    if scene_path != UnitTypes.SOLDIER_SCENE:
+        scene = load(scene_path)
+    var soldier := scene.instantiate() as Soldier
     soldier.setup(unit_id, data)
     soldier.grid_service = grid_service
     soldier.can_step = _can_soldier_step
@@ -72,7 +77,7 @@ func spawn_unit(team: String, unit_id: String, data: Dictionary, tile: Vector2i,
     soldier.died.connect(_on_soldier_died)
     unit_container.add_child(soldier)
     soldier.place_at(tile, facing)
-    occupancy_service.place(soldier, tile, Footprint.single(), TileOccupancyService.LAYER_UNIT)
+    occupancy_service.place(soldier, tile, soldier.footprint, TileOccupancyService.LAYER_UNIT)
     soldiers.append(soldier)
     soldier_spawned.emit(soldier)
     return soldier
@@ -122,6 +127,17 @@ func handle_tile_tap(tile: Vector2i) -> void:
             command_attack(selected, tapped)
     elif selected != null:
         command_move(selected, tile)
+
+## What a right click on a tile means: the selected unit turns to look at it. It costs nothing.
+## A unit that is walking or shooting keeps going.
+func handle_tile_right_tap(tile: Vector2i) -> void:
+    if selected != null:
+        command_face(selected, tile)
+
+func command_face(soldier: Soldier, tile: Vector2i) -> bool:
+    if not _may_command(soldier) or soldier.get_action() != &"idle":
+        return false
+    return soldier.look_at_tile(tile)
 
 func command_move(soldier: Soldier, tile: Vector2i) -> bool:
     if not _may_command(soldier):
@@ -179,6 +195,7 @@ func get_profile(soldier: Soldier) -> MoveProfile:
     if not _profiles.has(soldier):
         var profile := MoveProfile.new()
         profile.ignore = soldier
+        profile.footprint = soldier.footprint
         _profiles[soldier] = profile
     return _profiles[soldier]
 

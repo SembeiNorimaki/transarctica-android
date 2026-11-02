@@ -12,6 +12,9 @@ var blocked_by := TileOccupancyService.LAYER_UNIT | TileOccupancyService.LAYER_S
 var corner_blocked_by := TileOccupancyService.LAYER_STRUCTURE | TileOccupancyService.LAYER_OBSTACLE
 ## The mover itself: its own tiles never block it.
 var ignore: Object = null
+## The tiles the mover covers, around its anchor (the tile pathfinding works with). A 2x2 tank
+## uses Footprint.rect(2, 2): every tile of it has to be free, walkable and not behind a wall.
+var footprint: Footprint = Footprint.single()
 ## Highest elevation difference a single step can climb or drop.
 var max_step_height := 1
 ## A diagonal step costs this much times the cost of the tile entered.

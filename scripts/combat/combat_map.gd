@@ -8,6 +8,10 @@ class_name CombatMap
 #              (south-east on an isometric map).
 #   WallsY   : the same between a tile and its y+1 neighbor. Drawn on the south side of the tile
 #              (south-west on an isometric map).
+#   Roads    : optional. Road tiles over the ground (custom data "terrain", see TerrainTypes)
+#   Buildings: optional. One tile per building, painted on its first tile (the north corner, the
+#              one with the smallest x and y). Custom data "building_type" and "building_size"
+#              (the tiles it covers: 3 x 3, 4 x 4...).
 #   Spawns   : markers where soldiers start (custom data "spawn_team", "spawn_type")
 #   Fog      : drawn by FogManager over everything (unexplored, explored; visible = no tile)
 # Each border between two tiles belongs to exactly one wall layer cell, so a tile can have walls on
@@ -25,6 +29,8 @@ class_name CombatMap
 @onready var objects: TileMapLayer = $Objects
 @onready var walls_x: TileMapLayer = $WallsX
 @onready var walls_y: TileMapLayer = $WallsY
+@onready var roads: TileMapLayer = get_node_or_null("Roads") # optional
+@onready var buildings: TileMapLayer = get_node_or_null("Buildings") # optional
 @onready var spawns: TileMapLayer = $Spawns
 @onready var fog: TileMapLayer = $Fog
 
@@ -62,6 +68,20 @@ func read_objects() -> Array[Dictionary]:
         var object_type := _custom(objects, cell, "object_type")
         if object_type != "":
             result.append({"tile": cell, "type": object_type})
+    return result
+
+## [{"tile": Vector2i, "type": String, "size": Vector2i}] for each building. `tile` is its first
+## tile; it covers size.x * size.y tiles from there.
+func read_buildings() -> Array[Dictionary]:
+    var result: Array[Dictionary] = []
+    if buildings == null:
+        return result
+    for cell in buildings.get_used_cells():
+        var building_type := _custom(buildings, cell, "building_type")
+        if building_type == "":
+            continue
+        var size: Vector2i = buildings.get_cell_tile_data(cell).get_custom_data("building_size")
+        result.append({"tile": cell, "type": building_type, "size": Vector2i(maxi(size.x, 1), maxi(size.y, 1))})
     return result
 
 ## [{"a": Vector2i, "b": Vector2i, "type": String, "open": bool}] for each wall, fence, window or door.

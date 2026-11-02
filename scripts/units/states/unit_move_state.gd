@@ -92,7 +92,7 @@ func _begin_step() -> void:
     unit.face_towards(to)
     unit.tile = to
     _from_pos = unit.position
-    _to_pos = unit.grid_service.tile_to_world(Vector2(to))
+    _to_pos = unit.get_world_position(to)
     var diagonal := from.x != to.x and from.y != to.y
     _duration = (1.4142135 if diagonal else 1.0) / maxf(unit.move_speed, 0.1)
     _time = 0.0

@@ -1,0 +1,47 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/combat/combat_roads.png" id="1_roads"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_roads"]
+texture = ExtResource("1_roads")
+texture_region_size = Vector2i(64, 32)
+0:0/0 = 0
+0:0/0/custom_data_0 = "road"
+1:0/0 = 0
+1:0/0/custom_data_0 = "road"
+2:0/0 = 0
+2:0/0/custom_data_0 = "road"
+3:0/0 = 0
+3:0/0/custom_data_0 = "road"
+4:0/0 = 0
+4:0/0/custom_data_0 = "road"
+5:0/0 = 0
+5:0/0/custom_data_0 = "road"
+6:0/0 = 0
+6:0/0/custom_data_0 = "road"
+7:0/0 = 0
+7:0/0/custom_data_0 = "road"
+8:0/0 = 0
+8:0/0/custom_data_0 = "road"
+9:0/0 = 0
+9:0/0/custom_data_0 = "road"
+10:0/0 = 0
+10:0/0/custom_data_0 = "road"
+11:0/0 = 0
+11:0/0/custom_data_0 = "road"
+12:0/0 = 0
+12:0/0/custom_data_0 = "road"
+13:0/0 = 0
+13:0/0/custom_data_0 = "road"
+14:0/0 = 0
+14:0/0/custom_data_0 = "road"
+15:0/0 = 0
+15:0/0/custom_data_0 = "road"
+
+[resource]
+tile_shape = 1
+tile_layout = 5
+tile_size = Vector2i(64, 32)
+custom_data_layer_0/name = "terrain"
+custom_data_layer_0/type = 4
+sources/0 = SubResource("TileSetAtlasSource_roads")

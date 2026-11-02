@@ -5,6 +5,8 @@ class_name CombatInputManager
 # reported on release as tile_tapped. It only reports: others decide what a tap means.
 
 signal tile_tapped(tile: Vector2i)
+## A click of the right mouse button (the player turns a unit towards a tile).
+signal tile_right_tapped(tile: Vector2i)
 signal tile_hovered(tile: Vector2i)
 
 const DRAG_THRESHOLD := 12.0 # px the pointer must move before it counts as a drag and not a tap
@@ -17,6 +19,7 @@ var world: Node2D # the node the tiles are drawn in (the CombatMap)
 var _pressed := false
 var _dragging := false
 var _press_position := Vector2.ZERO
+var _right_press_position := Vector2.ZERO
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -49,6 +52,9 @@ func _on_press_or_release(event: InputEvent) -> void:
         position = (event as InputEventScreenTouch).position
     else:
         var mouse := event as InputEventMouseButton
+        if mouse.button_index == MOUSE_BUTTON_RIGHT:
+            _on_right_button(mouse)
+            return
         if mouse.button_index != MOUSE_BUTTON_LEFT:
             return
         pressed = mouse.pressed
@@ -61,6 +67,12 @@ func _on_press_or_release(event: InputEvent) -> void:
         _pressed = false
         if not _dragging:
             tile_tapped.emit(tile_at_screen(position))
+
+func _on_right_button(mouse: InputEventMouseButton) -> void:
+    if mouse.pressed:
+        _right_press_position = mouse.position
+    elif mouse.position.distance_to(_right_press_position) <= DRAG_THRESHOLD:
+        tile_right_tapped.emit(tile_at_screen(mouse.position))
 
 func _on_move(position: Vector2, relative: Vector2) -> void:
     if not _pressed:

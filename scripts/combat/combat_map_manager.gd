@@ -20,8 +20,11 @@ func setup() -> void:
             and edge_service != null and occupancy_service != null, "CombatMapManager: not injected")
     _setup_grid()
     terrain_service.load_from_layer(combat_map.ground)
+    if combat_map.roads != null:
+        terrain_service.load_from_layer(combat_map.roads) # roads over the ground
     _load_edges()
     _load_objects()
+    _load_buildings()
     combat_map.set_spawns_visible(false)
     edge_service.edge_changed.connect(_on_edge_changed)
 
@@ -68,6 +71,14 @@ func _load_objects() -> void:
         var object := MapObject.new(data["type"], data["tile"])
         occupancy_service.place(object, object.tile, Footprint.single(), CombatObjectTypes.get_layer(object.type))
         objects.append(object)
+
+# A building blocks movement and sight on all the tiles it covers
+func _load_buildings() -> void:
+    for data in combat_map.read_buildings():
+        var size: Vector2i = data["size"]
+        var building := MapObject.new(data["type"], data["tile"])
+        occupancy_service.place(building, building.tile, Footprint.rect(size.x, size.y), TileOccupancyService.LAYER_STRUCTURE)
+        objects.append(building)
 
 func _on_edge_changed(a: Vector2i, b: Vector2i) -> void:
     var edge := edge_service.get_edge(a, b)

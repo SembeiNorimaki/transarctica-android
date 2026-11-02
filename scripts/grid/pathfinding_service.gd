@@ -26,14 +26,15 @@ func can_step(from: Vector2i, to: Vector2i, profile: MoveProfile, is_goal := fal
         if absi(terrain_service.get_elevation(to) - terrain_service.get_elevation(from)) > profile.max_step_height:
             return false
     var d := to - from
-    if edge_service != null and edge_service.is_move_blocked(from, to):
-        return false
-    if d.x != 0 and d.y != 0: # diagonal: the two tiles it passes by must be open ground
-        for corner in [from + Vector2i(d.x, 0), from + Vector2i(0, d.y)]:
-            if terrain_service != null and not terrain_service.is_walkable(corner):
-                return false
-            if occupancy_service != null and occupancy_service.is_occupied(corner, profile.corner_blocked_by, profile.ignore):
-                return false
+    for o in profile.footprint.offsets: # every tile of the mover makes the same step
+        if edge_service != null and edge_service.is_move_blocked(from + o, to + o):
+            return false
+        if d.x != 0 and d.y != 0: # diagonal: the two tiles it passes by must be open ground
+            for corner in [from + o + Vector2i(d.x, 0), from + o + Vector2i(0, d.y)]:
+                if terrain_service != null and not terrain_service.is_walkable(corner):
+                    return false
+                if occupancy_service != null and occupancy_service.is_occupied(corner, profile.corner_blocked_by, profile.ignore):
+                    return false
     return true
 
 ## Why a step is not allowed, for debugging overlays. "" if it is (the same answer as can_step).
@@ -47,15 +48,17 @@ func get_step_block_reason(from: Vector2i, to: Vector2i, profile: MoveProfile, i
     if terrain_service != null and profile.max_step_height >= 0:
         if absi(terrain_service.get_elevation(to) - terrain_service.get_elevation(from)) > profile.max_step_height:
             return "height"
-    if edge_service != null and edge_service.is_move_blocked(from, to):
-        return "wall"
     var d := to - from
+    for o in profile.footprint.offsets:
+        if edge_service != null and edge_service.is_move_blocked(from + o, to + o):
+            return "wall"
     if d.x != 0 and d.y != 0:
-        for corner in [from + Vector2i(d.x, 0), from + Vector2i(0, d.y)]:
-            if terrain_service != null and not terrain_service.is_walkable(corner):
-                return "corner"
-            if occupancy_service != null and occupancy_service.is_occupied(corner, profile.corner_blocked_by, profile.ignore):
-                return "corner"
+        for o in profile.footprint.offsets:
+            for corner in [from + o + Vector2i(d.x, 0), from + o + Vector2i(0, d.y)]:
+                if terrain_service != null and not terrain_service.is_walkable(corner):
+                    return "corner"
+                if occupancy_service != null and occupancy_service.is_occupied(corner, profile.corner_blocked_by, profile.ignore):
+                    return "corner"
     return ""
 
 ## Cost of the step (assumes can_step is true).
@@ -173,16 +176,19 @@ func path_cost(path: Array[Vector2i], profile: MoveProfile = null) -> float:
 #endregion
 
 
-func _can_stand(tile: Vector2i, profile: MoveProfile, is_goal: bool) -> bool:
-    if grid_service != null and not grid_service.is_inside_map(tile):
-        return false
-    if terrain_service != null and not terrain_service.is_walkable(tile):
-        return false
-    if occupancy_service != null and not (is_goal and profile.goal_may_be_occupied):
-        if occupancy_service.is_occupied(tile, profile.blocked_by, profile.ignore):
+# Every tile of the mover's footprint has to be standable
+func _can_stand(anchor: Vector2i, profile: MoveProfile, is_goal: bool) -> bool:
+    for o in profile.footprint.offsets:
+        var tile := anchor + o
+        if grid_service != null and not grid_service.is_inside_map(tile):
             return false
-    if profile.can_enter.is_valid() and not profile.can_enter.call(tile):
-        return false
+        if terrain_service != null and not terrain_service.is_walkable(tile):
+            return false
+        if occupancy_service != null and not (is_goal and profile.goal_may_be_occupied):
+            if occupancy_service.is_occupied(tile, profile.blocked_by, profile.ignore):
+                return false
+        if profile.can_enter.is_valid() and not profile.can_enter.call(tile):
+            return false
     return true
 
 func _neighbors(tile: Vector2i, profile: MoveProfile) -> Array[Vector2i]:

@@ -1,0 +1,43 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/combat/combat_buildings_3x3.png" id="3_tex"]
+[ext_resource type="Texture2D" path="res://assets/combat/combat_buildings_4x4.png" id="4_tex"]
+
+[sub_resource type="TileSetAtlasSource" id="Src_3"]
+texture = ExtResource("3_tex")
+texture_region_size = Vector2i(192, 216)
+0:0/0 = 0
+0:0/0/texture_origin = Vector2i(0, 28)
+0:0/0/y_sort_origin = 64
+0:0/0/custom_data_0 = "apartment"
+0:0/0/custom_data_1 = Vector2i(3, 3)
+1:0/0 = 0
+1:0/0/texture_origin = Vector2i(0, 28)
+1:0/0/y_sort_origin = 64
+1:0/0/custom_data_0 = "warehouse"
+1:0/0/custom_data_1 = Vector2i(3, 3)
+
+[sub_resource type="TileSetAtlasSource" id="Src_4"]
+texture = ExtResource("4_tex")
+texture_region_size = Vector2i(256, 278)
+0:0/0 = 0
+0:0/0/texture_origin = Vector2i(0, 27)
+0:0/0/y_sort_origin = 96
+0:0/0/custom_data_0 = "factory"
+0:0/0/custom_data_1 = Vector2i(4, 4)
+1:0/0 = 0
+1:0/0/texture_origin = Vector2i(0, 27)
+1:0/0/y_sort_origin = 96
+1:0/0/custom_data_0 = "bunker"
+1:0/0/custom_data_1 = Vector2i(4, 4)
+
+[resource]
+tile_shape = 1
+tile_layout = 5
+tile_size = Vector2i(64, 32)
+custom_data_layer_0/name = "building_type"
+custom_data_layer_0/type = 4
+custom_data_layer_1/name = "building_size"
+custom_data_layer_1/type = 6
+sources/0 = SubResource("Src_3")
+sources/1 = SubResource("Src_4")

@@ -8,8 +8,9 @@ class_name CombatSceneBase
 # TURN BASED OR REAL TIME: the Managers node must have exactly ONE child that is a TurnManager
 # (turn based) or an RtsManager (real time). To change the mode, delete one and add the other.
 #
-# Controls: tap a soldier of yours to select it, tap an empty tile to walk there, tap an enemy to
-# attack it (it walks into range first if it has to). Drag to move the camera, wheel to zoom.
+# Controls: tap (left click) a soldier of yours to select it, tap an empty tile to walk there, tap an
+# enemy to attack it (it walks into range first if it has to). Right click turns the selected unit
+# towards the tile. Drag to move the camera, wheel to zoom.
 
 # Services
 @onready var grid_service: GridService = $Services/GridService
@@ -71,6 +72,7 @@ func _ready() -> void:
     camera_service.center_at_tile(grid_service.map_rect.get_center())
 
     combat_input_manager.tile_tapped.connect(battle_unit_manager.handle_tile_tap)
+    combat_input_manager.tile_right_tapped.connect(battle_unit_manager.handle_tile_right_tap)
     combat_input_manager.tile_hovered.connect(_on_tile_hovered)
     battle_unit_manager.selection_changed.connect(_on_selection_changed)
     battle_unit_manager.shot_resolved.connect(_on_shot_resolved)
@@ -87,7 +89,7 @@ func _ready() -> void:
     flow_manager.start()
     _update_mode_ui()
     _start_scene()
-    info_label.text = "Tap one of your soldiers (blue) to select it"
+    info_label.text = "Left click one of your units (blue) to select it: left click to walk, right click to turn"
 
 
 #region hooks for the scenes that extend this one

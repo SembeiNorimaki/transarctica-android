@@ -50,7 +50,9 @@ var max_action_points := 8.0
 var action_points := 0.0
 var show_action_points := false
 
-var tile := Vector2i.ZERO # the tile it stands on, or is walking to
+var tile := Vector2i.ZERO # the tile it stands on, or is walking to (the anchor of its footprint)
+## The tiles it covers around `tile`: one for a soldier, 2 x 2 for a tank (see UnitTypes).
+var footprint: Footprint = Footprint.single()
 var facing := "N" # one of GridService.ORIENTATIONS
 
 # Injected by the manager
@@ -85,6 +87,7 @@ func setup(id: String, data: Dictionary) -> void:
     max_hp = int(data.get("max_hp", hp))
     weapon_type = str(data.get("weapon_type", ""))
     team = str(data.get("team", TEAM_PLAYER))
+    footprint = UnitTypes.get_footprint(unit_type)
     if UnitTypes.exists(unit_type):
         var stats := UnitTypes.combat_stats(unit_type)
         move_speed = float(stats["move_speed"])
@@ -101,7 +104,7 @@ func setup(id: String, data: Dictionary) -> void:
 func place_at(new_tile: Vector2i, orientation := "S") -> void:
     assert(grid_service != null, "Soldier: grid_service not injected")
     tile = new_tile
-    position = grid_service.tile_to_world(Vector2(tile))
+    position = get_world_position(tile)
     face(orientation)
     refresh_labels()
 
@@ -117,6 +120,31 @@ func face(orientation: String) -> void:
 
 func face_towards(target_tile: Vector2i) -> void:
     face(grid_service.get_orientation(tile, target_tile))
+
+## Where the unit is drawn when its anchor is `anchor`: the middle of its footprint
+## (the centre of the tile for a soldier, the corner shared by the four tiles of a 2 x 2 tank).
+func get_world_position(anchor: Vector2i) -> Vector2:
+    var middle := Vector2.ZERO
+    for o in footprint.offsets:
+        middle += Vector2(o)
+    middle /= float(footprint.size())
+    return grid_service.tile_to_world(Vector2(anchor) + middle)
+
+## Turns to look at a tile (the player's right click). Measured from the tile of its footprint
+## that is nearest to the target, so a tank looks at it as a whole. Returns false if the target
+## is under the unit itself.
+func look_at_tile(target_tile: Vector2i) -> bool:
+    var from_tile := tile
+    var best := INF
+    for covered in footprint.tiles_at(tile):
+        var distance := Vector2(covered).distance_squared_to(Vector2(target_tile))
+        if distance < best:
+            best = distance
+            from_tile = covered
+    if from_tile == target_tile:
+        return false
+    face(grid_service.get_orientation(from_tile, target_tile))
+    return true
 #endregion
 
 
@@ -208,7 +236,7 @@ func take_damage(amount: int, _source: Soldier = null) -> void:
 # Called by DeadState
 func on_death() -> void:
     if grid_service != null:
-        position = grid_service.tile_to_world(Vector2(tile)) # a step in progress is dropped
+        position = get_world_position(tile) # a step in progress is dropped
     selected = false
     sprite.rotation = PI * 0.5
     $CollisionShape2D.set_deferred("disabled", true)
