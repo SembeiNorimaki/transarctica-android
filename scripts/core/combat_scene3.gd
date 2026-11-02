@@ -15,6 +15,13 @@ class_name CombatScene3
 
 signal battle_finished(result: String) # "victory" or "defeat"
 
+## How far past the edge of the map the camera may go (the map fills the screen, so 0).
+@export var camera_margin := 0.0
+
+## The AI plays the player's side too (it is defensive: patrols near the train, a few soldiers in
+## cover towards the middle, attacks only when much stronger). Off by default: the player plays.
+@export var player_ai_enabled := false
+
 ## Soldiers that start in each barracks when the campaign (GameState) has none for the player, and
 ## always for the enemy: unit types.
 @export var debug_player_units: Array[String] = ["liquidator", "liquidator", "pioneer", "redops", "liquidator"]
@@ -22,10 +29,13 @@ signal battle_finished(result: String) # "victory" or "defeat"
 
 @onready var horizontal_train_manager: HorizontalTrainManager = $Managers/HorizontalTrainManager
 @onready var deployment_manager: DeploymentManager = $Managers/DeploymentManager
+@onready var projectile_manager: ProjectileManager = $Managers/ProjectileManager
+@onready var projectiles: Node2D = $Projectiles
 @onready var train_container: Node2D = $TrainContainer
 @onready var player_train: HorizontalTrain = $TrainContainer/PlayerTrain
 @onready var enemy_train: HorizontalTrain = $TrainContainer/EnemyTrain
 @onready var combat_ai: CombatAI = $AI/CombatAI
+@onready var player_ai: CombatAI = $AI/PlayerAI
 @onready var barracks_menu: BarracksMenu = $HUD/BarracksMenu
 @onready var board_button: Button = $HUD/Buttons/BoardButton
 @onready var ai_label: Label = $HUD/AiLabel
@@ -37,6 +47,8 @@ var outcome := ""
 
 func _process(_delta: float) -> void:
     ai_label.text = combat_ai.get_status_text() if combat_ai.enabled else "AI off"
+    if player_ai.enabled:
+        ai_label.text += "\n" + player_ai.get_status_text()
 
 
 #region the hooks of CombatSceneBase
@@ -54,6 +66,9 @@ func _setup_scene() -> void:
     deployment_manager.flow_manager = flow_manager
     deployment_manager.setup()
     # Registered after the setup: the wagons' places in the world are known
+    projectile_manager.projectile_container = projectiles
+    projectile_manager.register_train(player_train)
+    projectile_manager.register_train(enemy_train)
     _register_train(Soldier.TEAM_PLAYER, player_train, _player_units, false)
     _register_train(Soldier.TEAM_ENEMY, enemy_train, _enemy_units, true)
 
@@ -65,10 +80,11 @@ func _setup_scene() -> void:
     deployment_manager.soldier_boarded.connect(_on_soldier_boarded)
     battle_unit_manager.soldier_died.connect(func(_s: Soldier) -> void: _check_outcome())
     combat_ai.fled.connect(func() -> void: _finish("victory", "VICTORY - the enemy train fled"))
+    player_ai.fled.connect(func() -> void: _finish("defeat", "DEFEAT - your train fled"))
     outcome_label.visible = false
 
 func _get_camera_bounds() -> Rect2:
-    return grid_service.get_world_bounds().grow_individual(300.0, 260.0, 300.0, 260.0)
+    return grid_service.get_world_bounds().grow(camera_margin)
 
 # The soldiers start aboard their trains: nobody is on the battlefield yet
 func _spawn_units() -> void:
@@ -119,7 +135,7 @@ func _player_train_from_game_state(units: Dictionary) -> Dictionary:
             break
     return train_data if found else {}
 
-# A locomotive and a barracks wagon with one soldier per type of the list
+# A locomotive, a barracks wagon with one soldier per type of the list, and a cannon wagon
 func _debug_train(unit_types: Array[String], team: String, units: Dictionary) -> Dictionary:
     var ids: Array[String] = []
     for i in unit_types.size():
@@ -129,6 +145,7 @@ func _debug_train(unit_types: Array[String], team: String, units: Dictionary) ->
     return {"wagons": [
         {"type": "LocomotiveWagon"},
         {"type": "BarracksWagon", "cargo_name": "Soldiers", "cargo_qty": ids.size(), "unit_ids": ids},
+        {"type": "CannonWagon", "cargo_name": "Ammunition", "cargo_qty": 10},
     ]}
 
 func _register_train(team: String, train: HorizontalTrain, units: Dictionary, from_top: bool) -> void:
@@ -143,26 +160,32 @@ func _register_train(team: String, train: HorizontalTrain, units: Dictionary, fr
 
 #region AI
 func _setup_ai() -> void:
-    combat_ai.battle_unit_manager = battle_unit_manager
-    combat_ai.deployment_manager = deployment_manager
-    combat_ai.flow_manager = flow_manager
+    player_ai.enabled = player_ai_enabled
+    _setup_one_ai(combat_ai, enemy_train)
+    _setup_one_ai(player_ai, player_train)
+    # When an AI plays the enemy's turns, they end when it says so (not after a fixed delay)
+    if flow_manager is TurnManager and combat_ai.enabled:
+        (flow_manager as TurnManager).auto_pass_computer_turns = false
 
-    var train_ai := combat_ai.train_ai
+func _setup_one_ai(ai: CombatAI, train: HorizontalTrain) -> void:
+    ai.battle_unit_manager = battle_unit_manager
+    ai.deployment_manager = deployment_manager
+    ai.flow_manager = flow_manager
+
+    var train_ai := ai.train_ai
     train_ai.deployment_manager = deployment_manager
-    train_ai.train = enemy_train
+    train_ai.train = train
     train_ai.exit_x = grid_service.get_world_bounds().end.x + 150.0
 
-    var unit_ai := combat_ai.unit_ai
+    var unit_ai := ai.unit_ai
     unit_ai.battle_unit_manager = battle_unit_manager
     unit_ai.deployment_manager = deployment_manager
     unit_ai.visibility_service = visibility_service
     unit_ai.pathfinding_service = pathfinding_service
     unit_ai.occupancy_service = occupancy_service
-
-    # When an AI plays the enemy's turns, they end when it says so (not after a fixed delay)
-    if flow_manager is TurnManager and combat_ai.enabled:
-        (flow_manager as TurnManager).auto_pass_computer_turns = false
-    combat_ai.setup()
+    unit_ai.terrain_service = terrain_service
+    unit_ai.grid_service = grid_service
+    ai.setup()
 #endregion
 
 

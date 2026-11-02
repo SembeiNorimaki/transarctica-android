@@ -17,6 +17,8 @@ var max_speed := 1500.0
 var acceleration := 1200.0
 var deceleration := 1200.0
 
+## Soldier.TEAM_PLAYER or Soldier.TEAM_ENEMY. Set it BEFORE the wagons are added: they take it.
+var team := "player"
 var wagons: Array[GenericWagon] = []
 var last_wagon_position := Vector2.ZERO # back end of the last wagon, local to the train
 
@@ -49,6 +51,7 @@ func add_wagon(wagon_data: Dictionary) -> GenericWagon:
 
     # Plain data only, so this is safe before the wagon is in the tree
     wagon.apply_data(wagon_data, wagon_info)
+    wagon.set_team(team)
 
     # The wagon is centered on its slot, then the slot is consumed
     wagon.position = last_wagon_position - Vector2(wagon_width / 2.0, 0.0)

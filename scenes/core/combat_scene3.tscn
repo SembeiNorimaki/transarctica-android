@@ -16,7 +16,7 @@
 [ext_resource type="Script" uid="uid://dtqnwe3qg1p0p" path="res://scripts/combat/rts_manager.gd" id="RtsManager"]
 [ext_resource type="Script" uid="uid://de376lmpw5tq3" path="res://scripts/combat/path_overlay.gd" id="PathOverlay"]
 [ext_resource type="PackedScene" uid="uid://dodp70bgkluj6" path="res://scenes/services/camera_service.tscn" id="camera"]
-[ext_resource type="PackedScene" path="res://scenes/maps/combat_map_square.tscn" id="map"]
+[ext_resource type="PackedScene" path="res://scenes/maps/combat_map_trenches.tscn" id="map"]
 [ext_resource type="Script" uid="uid://cyw0lnsjbi0r8" path="res://scripts/combat/deployment_manager.gd" id="DeploymentManager"]
 [ext_resource type="Script" uid="uid://c0ek0f2hvi608" path="res://scripts/combat/ai/combat_ai.gd" id="CombatAI"]
 [ext_resource type="Script" uid="uid://d370kvhw4pjra" path="res://scripts/combat/ai/train_ai.gd" id="TrainAI"]
@@ -26,6 +26,7 @@
 [ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="train"]
 [ext_resource type="Script" uid="uid://bts2pu8sooii4" path="res://scripts/combat/vision_overlay.gd" id="VisionOverlay"]
 [ext_resource type="Script" uid="uid://dh4sur3qrpgfl" path="res://scripts/combat/nav_graph_overlay.gd" id="NavGraphOverlay"]
+[ext_resource type="Script" path="res://scripts/managers/projectile_manager.gd" id="ProjectileManager"]
 
 [node name="CombatScene3" type="Node2D"]
 script = ExtResource("scene")
@@ -78,9 +79,13 @@ script = ExtResource("RtsManager")
 
 [node name="DeploymentManager" type="Node" parent="Managers"]
 script = ExtResource("DeploymentManager")
+entry_inset = 3
 
 [node name="HorizontalTrainManager" type="Node" parent="Managers"]
 script = ExtResource("HorizontalTrainManager")
+
+[node name="ProjectileManager" type="Node" parent="Managers"]
+script = ExtResource("ProjectileManager")
 
 [node name="CombatMap" parent="." instance=ExtResource("map")]
 
@@ -106,10 +111,12 @@ script = ExtResource("NavGraphOverlay")
 [node name="TrainContainer" type="Node2D" parent="."]
 
 [node name="PlayerTrain" parent="TrainContainer" instance=ExtResource("train")]
-position = Vector2(492, 482)
+position = Vector2(1000, 1056)
 
 [node name="EnemyTrain" parent="TrainContainer" instance=ExtResource("train")]
-position = Vector2(804, -36)
+position = Vector2(1700, 96)
+
+[node name="Projectiles" type="Node2D" parent="."]
 
 [node name="AI" type="Node" parent="."]
 
@@ -120,6 +127,19 @@ script = ExtResource("CombatAI")
 script = ExtResource("TrainAI")
 
 [node name="UnitAI" type="Node" parent="AI/CombatAI"]
+script = ExtResource("UnitAI")
+
+[node name="PlayerAI" type="Node" parent="AI"]
+script = ExtResource("CombatAI")
+team = "player"
+enabled = false
+attack_ratio = 2.5
+forward_fraction = 0.15
+
+[node name="TrainAI" type="Node" parent="AI/PlayerAI"]
+script = ExtResource("TrainAI")
+
+[node name="UnitAI" type="Node" parent="AI/PlayerAI"]
 script = ExtResource("UnitAI")
 
 [node name="HUD" type="CanvasLayer" parent="."]

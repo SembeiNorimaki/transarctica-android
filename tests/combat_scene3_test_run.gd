@@ -39,8 +39,9 @@ func wait_until(condition: Callable, timeout := 8.0) -> bool:
 
 
 # A fresh scene. `rts`: real time instead of turn based. `ai`: the enemy AI plays. `iso`: the same
-# map drawn with the isometric tile sets.
-func _new_scene(rts: bool, ai: bool, iso := false) -> void:
+# map drawn with the isometric tile sets. `legacy`: the small test map (24 x 12 tiles, walls, doors,
+# the trains outside it) that most of these tests were written for; false gives the scene as it ships.
+func _new_scene(rts: bool, ai: bool, iso := false, legacy := true) -> void:
     if scene != null:
         scene.queue_free()
         await get_tree().process_frame
@@ -56,12 +57,27 @@ func _new_scene(rts: bool, ai: bool, iso := false) -> void:
         turn_manager.auto_pass_computer_turns = not ai
         managers.add_child(turn_manager)
     s.get_node("AI/CombatAI").enabled = ai
+    if legacy:
+        _use_legacy_map(s)
     if iso:
         _make_iso(s)
     get_tree().root.add_child(s)
     await get_tree().process_frame
     await get_tree().process_frame
     scene = s
+
+# The small map with the trains outside it, and the AI as it was (it attacks when the forces are equal)
+func _use_legacy_map(s: Node) -> void:
+    # The scene's CombatMap node keeps its children (units, overlays): only the painted cells change
+    var small: Node = load("res://scenes/maps/combat_map_square.tscn").instantiate()
+    for layer_name in ["Ground", "Objects", "WallsX", "WallsY"]:
+        (s.get_node("CombatMap/" + layer_name) as TileMapLayer).tile_map_data = (small.get_node(layer_name) as TileMapLayer).tile_map_data
+    small.free()
+    s.get_node("TrainContainer/PlayerTrain").position = Vector2(492, 482)
+    s.get_node("TrainContainer/EnemyTrain").position = Vector2(804, -36)
+    s.get_node("Managers/DeploymentManager").entry_inset = 0
+    (s as CombatScene3).camera_margin = 300.0
+    s.get_node("AI/CombatAI").attack_ratio = 0.75
 
 # The painted cells of the square map, with the isometric tile sets (the tiles are in the same order)
 func _make_iso(s: Node) -> void:
@@ -91,6 +107,9 @@ func _run() -> void:
     await _test_combat_ai_rts()
     await _test_combat_ai_turns()
     await _test_retreat_and_flee()
+    await _test_trench_map()
+    await _test_defensive_ai()
+    await _test_cover_advance()
     await _test_isometric()
     await _test_overlays()
     await _test_modes_and_errors()
@@ -145,8 +164,8 @@ func _test_loading() -> void:
     eq(scene.battle_unit_manager.soldiers.size(), 0, "nobody is on the battlefield at the start")
     eq(scene.deployment_manager.get_aboard(PLAYER).size(), 5, "five soldiers in the player's barracks")
     eq(scene.deployment_manager.get_aboard(ENEMY).size(), 5, "five soldiers in the enemy's barracks")
-    eq(scene.player_train.wagons.size(), 2, "player train: locomotive and barracks")
-    eq(scene.enemy_train.wagons.size(), 2, "enemy train: locomotive and barracks")
+    eq(scene.player_train.wagons.size(), 3, "player train: locomotive, barracks and cannon")
+    eq(scene.enemy_train.wagons.size(), 3, "enemy train: locomotive, barracks and cannon")
     ok(scene.player_train.global_position.y > g.get_world_bounds().end.y, "the player's train is below the map")
     ok(scene.enemy_train.global_position.y < g.get_world_bounds().position.y, "the enemy's train is above the map")
     ok(scene.deployment_manager.get_barracks(PLAYER) is BarracksWagon, "the barracks wagon is known")
@@ -419,19 +438,22 @@ func _test_unit_ai() -> void:
     mine.take_damage(999) # nobody is left to fight: the defender only goes home
     hidden.take_damage(999)
     scene.fog_manager.update_viewer(defender)
-    eq(unit_ai.think(), 1, "the defender goes home")
-    for i in 6: # a few tiles at a time
+    unit_ai.forward_fraction = 0.0 # nobody takes a post: they all patrol
+    unit_ai.seed_random(11)
+    eq(unit_ai.think(), 1, "the defender walks to patrol near its train")
+    for i in 8: # a few tiles at a time
         await wait_until(func() -> bool: return defender.get_action() == &"idle", 3.0)
         unit_ai.think()
     await wait_until(func() -> bool: return defender.get_action() == &"idle", 3.0)
-    ok(Vector2(defender.tile).distance_to(Vector2(15, 0)) <= unit_ai.defend_radius + 0.01, "and holds there")
-    eq(unit_ai.think(), 0, "a defender at home with nobody around does nothing")
+    ok(defender.tile.y <= unit_ai.patrol_depth and absi(defender.tile.x - 15) <= unit_ai.patrol_half_width, "and patrols close to the train (%s)" % defender.tile)
+    eq(unit_ai.get_role(defender), UnitAI.Role.PATROL, "as a patroller")
     # attack with nothing in sight: advance to the objective
+    scene.occupancy_service.move(defender, Vector2i(15, 0)); defender.place_at(Vector2i(15, 0), "S") # where it patrols is random
     unit_ai.set_orders(UnitAI.Stance.ATTACK, Vector2i(5, 10), Vector2i(15, 0))
     var y_before := defender.tile.y
     eq(unit_ai.think(), 1, "an attacker advances")
     ok(await wait_until(func() -> bool: return defender.get_action() == &"idle" and defender.tile.y > y_before), "closer to the objective")
-    ok(defender.tile.y - y_before <= unit_ai.advance_steps, "no more than advance_steps at once")
+    ok(defender.tile.y - y_before <= unit_ai.advance_steps + 3, "a short walk at a time")
     # retreat
     unit_ai.set_orders(UnitAI.Stance.RETREAT, Vector2i(5, 10), Vector2i(15, 0))
     eq(unit_ai.think(), 1, "a retreating soldier walks to the train")
@@ -531,6 +553,110 @@ func _test_retreat_and_flee() -> void:
     ok(await wait_until(func() -> bool: return scene.outcome == "victory", 3.0), "which wins the battle")
     ok(not ai.enabled, "the AI is off at the end")
     _speed(1.0)
+
+
+#region the trench map (the scene as it ships)
+func _test_trench_map() -> void:
+    await _new_scene(true, false, false, false)
+    var g := scene.grid_service
+    var dm := scene.deployment_manager
+    eq(g.map_rect, Rect2i(0, 0, 75, 34), "the ground is 75 x 34 tiles")
+    var bounds := g.get_world_bounds()
+    ok(bounds.size.x >= 2400.0 and bounds.size.y >= 1080.0, "which fills the 2400 x 1080 screen")
+    ok(scene.enemy_train.global_position.y < 200.0, "the enemy train is at the top of the screen")
+    ok(scene.player_train.global_position.y > 880.0, "the player train is at the bottom")
+    ok(bounds.has_point(scene.enemy_train.global_position) and bounds.has_point(scene.player_train.global_position), "both on the map")
+    eq(dm.get_door_tile(ENEMY).y, 3, "the enemy's door is below its train yard")
+    eq(dm.get_door_tile(PLAYER).y, 30, "the player's is above its yard")
+    var p := dm.deploy(PLAYER, "p_u0")
+    var e := dm.deploy(ENEMY, "e_u0")
+    ok(p != null and e != null and p.tile.y >= 29 and e.tile.y <= 4, "soldiers get off next to their trains")
+    # trenches: covered, walkable
+    for tile in [Vector2i(10, 7), Vector2i(10, 26), Vector2i(30, 12), Vector2i(37, 15)]:
+        eq(scene.terrain_service.get_type(tile), "trench", "%s is a trench" % tile)
+        eq(scene.terrain_service.get_cover(tile), CoverLevel.HALF, "%s gives half cover" % tile)
+        ok(scene.terrain_service.is_walkable(tile), "and can be walked")
+    eq(scene.terrain_service.get_cover(Vector2i(40, 5)), CoverLevel.NONE, "open snow gives none")
+    ok(not scene.terrain_service.is_walkable(Vector2i(14, 11)), "ruins block the way")
+    var path := scene.pathfinding_service.find_path(p.tile, e.tile + Vector2i(0, 2), scene.battle_unit_manager.get_profile(p))
+    ok(path.size() > 20, "there is a way from one train to the other (%d steps, %s to %s)" % [path.size(), p.tile, e.tile])
+    ok(scene.camera_service.world_bounds.size.is_equal_approx(bounds.size), "the camera stays on the map")
+
+
+func _all_unit_rows(team: String) -> Array[int]:
+    var rows: Array[int] = []
+    for soldier in _field(team):
+        rows.append(soldier.tile.y)
+    return rows
+
+func _test_defensive_ai() -> void:
+    await _new_scene(true, true, false, false)
+    _speed(8.0)
+    var ai := scene.combat_ai
+    var unit_ai := ai.unit_ai
+    var dm := scene.deployment_manager
+    var door := dm.get_door_tile(ENEMY)
+    unit_ai.seed_random(5)
+    scene.player_ai.unit_ai.seed_random(6)
+    ok(await wait_until(func() -> bool: return _field(ENEMY).size() >= 3, 15.0), "the enemy gets off the train")
+    eq(ai.stance, UnitAI.Stance.DEFEND, "equal forces: it does not attack")
+    # Watch them for a while: they patrol near the train, some hold a post in cover
+    var max_row_seen := 0
+    var patrol_columns := {}
+    var posts_ok := false
+    var elapsed := 0.0
+    while elapsed < 25.0:
+        for soldier in _field(ENEMY):
+            max_row_seen = maxi(max_row_seen, soldier.tile.y)
+            if unit_ai.get_role(soldier) == UnitAI.Role.PATROL:
+                ok(soldier.tile.y <= door.y + unit_ai.patrol_depth + 1, "a patroller stays close to the train (row %d)" % soldier.tile.y)
+                patrol_columns[soldier.tile.x] = true
+        elapsed += 0.5
+        await get_tree().create_timer(0.5, true, false, true).timeout
+    var posts := 0
+    for soldier in _field(ENEMY):
+        if unit_ai.get_role(soldier) == UnitAI.Role.POST:
+            posts += 1
+            var post := unit_ai.get_post(soldier)
+            ok(scene.terrain_service.get_cover(post) >= CoverLevel.HALF, "a post is covered")
+            ok(post.y >= door.y + 6, "and towards the middle")
+            posts_ok = posts_ok or soldier.tile == post
+    ok(posts >= 1 and posts <= 2, "one or two soldiers take posts (%d)" % posts)
+    ok(posts_ok, "and reach them")
+    ok(patrol_columns.size() >= 3, "the patrollers walk sideways (%d columns)" % patrol_columns.size())
+    ok(max_row_seen <= 18, "nobody pushes past the middle of the map (row %d)" % max_row_seen)
+
+    # The player's AI is even more careful
+    scene.player_ai.enabled = true
+    var player_door := dm.get_door_tile(PLAYER)
+    ok(await wait_until(func() -> bool: return _field(PLAYER).size() >= 3, 15.0), "the player's AI gets its soldiers off the train")
+    var min_row_seen := 99
+    elapsed = 0.0
+    while elapsed < 25.0:
+        for soldier in _field(PLAYER):
+            min_row_seen = mini(min_row_seen, soldier.tile.y)
+        elapsed += 0.5
+        await get_tree().create_timer(0.5, true, false, true).timeout
+    ok(min_row_seen >= 14, "the player's soldiers keep to their half (row %d)" % min_row_seen)
+    ok(scene.player_ai.stance != UnitAI.Stance.ATTACK, "and it never attacks (it defends, or retreats when hurt)")
+    ok(scene.ai_label.text.contains("player"), "the label shows both AIs")
+
+# Attackers advance from cover to cover
+func _test_cover_advance() -> void:
+    await _new_scene(true, false, false, false)
+    var dm := scene.deployment_manager
+    var unit_ai := scene.combat_ai.unit_ai
+    var soldier := dm.deploy(ENEMY, "e_u0")
+    scene.occupancy_service.move(soldier, Vector2i(10, 8)); soldier.place_at(Vector2i(10, 8), "S")
+    unit_ai.set_orders(UnitAI.Stance.ATTACK, Vector2i(37, 30), Vector2i(37, 3))
+    for i in 3:
+        var before := soldier.tile
+        eq(unit_ai.think(), 1, "the attacker moves")
+        ok(await wait_until(func() -> bool: return soldier.get_action() == &"idle", 6.0), "and arrives")
+        ok(soldier.tile.y > before.y, "closer to the enemy")
+        if i < 2:
+            ok(scene.terrain_service.get_cover(soldier.tile) >= CoverLevel.HALF, "in cover (%s)" % soldier.tile)
+#endregion
 
 
 func _test_isometric() -> void:

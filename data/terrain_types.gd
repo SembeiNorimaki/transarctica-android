@@ -19,6 +19,7 @@ const DEFS := {
     "sand": {"cost": 1.5},
     "snow": {"cost": 1.5},
     "mud": {"cost": 2.0},
+    "trench": {"cost": 1.0, "cover": CoverLevel.HALF},
     "forest": {"cost": 2.0, "cover": CoverLevel.HALF},
     "shallow_water": {"cost": 3.0},
     "deep_water": {"walkable": false},

@@ -20,6 +20,8 @@ const NO_TILE := Vector2i(-99999, -99999)
 
 ## How many rows from the entry edge a soldier can be put in.
 @export var entry_depth := 2
+## Rows between the edge of the map and the door row. The ground behind it is the train yard.
+@export var entry_inset := 0
 ## A soldier boards when it stands this close (in tiles) to the door tile.
 @export var board_range := 2.0
 
@@ -100,7 +102,7 @@ func is_team_defeated(team: String) -> bool:
 ## The tile of the entry edge the soldiers get off at: the one nearest to the wagon.
 func get_door_tile(team: String) -> Vector2i:
     var rect := grid_service.map_rect
-    var row := rect.position.y if _trains[team]["from_top"] else rect.end.y - 1
+    var row := rect.position.y + entry_inset if _trains[team]["from_top"] else rect.end.y - 1 - entry_inset
     var wagon := get_barracks(team)
     var best := Vector2i(rect.get_center().x, row)
     if wagon == null:
@@ -239,7 +241,7 @@ func _find_boarding_spot(soldier: Soldier) -> Vector2i:
 # The first `entry_depth` rows from the entry edge of the team
 func _in_entry_zone(team: String, tile: Vector2i) -> bool:
     var rect := grid_service.map_rect
-    var depth := tile.y - rect.position.y if _trains[team]["from_top"] else rect.end.y - 1 - tile.y
+    var depth := tile.y - rect.position.y - entry_inset if _trains[team]["from_top"] else rect.end.y - 1 - entry_inset - tile.y
     return depth >= 0 and depth < entry_depth
 
 func _can_stand(tile: Vector2i, ignore: Object = null) -> bool:

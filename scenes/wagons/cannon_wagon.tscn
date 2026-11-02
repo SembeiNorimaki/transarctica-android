@@ -2,8 +2,13 @@
 
 [ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_y0apk"]
 [ext_resource type="Texture2D" uid="uid://dis6w08ugtha8" path="res://assets/wagons/cannon_tr.png" id="2_rc7k8"]
+[ext_resource type="Script" path="res://scripts/wagons/cannon_wagon.gd" id="3_cannon"]
 
 [node name="CannonWagon" unique_id=420343912 instance=ExtResource("1_y0apk")]
+script = ExtResource("3_cannon")
 
 [node name="Sprite2D" parent="." index="0" unique_id=1095718610]
 texture = ExtResource("2_rc7k8")
+
+[node name="Muzzle" type="Marker2D" parent="." index="2"]
+position = Vector2(0, -24)

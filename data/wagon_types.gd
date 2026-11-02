@@ -11,6 +11,7 @@ const TYPES = {
         "stores": [],
         "default_cargo": "",
         "capacity": 0,
+        "max_hp": 200,
         "footprint": "wagon_large"
     },
     "BarracksWagon": {
@@ -24,6 +25,7 @@ const TYPES = {
         "stores": ["Soldiers"],
         "default_cargo": "Soldiers",
         "capacity": 5,
+        "max_hp": 100,
         "footprint": "wagon_small"
     },
     "CannonWagon": {
@@ -37,6 +39,7 @@ const TYPES = {
         "stores": ["Ammunition"],
         "default_cargo": "Ammunition",
         "capacity": 20,
+        "max_hp": 80,
         "footprint": "wagon_small"
     },
     "MerchandiseWagon": {
@@ -50,6 +53,7 @@ const TYPES = {
         "stores": ["Crate"],
         "default_cargo": "Crate",
         "capacity": 10,
+        "max_hp": 100,
         "footprint": "wagon_small"
     },
     "SteelWagon": {
@@ -64,6 +68,7 @@ const TYPES = {
         "stores": ["Steel"],
         "default_cargo": "Steel",
         "capacity": 20,
+        "max_hp": 120,
         "footprint": "wagon_small"
     },
     "TenderWagon": {
@@ -77,6 +82,7 @@ const TYPES = {
         "stores": ["Coal"],
         "default_cargo": "Coal",
         "capacity": 100,
+        "max_hp": 100,
         "footprint": "wagon_small"
     },
 

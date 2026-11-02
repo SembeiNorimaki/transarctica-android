@@ -9,8 +9,22 @@ class_name GenericWagon
 # so a wagon script that reads it can create a cyclic reference.
 
 signal clicked(wagon: GenericWagon)
+signal damaged(wagon: GenericWagon, amount: int)
+signal destroyed(wagon: GenericWagon)
+
+# Physics layers of the wagons' Area2D (see project.godot): a cannonball looks for the other team's
+const LAYER_PLAYER_TRAIN := 1
+const LAYER_ENEMY_TRAIN := 2
+const DESTROYED_TINT := Color(0.25, 0.25, 0.25)
 
 @onready var sprite: Sprite2D = $Sprite2D # kept: wagon variants may use it
+@onready var area: Area2D = $Area2D # detects clicks and cannonball hits
+
+## Soldier.TEAM_PLAYER or Soldier.TEAM_ENEMY. Set by the train (HorizontalTrain.add_wagon).
+var team := "player"
+var max_hp := 100
+var hp := 100
+var is_destroyed := false
 
 var wagon_type := ""
 var wagon_dim := Vector2i.ZERO # size in the horizontal view
@@ -22,6 +36,7 @@ var max_cargo_amount := 0 # capacity
 
 # If a wagon variant overrides _ready(), it must call super() so the visuals are refreshed.
 func _ready() -> void:
+    _apply_team_layer()
     _refresh_visuals()
 
 
@@ -62,6 +77,10 @@ func apply_data(wagon_data: Dictionary, type_info: Dictionary) -> void:
         push_warning("GenericWagon: %s holds %d but its capacity is %d" % [wagon_type, amount, max_cargo_amount])
     cargo_amount = clampi(amount, 0, max_cargo_amount)
 
+    max_hp = maxi(int(type_info.get("max_hp", 100)), 1)
+    hp = clampi(int(wagon_data.get("hp", max_hp)), 0, max_hp)
+    is_destroyed = hp <= 0
+
     if is_node_ready():
         _refresh_visuals()
 
@@ -83,6 +102,40 @@ func get_icon() -> Texture2D:
 
 func get_free_capacity() -> int:
     return max_cargo_amount - cargo_amount
+#endregion
+
+
+#region team and damage
+# Only sets variables, so it is safe to call BEFORE the wagon is in the tree.
+func set_team(new_team: String) -> void:
+    team = new_team
+    if is_node_ready():
+        _apply_team_layer()
+
+# The wagon's Area2D sits on its team's layer. It looks at nothing (mask 0): the cannonballs look at it.
+func _apply_team_layer() -> void:
+    area.collision_layer = LAYER_ENEMY_TRAIN if team == "enemy" else LAYER_PLAYER_TRAIN
+    area.collision_mask = 0
+    if is_destroyed:
+        _show_destroyed()
+
+# A cannonball hit. Returns true if the wagon took the damage.
+func take_damage(amount: int) -> bool:
+    if is_destroyed or amount <= 0:
+        return false
+    hp = maxi(hp - amount, 0)
+    damaged.emit(self, amount)
+    if hp <= 0:
+        is_destroyed = true
+        _show_destroyed()
+        destroyed.emit(self)
+    return true
+
+# The wreck stays on the train, but nobody can click it or hit it any more
+func _show_destroyed() -> void:
+    modulate = DESTROYED_TINT
+    area.input_pickable = false
+    area.set_deferred("monitorable", false)
 #endregion
 
 

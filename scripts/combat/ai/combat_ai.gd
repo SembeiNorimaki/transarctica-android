@@ -24,12 +24,15 @@ signal fled
 @export var enabled := true
 ## Game seconds between two rounds of thinking.
 @export var think_interval := 0.5
-## The team attacks when it has at least this many times the enemy's strength.
-@export var attack_ratio := 0.75
+## The team attacks when it has at least this many times the enemy's strength. It starts out
+## supposing the enemy is as strong as itself (ratio 1), so above 1 it waits for proof.
+@export var attack_ratio := 1.5
 ## Below this many times the enemy's strength it retreats.
 @export var retreat_ratio := 0.35
 ## Seconds a stance lasts at least, so it does not change its mind all the time.
 @export var min_stance_time := 4.0
+## Share of the soldiers that take a post in cover towards the middle when defending (see UnitAI).
+@export_range(0.0, 1.0) var forward_fraction := 0.3
 ## What the AI supposes about the enemy soldiers it has not seen yet: each one has this much hp.
 @export var assumed_enemy_hp := 100.0
 
@@ -60,6 +63,7 @@ func setup() -> void:
             "CombatAI: not injected")
     train_ai.team = team
     unit_ai.team = team
+    unit_ai.forward_fraction = forward_fraction
     train_ai.setup()
     unit_ai.setup()
     train_ai.departed.connect(_on_departed)

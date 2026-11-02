@@ -28,6 +28,7 @@ func setup_train(train: HorizontalTrain, train_data: Dictionary, team: Team) -> 
         push_error("HorizontalTrainManager: train data has no wagons")
         return false
     
+    train.team = "player" if team == Team.PLAYER else "enemy" # before the wagons: they take it
     for wagon_data in wagons_data:
         train.add_wagon(wagon_data)
     # Forget the train if it is freed (e.g. destroyed in combat)
