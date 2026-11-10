@@ -94,12 +94,13 @@ func remove_soldier(soldier: Soldier) -> void:
     soldier_removed.emit(soldier)
     soldier.queue_free()
 
-## Deploys the soldiers of CombatMapManager.get_spawns(). Facing: the player's face north-east,
-## the enemy's south-west, so they look at each other on a map laid out corner to corner.
+## Deploys the soldiers of CombatMapManager.get_spawns(). A spawn marker may say which way its unit
+## faces; otherwise the player's face north-west and the enemy's south-east, so they look at each
+## other on a map laid out corner to corner.
 func spawn_all(spawns: Array[Dictionary]) -> void:
     for spawn_data in spawns:
         var facing := "SE" if spawn_data["team"] == Soldier.TEAM_ENEMY else "NW"
-        spawn(spawn_data["team"], spawn_data["unit_type"], spawn_data["tile"], facing)
+        spawn(spawn_data["team"], spawn_data["unit_type"], spawn_data["tile"], str(spawn_data.get("facing", facing)))
 #endregion
 
 

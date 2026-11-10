@@ -67,11 +67,15 @@ script = ExtResource("CombatInputManager")
 
 [node name="FogManager" type="Node" parent="Managers"]
 script = ExtResource("FogManager")
+enabled = false
 
 [node name="TurnManager" type="Node" parent="Managers"]
 script = ExtResource("TurnManager")
 
 [node name="CombatMap" parent="." instance=ExtResource("map")]
+
+[node name="BuildingContainer" type="Node2D" parent="CombatMap"]
+y_sort_enabled = true
 
 [node name="UnitContainer" type="Node2D" parent="CombatMap"]
 y_sort_enabled = true

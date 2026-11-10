@@ -1,8 +1,9 @@
 extends Node
 class_name CombatMapManager
 # Turns a painted CombatMap into the state of the services: it sets up the grid, the terrain, the
-# walls and doors and the objects. After that it keeps the drawing of the doors up to date when
-# an edge changes. The map itself never knows about the services.
+# walls and doors, the objects and the buildings. After that it keeps the drawing of the doors up to
+# date when an edge changes, and frees the tiles of a building that is destroyed. The map itself
+# never knows about the services.
 
 # Injected by the scene
 var combat_map: CombatMap
@@ -10,8 +11,16 @@ var grid_service: GridService
 var terrain_service: TerrainService
 var edge_service: EdgeOccupancyService
 var occupancy_service: TileOccupancyService
+## Where the GenericBuildings are put: a Y-sorted node, a sibling of the units' container. Needed
+## only if the map has a Buildings layer.
+var building_container: Node2D
+
+const BUILDING_SCENE: PackedScene = preload("res://scenes/buildings/generic_building.tscn")
+
+signal building_destroyed(building: GenericBuilding)
 
 var objects: Array[MapObject] = []
+var buildings: Array[GenericBuilding] = []
 
 
 # Call once, after the injection
@@ -26,6 +35,7 @@ func setup() -> void:
     _load_objects()
     _load_buildings()
     combat_map.set_spawns_visible(false)
+    combat_map.set_building_placeholders_visible(false)
     edge_service.edge_changed.connect(_on_edge_changed)
 
 
@@ -72,13 +82,29 @@ func _load_objects() -> void:
         occupancy_service.place(object, object.tile, Footprint.single(), CombatObjectTypes.get_layer(object.type))
         objects.append(object)
 
-# A building blocks movement and sight on all the tiles it covers
+# A GenericBuilding takes the place of each building placeholder of the map. It blocks movement and
+# sight on all the tiles it covers, until it is destroyed.
 func _load_buildings() -> void:
-    for data in combat_map.read_buildings():
+    var placeholders := combat_map.read_buildings()
+    if placeholders.is_empty():
+        return
+    assert(building_container != null, "CombatMapManager: the map has buildings but no building_container is injected")
+    for data in placeholders:
+        var building := BUILDING_SCENE.instantiate() as GenericBuilding
+        building_container.add_child(building)
+        building.setup(data, grid_service.tile_to_world(Vector2(data["tile"])), grid_service.tile_size)
         var size: Vector2i = data["size"]
-        var building := MapObject.new(data["type"], data["tile"])
         occupancy_service.place(building, building.tile, Footprint.rect(size.x, size.y), TileOccupancyService.LAYER_STRUCTURE)
-        objects.append(building)
+        building.destroyed.connect(_on_building_destroyed)
+        buildings.append(building)
+
+## The building that covers this tile (null if there is none, or it is destroyed).
+func get_building_at(tile: Vector2i) -> GenericBuilding:
+    return occupancy_service.get_first_at(tile, TileOccupancyService.LAYER_STRUCTURE) as GenericBuilding
+
+func _on_building_destroyed(building: GenericBuilding) -> void:
+    occupancy_service.remove(building) # units can walk and see through the rubble
+    building_destroyed.emit(building)
 
 func _on_edge_changed(a: Vector2i, b: Vector2i) -> void:
     var edge := edge_service.get_edge(a, b)

@@ -14,6 +14,11 @@ const TYPES := {
     "SniperRifle": {"range": 12, "damage": 60, "windup": 0.6, "cooldown": 1.2, "ap_cost": 3.0},
     "TankCannon": {"range": 9, "damage": 45, "windup": 0.5, "cooldown": 1.2, "ap_cost": 4.0},
     "HeavyCannon": {"range": 11, "damage": 80, "windup": 0.7, "cooldown": 1.6, "ap_cost": 5.0},
+    "ArtilleryGun": {"range": 16, "damage": 100, "windup": 1.0, "cooldown": 2.0, "ap_cost": 6.0},
+    "VehicleMG": {"range": 7, "damage": 14, "windup": 0.2, "cooldown": 0.5, "ap_cost": 1.5},
+    "GravCannon": {"range": 10, "damage": 60, "windup": 0.5, "cooldown": 1.2, "ap_cost": 4.0},
+    "SpeederGun": {"range": 6, "damage": 22, "windup": 0.2, "cooldown": 0.5, "ap_cost": 2.0},
+    "GunshipCannon": {"range": 9, "damage": 35, "windup": 0.3, "cooldown": 0.8, "ap_cost": 3.0},
 }
 
 

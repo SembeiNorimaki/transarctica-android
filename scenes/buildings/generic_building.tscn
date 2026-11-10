@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/generic_building.gd" id="1_script"]
+
+[node name="GenericBuilding" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="Rubble" type="Polygon2D" parent="."]
+visible = false
+z_index = -8
+color = Color(0.2, 0.18, 0.17, 0.95)

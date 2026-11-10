@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://b4u8vieuc48la" path="res://scenes/units/soldier.tscn" id="1_soldier"]
+[ext_resource type="SpriteFrames" path="res://assets/tilesets/buggy.tres" id="2_frames"]
+
+[node name="Buggy" instance=ExtResource("1_soldier")]
+
+[node name="AnimatedSprite2D" parent="." index="1"]
+position = Vector2(0, -16)
+sprite_frames = ExtResource("2_frames")
+animation = &"N"

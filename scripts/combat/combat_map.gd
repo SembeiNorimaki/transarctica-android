@@ -9,10 +9,12 @@ class_name CombatMap
 #   WallsY   : the same between a tile and its y+1 neighbor. Drawn on the south side of the tile
 #              (south-west on an isometric map).
 #   Roads    : optional. Road tiles over the ground (custom data "terrain", see TerrainTypes)
-#   Buildings: optional. One tile per building, painted on its first tile (the north corner, the
-#              one with the smallest x and y). Custom data "building_type" and "building_size"
-#              (the tiles it covers: 3 x 3, 4 x 4...).
-#   Spawns   : markers where soldiers start (custom data "spawn_team", "spawn_type")
+#   Buildings: optional. Placeholders: one tile per building, painted on its first tile (the north
+#              corner, the one with the smallest x and y). Which building a tile is comes from
+#              data/combat_tiles.json (BuildingTypes has its size: 1 x 1 up to 4 x 4). At run time
+#              CombatMapManager hides this layer and puts a GenericBuilding where each tile is.
+#   Spawns   : markers where units start. Which unit (and which way it faces) a tile is comes from
+#              data/combat_tiles.json too.
 #   Fog      : drawn by FogManager over everything (unexplored, explored; visible = no tile)
 # Each border between two tiles belongs to exactly one wall layer cell, so a tile can have walls on
 # all its sides. To put a wall on the north or west side of a tile, paint it in the neighbor.
@@ -70,18 +72,30 @@ func read_objects() -> Array[Dictionary]:
             result.append({"tile": cell, "type": object_type})
     return result
 
-## [{"tile": Vector2i, "type": String, "size": Vector2i}] for each building. `tile` is its first
-## tile; it covers size.x * size.y tiles from there.
+## One element for each building placeholder:
+## {"tile": its first tile, "type": String, "size": Vector2i, "texture": the picture of the placeholder,
+##  "texture_origin": Vector2, "y_sort_origin": int}. It covers size.x * size.y tiles from `tile`.
 func read_buildings() -> Array[Dictionary]:
     var result: Array[Dictionary] = []
     if buildings == null:
         return result
+    var tileset_path := buildings.tile_set.resource_path
     for cell in buildings.get_used_cells():
-        var building_type := _custom(buildings, cell, "building_type")
-        if building_type == "":
+        var source_id := buildings.get_cell_source_id(cell)
+        var coords := buildings.get_cell_atlas_coords(cell)
+        var building_type := str(CombatTiles.lookup(tileset_path, source_id, coords).get("building_type", ""))
+        if not BuildingTypes.exists(building_type):
+            push_warning("CombatMap: tile %s of the Buildings layer (atlas %d, %s) is not a known building in %s" % [cell, source_id, coords, CombatTiles.PATH])
             continue
-        var size: Vector2i = buildings.get_cell_tile_data(cell).get_custom_data("building_size")
-        result.append({"tile": cell, "type": building_type, "size": Vector2i(maxi(size.x, 1), maxi(size.y, 1))})
+        var source := buildings.tile_set.get_source(source_id) as TileSetAtlasSource
+        var tile_data := source.get_tile_data(coords, 0)
+        var texture := AtlasTexture.new()
+        texture.atlas = source.texture
+        texture.region = source.get_tile_texture_region(coords)
+        result.append({
+            "tile": cell, "type": building_type, "size": BuildingTypes.get_size(building_type),
+            "texture": texture, "texture_origin": Vector2(tile_data.texture_origin), "y_sort_origin": tile_data.y_sort_origin,
+        })
     return result
 
 ## [{"a": Vector2i, "b": Vector2i, "type": String, "open": bool}] for each wall, fence, window or door.
@@ -91,13 +105,20 @@ func read_edges() -> Array[Dictionary]:
     _read_wall_layer(walls_y, Vector2i(0, 1), result)
     return result
 
-## [{"tile": Vector2i, "team": String, "unit_type": String}] for each spawn marker.
+## [{"tile": Vector2i, "team": String, "unit_type": String, "facing": String}] for each spawn
+## marker. "facing" is only there for the markers that say it (the vehicle markers: one per facing).
 func read_spawns() -> Array[Dictionary]:
     var result: Array[Dictionary] = []
+    var tileset_path := spawns.tile_set.resource_path
     for cell in spawns.get_used_cells():
-        var team := _custom(spawns, cell, "spawn_team")
-        if team != "":
-            result.append({"tile": cell, "team": team, "unit_type": _custom(spawns, cell, "spawn_type")})
+        var entry := CombatTiles.lookup(tileset_path, spawns.get_cell_source_id(cell), spawns.get_cell_atlas_coords(cell))
+        if not entry.has("unit_type"):
+            push_warning("CombatMap: tile %s of the Spawns layer is not a known unit in %s" % [cell, CombatTiles.PATH])
+            continue
+        var spawn := {"tile": cell, "team": str(entry["team"]), "unit_type": str(entry["unit_type"])}
+        if entry.has("facing"):
+            spawn["facing"] = str(entry["facing"])
+        result.append(spawn)
     return result
 #endregion
 
@@ -122,6 +143,11 @@ func clear_edge_visual(a: Vector2i, b: Vector2i) -> void:
 
 func set_spawns_visible(value: bool) -> void:
     spawns.visible = value
+
+## The placeholder tiles of the Buildings layer (GenericBuildings are drawn instead).
+func set_building_placeholders_visible(value: bool) -> void:
+    if buildings != null:
+        buildings.visible = value
 #endregion
 
 

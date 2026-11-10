@@ -1,6 +1,7 @@
 extends Node
-# Headless test of the isometric city battle (combat_scene_city.tscn): the big map with roads and 3x3 /
-# 4x4 buildings, the 2x2 tanks, left click to walk, right click to turn, and the scrolling camera.
+# Headless test of the isometric city battle (combat_scene_city.tscn): the big map with roads and
+# buildings of 1x1 to 4x4 tiles (GenericBuildings, destroyable), one unit of each type per team (soldiers and
+# six vehicles, 1x1 and 2x2), fog off by default, left click to walk, right click to turn, and the scrolling camera.
 # It is a scene because the scene uses autoloads.
 # Run:  godot --headless --path . res://tests/combat_city_test_run.tscn
 
@@ -45,6 +46,8 @@ func _run() -> void:
     await _test_map()
     await _test_units()
     await _test_tank_pathfinding()
+    await _test_vehicles_get_out()
+    await _test_destroying_buildings()
     await _test_clicks()
     await _test_camera()
     scene.queue_free()
@@ -97,59 +100,70 @@ func _test_map() -> void:
     ok(scene.terrain_service.get_cost(road) < scene.terrain_service.get_cost(Vector2i(20, 20)) or scene.terrain_service.get_type(Vector2i(20, 20)) == "road", "walking on the road is cheaper than on snow")
     eq(scene.combat_map.roads.tile_set.get_source(0).get_tiles_count(), 16, "the road tileset has the 16 connections")
 
-    # buildings
-    var buildings := scene.combat_map.read_buildings()
+    # buildings: placeholders in the map, GenericBuildings in the battle
+    var placeholders := scene.combat_map.read_buildings()
+    eq(placeholders.size(), scene.combat_map_manager.buildings.size(), "a GenericBuilding for each placeholder")
+    ok(not scene.combat_map.buildings.visible, "the placeholder tiles are hidden")
     var sizes := {}
-    for b in buildings:
-        sizes[b["size"]] = int(sizes.get(b["size"], 0)) + 1
-        var tiles := scene.occupancy_service.get_tiles_of(_find_building(b["tile"]))
-        eq(tiles.size(), b["size"].x * b["size"].y, "building %s covers %d tiles" % [b["type"], b["size"].x * b["size"].y])
-        eq(scene.occupancy_service.get_layer(_find_building(b["tile"])), TileOccupancyService.LAYER_STRUCTURE, "a building is a structure")
-    ok(sizes.has(Vector2i(3, 3)) and sizes.has(Vector2i(4, 4)), "there are 3x3 and 4x4 buildings (%s)" % sizes)
-    var one: Dictionary = buildings[0]
-    var corner: Vector2i = one["tile"] + one["size"] - Vector2i.ONE
+    var kinds := {}
+    for building in scene.combat_map_manager.buildings:
+        sizes[building.size] = int(sizes.get(building.size, 0)) + 1
+        kinds[building.building_type] = true
+        eq(scene.occupancy_service.get_tiles_of(building).size(), building.size.x * building.size.y, "building %s covers %d tiles" % [building.building_type, building.size.x * building.size.y])
+        eq(scene.occupancy_service.get_layer(building), TileOccupancyService.LAYER_STRUCTURE, "a building is a structure")
+        eq(building.get_parent(), scene.building_container, "it is in the building container")
+        ok(building.sprite.texture != null, "%s has a picture" % building.name)
+    for size in [Vector2i(1, 1), Vector2i(2, 2), Vector2i(3, 3), Vector2i(4, 4)]:
+        ok(sizes.has(size), "there are %s buildings" % size)
+    for kind in BuildingTypes.TYPES:
+        ok(kinds.has(kind), "there is a %s" % kind)
+    var one: GenericBuilding = scene.combat_map_manager.buildings[0]
+    var corner: Vector2i = one.tile + one.size - Vector2i.ONE
     ok(scene.occupancy_service.is_occupied(corner, TileOccupancyService.LAYER_STRUCTURE), "the far corner of a building is blocked too")
+    eq(scene.combat_map_manager.get_building_at(corner), one, "and it is the building that is found there")
     ok(scene.vision_service.has_line_of_sight(Vector2i(8, 20), Vector2i(8, 26)), "sight along a street is open")
+    ok(not scene.fog_manager.enabled, "the fog is off by default")
+    ok(not scene.combat_map.fog.visible, "and the fog layer is hidden")
 
     # the two wall tilesets are still used
     ok(scene.combat_map.walls_x.get_used_cells().size() > 0 and scene.combat_map.walls_y.get_used_cells().size() > 0, "walls on both edge layers")
     ok(not scene.combat_map.read_edges().is_empty(), "the walls are edges of the grid")
 
-func _find_building(tile: Vector2i) -> Object:
-    for object in scene.combat_map_manager.objects:
-        if object.tile == tile and scene.occupancy_service.has_entity(object):
-            return object
-    return null
-
-
 func _test_units() -> void:
-    var soldiers := 0
-    var tanks := 0
+    var types := ["liquidator", "pioneer", "redops", "tank", "artillery", "buggy", "grav_tank", "speeder", "gunship"]
+    for team in ["player", "enemy"]:
+        for unit_type in types:
+            var count := 0
+            for soldier in scene.battle_unit_manager.soldiers:
+                if soldier.team == team and soldier.unit_type == unit_type:
+                    count += 1
+            eq(count, 1, "%s has exactly one %s" % [team, unit_type])
+    eq(scene.battle_unit_manager.soldiers.size(), 18, "9 units a side")
+    var big := 0
     for soldier in scene.battle_unit_manager.soldiers:
         var tiles := scene.occupancy_service.get_tiles_of(soldier)
-        if soldier.unit_type.ends_with("tank"):
-            tanks += 1
-            eq(tiles.size(), 4, "%s covers 2 x 2 tiles" % soldier.unit_id)
-            eq(soldier.footprint.size(), 4, "%s has a 2x2 footprint" % soldier.unit_id)
-            # drawn in the middle of its four tiles
-            var middle := scene.grid_service.tile_to_world(Vector2(soldier.tile) + Vector2(0.5, 0.5))
-            ok(soldier.position.distance_to(middle) < 0.01, "%s is drawn in the middle of its tiles" % soldier.unit_id)
-        else:
-            soldiers += 1
-            eq(tiles.size(), 1, "%s covers one tile" % soldier.unit_id)
-    eq(soldiers, 8, "8 soldiers (4 a side)")
-    eq(tanks, 4, "4 tanks (2 a side)")
-    ok(_first("player", "light_tank") != null and _first("player", "heavy_tank") != null, "the player has both tanks")
-    ok(_first("enemy", "light_tank") != null and _first("enemy", "heavy_tank") != null, "the enemy has both tanks")
-    ok(_first("player", "heavy_tank").max_hp > _first("player", "light_tank").max_hp, "the heavy tank has more hp")
-    ok(WeaponTypes.get_def(_first("player", "heavy_tank").weapon_type)["range"] > WeaponTypes.get_def("AK47")["range"], "tank cannons outrange rifles")
-    var player_y := _first("player", "light_tank").tile.y
-    var enemy_y := _first("enemy", "light_tank").tile.y
-    ok(player_y > 40 and enemy_y < 16, "the teams start in opposite corners")
+        var size: Vector2i = UnitTypes.TYPES[soldier.unit_type].get("size", Vector2i.ONE)
+        eq(tiles.size(), size.x * size.y, "%s covers %d tiles" % [soldier.unit_id, size.x * size.y])
+        eq(soldier.footprint.size(), size.x * size.y, "%s has the footprint of its type" % soldier.unit_id)
+        var middle := scene.grid_service.tile_to_world(Vector2(soldier.tile) + Vector2(size - Vector2i.ONE) / 2.0)
+        ok(soldier.position.distance_to(middle) < 0.01, "%s is drawn in the middle of its tiles" % soldier.unit_id)
+        if size == Vector2i(2, 2):
+            big += 1
+        ok(soldier.sprite.sprite_frames != null and soldier.sprite.sprite_frames.has_animation(StringName(scene.grid_service.orientation_to_screen_direction(soldier.facing))), "%s has a picture for the way it faces" % soldier.unit_id)
+    eq(big, 8, "4 big vehicles a side (tank, artillery, grav tank, gunship)")
+    # the markers say which way the vehicles face: the player's look up the screen, the enemy's down
+    eq(_first("player", "tank").facing, "NW", "the player's vehicles face up the screen")
+    eq(_first("enemy", "gunship").facing, "SE", "the enemy's face down")
+    ok(WeaponTypes.get_def(_first("player", "artillery").weapon_type)["range"] > WeaponTypes.get_def(_first("player", "tank").weapon_type)["range"], "artillery outranges a tank")
+    ok(_first("player", "grav_tank").max_hp > _first("player", "buggy").max_hp, "a grav tank has more hp than a buggy")
+    ok(WeaponTypes.get_def(_first("player", "tank").weapon_type)["range"] > WeaponTypes.get_def("AK47")["range"], "tank cannons outrange rifles")
+    ok(_first("player", "tank").tile.y > 40 and _first("enemy", "tank").tile.y < 16, "the teams start in opposite corners")
+    for soldier in scene.battle_unit_manager.soldiers:
+        ok(soldier.visible, "%s is visible (no fog)" % soldier.unit_id)
 
 
 func _test_tank_pathfinding() -> void:
-    var tank := _first("player", "heavy_tank")
+    var tank := _first("player", "tank")
     var profile := scene.battle_unit_manager.get_profile(tank)
     eq(profile.footprint.size(), 4, "a tank's move profile covers 4 tiles")
     var path := scene.pathfinding_service.find_path(tank.tile, Vector2i(4, 4), profile) # next to the enemy yard
@@ -181,9 +195,72 @@ func _test_tank_pathfinding() -> void:
     ok(blocked.is_empty() or blocked.size() > 12, "and not through the fence (%d steps)" % blocked.size())
 
 
+# every vehicle can leave the yard: 2x2 ones through the 2-wide gaps, and reach the avenue
+func _test_vehicles_get_out() -> void:
+    for unit_type in ["tank", "artillery", "buggy", "grav_tank", "speeder", "gunship"]:
+        var unit := _first("player", unit_type)
+        var profile := scene.battle_unit_manager.get_profile(unit)
+        var path := scene.pathfinding_service.find_path(unit.tile, Vector2i(40, 46), profile)
+        ok(path.size() > 5, "the player's %s gets out of its yard (%d steps)" % [unit_type, path.size()])
+        var enemy := _first("enemy", unit_type)
+        var enemy_path := scene.pathfinding_service.find_path(enemy.tile, Vector2i(14, 8), scene.battle_unit_manager.get_profile(enemy))
+        ok(enemy_path.size() > 5, "and the enemy's %s too (%d steps)" % [unit_type, enemy_path.size()])
+
+
+# a building is destroyed when its hp run out: it leaves rubble and its tiles are free
+func _test_destroying_buildings() -> void:
+    var manager := scene.combat_map_manager
+    var building: GenericBuilding = null
+    for candidate in manager.buildings:
+        if candidate.size == Vector2i(3, 3):
+            building = candidate
+            break
+    ok(building != null, "found a 3x3 building")
+    var tiles := building.get_tiles()
+    eq(building.hp, building.max_hp, "a new building is undamaged")
+    eq(building.max_hp, BuildingTypes.get_max_hp(building.building_type), "its hp are those of its type")
+    var events := []
+    building.damaged.connect(func(_b: GenericBuilding, amount: int) -> void: events.append(amount))
+    var destroyed_signals := []
+    manager.building_destroyed.connect(func(b: GenericBuilding) -> void: destroyed_signals.append(b))
+    ok(not building.take_damage(10), "a hit that does not kill returns false")
+    eq(building.hp, building.max_hp - 10, "hp go down")
+    ok(building.sprite.modulate != Color.WHITE, "a damaged building looks damaged")
+    ok(not building.take_damage(0) and not building.take_damage(-5), "no damage changes nothing")
+    eq(events, [10], "damaged is emitted for each hit")
+    for tile in tiles:
+        ok(scene.occupancy_service.is_occupied(tile, TileOccupancyService.LAYER_STRUCTURE), "%s is still blocked" % tile)
+    var soldier := _first("player", "liquidator")
+    var profile := scene.battle_unit_manager.get_profile(soldier)
+    var across_from := building.tile + Vector2i(-1, 1) # along the middle row of the building, from one side to the other
+    var across_to := building.tile + Vector2i(building.size.x, 1)
+    var before := scene.pathfinding_service.find_path(across_from, across_to, profile)
+    for tile in before:
+        ok(not tiles.has(tile), "before, the way round the building does not cross it (%s)" % tile)
+    ok(building.take_damage(building.max_hp), "the hit that takes the last hp destroys it")
+    ok(building.is_destroyed and building.hp == 0, "it is destroyed")
+    ok(not building.sprite.visible and building.rubble.visible, "rubble instead of the building")
+    eq(destroyed_signals, [building], "the manager says it was destroyed")
+    for tile in tiles:
+        ok(not scene.occupancy_service.is_occupied(tile, TileOccupancyService.LAYER_STRUCTURE), "%s is free now" % tile)
+        ok(scene.terrain_service.is_walkable(tile), "and walkable")
+    ok(manager.get_building_at(tiles[0]) == null, "no building is found there any more")
+    ok(not building.take_damage(50), "a destroyed building takes no more damage")
+    # a unit can now walk over what it left
+    var after := scene.pathfinding_service.find_path(across_from, across_to, profile)
+    ok(after.size() > 0, "a soldier finds a way across the ruin")
+    var crosses := false
+    for tile in after:
+        if tiles.has(tile):
+            crosses = true
+    ok(crosses, "and it goes over the rubble")
+    ok(after.size() <= before.size() or before.is_empty(), "which is shorter than going round")
+    ok(scene.vision_service.has_line_of_sight(across_from, across_to), "and sight goes through where it stood")
+
+
 func _test_clicks() -> void:
     var bum := scene.battle_unit_manager
-    var tank := _first("player", "light_tank")
+    var tank := _first("player", "tank")
     scene.camera_service.set_pos(scene.combat_map.to_global(tank.position))
     await get_tree().process_frame
     await get_tree().process_frame
@@ -213,11 +290,10 @@ func _test_clicks() -> void:
     bum.select(soldier)
     await _click(MOUSE_BUTTON_RIGHT, _screen_of(soldier.tile + Vector2i(0, -6)))
     eq(soldier.facing, "N", "a soldier turns to a tile straight 'north' of it in tile space")
-    ok(tank.facing != "N" or true, "the other unit is untouched")
 
     # left click walks
     bum.select(tank)
-    var goal := tank.tile + Vector2i(0, -3)
+    var goal := tank.tile + Vector2i(-3, 0)
     var from := tank.tile
     await _click(MOUSE_BUTTON_LEFT, _screen_of(goal))
     ok(await wait_until(func() -> bool: return tank.tile == goal and tank.get_action() == &"idle", 10.0), "a left click on a free tile walks the tank there")
@@ -232,8 +308,12 @@ func _test_clicks() -> void:
     ok(tank.facing in ["E", "NE", "SE"], "after the walk it can still be turned (%s)" % tank.facing)
 
     # a tank can't be sent onto a building
-    var building: Dictionary = scene.combat_map.read_buildings()[0]
-    var path := scene.pathfinding_service.find_path(tank.tile, building["tile"], bum.get_profile(tank))
+    var building: GenericBuilding = null
+    for candidate in scene.combat_map_manager.buildings:
+        if not candidate.is_destroyed:
+            building = candidate
+            break
+    var path := scene.pathfinding_service.find_path(tank.tile, building.tile, bum.get_profile(tank))
     ok(path.is_empty(), "no path onto a building")
 
 

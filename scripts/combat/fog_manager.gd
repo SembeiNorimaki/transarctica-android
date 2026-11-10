@@ -30,6 +30,8 @@ var visibility_service: VisibilityService
 var battle_unit_manager: BattleUnitManager
 var edge_service: EdgeOccupancyService
 var terrain_service: TerrainService
+## Optional: with it, a building that is destroyed opens the view
+var occupancy_service: TileOccupancyService
 
 var _dirty := false # something that changes what soldiers see happened: recompute next frame
 
@@ -49,6 +51,10 @@ func setup() -> void:
     battle_unit_manager.soldier_removed.connect(_on_soldier_died)
     if edge_service != null:
         edge_service.edge_changed.connect(func(_a: Vector2i, _b: Vector2i) -> void: _dirty = true)
+    if occupancy_service != null:
+        occupancy_service.entity_removed.connect(func(entity: Object, _tiles: Array[Vector2i]) -> void:
+            if entity is GenericBuilding:
+                _dirty = true)
     if terrain_service != null:
         terrain_service.terrain_changed.connect(func(_tiles: Array[Vector2i]) -> void: _dirty = true)
     for soldier in battle_unit_manager.soldiers:

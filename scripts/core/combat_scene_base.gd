@@ -33,6 +33,8 @@ class_name CombatSceneBase
 # Map, containers and overlays
 @onready var combat_map: CombatMap = $CombatMap
 @onready var unit_container: Node2D = $CombatMap/UnitContainer
+## Where the buildings of the map are put (only scenes whose map has a Buildings layer have one)
+@onready var building_container: Node2D = get_node_or_null("CombatMap/BuildingContainer")
 @onready var path_overlay: PathOverlay = $CombatMap/Overlays/PathOverlay
 @onready var vision_overlay: VisionOverlay = $CombatMap/Overlays/VisionOverlay
 @onready var nav_graph_overlay: NavGraphOverlay = $CombatMap/Overlays/NavGraphOverlay
@@ -153,6 +155,7 @@ func _inject() -> void:
     combat_map_manager.terrain_service = terrain_service
     combat_map_manager.edge_service = edge_service
     combat_map_manager.occupancy_service = occupancy_service
+    combat_map_manager.building_container = building_container
 
     battle_unit_manager.unit_container = unit_container
     battle_unit_manager.grid_service = grid_service
@@ -173,6 +176,7 @@ func _inject() -> void:
     fog_manager.battle_unit_manager = battle_unit_manager
     fog_manager.edge_service = edge_service
     fog_manager.terrain_service = terrain_service
+    fog_manager.occupancy_service = occupancy_service
 
     path_overlay.grid_service = grid_service
     path_overlay.battle_unit_manager = battle_unit_manager

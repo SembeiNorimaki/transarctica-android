@@ -1,20 +1,20 @@
 [gd_resource type="SpriteFrames" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/tilesets/imgs/light_tank.png" id="1_tex"]
-
-[sub_resource type="AtlasTexture" id="A_E"]
-atlas = ExtResource("1_tex")
-region = Rect2(0, 0, 96, 72)
+[ext_resource type="Texture2D" path="res://assets/tilesets/imgs/vehicles.png" id="1_tex"]
 
 [sub_resource type="AtlasTexture" id="A_N"]
 atlas = ExtResource("1_tex")
-region = Rect2(96, 0, 96, 72)
+region = Rect2(0, 0, 96, 72)
 
 [sub_resource type="AtlasTexture" id="A_NE"]
 atlas = ExtResource("1_tex")
+region = Rect2(96, 0, 96, 72)
+
+[sub_resource type="AtlasTexture" id="A_E"]
+atlas = ExtResource("1_tex")
 region = Rect2(192, 0, 96, 72)
 
-[sub_resource type="AtlasTexture" id="A_NW"]
+[sub_resource type="AtlasTexture" id="A_SE"]
 atlas = ExtResource("1_tex")
 region = Rect2(288, 0, 96, 72)
 
@@ -22,15 +22,15 @@ region = Rect2(288, 0, 96, 72)
 atlas = ExtResource("1_tex")
 region = Rect2(384, 0, 96, 72)
 
-[sub_resource type="AtlasTexture" id="A_SE"]
+[sub_resource type="AtlasTexture" id="A_SW"]
 atlas = ExtResource("1_tex")
 region = Rect2(480, 0, 96, 72)
 
-[sub_resource type="AtlasTexture" id="A_SW"]
+[sub_resource type="AtlasTexture" id="A_W"]
 atlas = ExtResource("1_tex")
 region = Rect2(576, 0, 96, 72)
 
-[sub_resource type="AtlasTexture" id="A_W"]
+[sub_resource type="AtlasTexture" id="A_NW"]
 atlas = ExtResource("1_tex")
 region = Rect2(672, 0, 96, 72)
 

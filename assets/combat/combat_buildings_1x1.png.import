@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dm27yhjx0wa0b"
-path="res://.godot/imported/heavy_tank.png-cb85b506f10307b44f895e91cb34d788.ctex"
+uid="uid://cl85ww2nrcjit"
+path="res://.godot/imported/combat_buildings_1x1.png-129db7884fd1825ee0cbf4ea11bd34df.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tilesets/imgs/heavy_tank.png"
-dest_files=["res://.godot/imported/heavy_tank.png-cb85b506f10307b44f895e91cb34d788.ctex"]
+source_file="res://assets/combat/combat_buildings_1x1.png"
+dest_files=["res://.godot/imported/combat_buildings_1x1.png-129db7884fd1825ee0cbf4ea11bd34df.ctex"]
 
 [params]
 
