@@ -239,7 +239,9 @@ func _on_tile_hovered(tile: Vector2i) -> void:
     for object in occupancy_service.get_entities_at(tile):
         if object is MapObject:
             text += "  | %s" % object.type
-        elif (object as Soldier).visible:
+        elif object is GenericBuilding:
+            text += "  | %s (%d/%d hp)" % [object.building_type, object.hp, object.max_hp]
+        elif object is Soldier and (object as Soldier).visible:
             text += "  | %s" % (object as Soldier).unit_id
     if vision_overlay.visible and vision_overlay.get_probe_text() != "":
         text += "  | " + vision_overlay.get_probe_text()

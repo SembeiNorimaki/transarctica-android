@@ -50,6 +50,7 @@ func _run() -> void:
     await _test_destroying_buildings()
     await _test_clicks()
     await _test_camera()
+    _test_hover_over_buildings()
     scene.queue_free()
     await get_tree().process_frame
     print("%d checks, %d failed" % [_checks, _failed])
@@ -346,3 +347,16 @@ func _test_camera() -> void:
     cam.set_pos(Vector2(99999, 99999))
     eq(cam.cam.global_position, bounds.end, "and at the bottom-right")
     ok(bounds.size.x > get_viewport().get_visible_rect().size.x, "the view is smaller than the map")
+
+
+# hovering any tile (also under a building) must not fail: the info line names what is there
+func _test_hover_over_buildings() -> void:
+    var building: GenericBuilding = null
+    for candidate in scene.combat_map_manager.buildings:
+        if not candidate.is_destroyed:
+            building = candidate
+            break
+    scene._on_tile_hovered(building.tile)
+    ok(scene.info_label.text.contains(building.building_type), "hovering a building names it (%s)" % scene.info_label.text)
+    scene._on_tile_hovered(_first("player", "tank").tile)
+    ok(scene.info_label.text.contains(_first("player", "tank").unit_id), "hovering a unit names it")

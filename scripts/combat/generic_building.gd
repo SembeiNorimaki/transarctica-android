@@ -53,7 +53,7 @@ func get_hp_fraction() -> float:
     return float(hp) / float(maxi(max_hp, 1))
 
 ## Takes `amount` hp off. Returns true if this hit destroyed the building.
-func take_damage(amount: int, source: Variant = null) -> bool:
+func take_damage(amount: int, _source: Variant = null) -> bool:
     if is_destroyed or amount <= 0:
         return false
     hp = maxi(hp - amount, 0)
