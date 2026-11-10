@@ -37,12 +37,14 @@ func _run() -> void:
     root.add_child(scene)
     await process_frame
     await process_frame
+    scene.battle_unit_manager.roll_hits = false # every shot that is not blocked hits, so the damage can be counted
     await _test_loading()
     await _test_fog()
     await _test_move()
     await _test_path_overlay()
     await _test_overlays()
     await _test_attack()
+    await _test_attack_preview_and_bullets()
     await _test_doors()
     await _test_death()
     await _test_turns()
@@ -228,7 +230,7 @@ func _test_attack() -> void:
     shooter.attack_fired.connect(func(_a: Soldier, _t: Soldier) -> void: fired.append(true))
     var shots := []
     m.shot_resolved.connect(func(a: Soldier, t: Soldier, d: int, c: int) -> void: shots.append([d, c]))
-    m.handle_tile_tap(tile)
+    _tap_twice(m, tile)
     await process_frame
     eq(shooter.get_action(), &"attack", "attacking")
     ok(shooter.status_label.text.contains("ATTACKING"), "status label says attacking")
@@ -243,7 +245,7 @@ func _test_attack() -> void:
     var wall_a: Vector2i = shooter.tile + axis[1]
     scene.edge_service.add(wall_a, tile, "fence")
     hp_before = target.hp
-    m.handle_tile_tap(tile)
+    _tap_twice(m, tile)
     ok(await wait_until(func() -> bool: return shooter.get_action() == &"idle" and target.hp < hp_before), "second volley")
     eq(hp_before - target.hp, 15, "half cover: 20 * 0.75")
     scene.edge_service.remove(wall_a, tile)
@@ -252,7 +254,7 @@ func _test_attack() -> void:
     _refill()
     hp_before = target.hp
     var tile_before := shooter.tile
-    m.handle_tile_tap(tile)
+    m.command_attack(shooter, target) # walks round the wall into a place with a line, then shoots
     ok(await wait_until(func() -> bool: return target.hp < hp_before, 12.0), "walks to a place with a line of sight, then shoots")
     ok(shooter.tile != tile_before, "the shooter moved to get a line")
     ok(scene.vision_service.has_line_of_sight(shooter.tile, tile), "and now has one")
@@ -261,6 +263,112 @@ func _test_attack() -> void:
     var friend := _soldier("player", "redops")
     eq(m.command_attack(shooter, friend), false, "no attacking your own team")
     await wait_until(func() -> bool: return shooter.get_action() == &"idle")
+
+
+func _test_attack_preview_and_bullets() -> void:
+    var m := scene.battle_unit_manager
+    var bm: BulletManager = scene.bullet_manager
+    var hud: UnitHud = scene.unit_hud
+    _refill()
+    var shooter := _soldier("player", "liquidator")
+    var axis := _axis_tile(shooter.tile, 3)
+    var tile: Vector2i = axis[0]
+    var wall_a: Vector2i = shooter.tile + axis[1]
+    var wall_b: Vector2i = wall_a + axis[1]
+    var target := m.spawn("enemy", "liquidator", tile, scene.grid_service.get_orientation(tile, shooter.tile))
+    m.select(shooter)
+    await process_frame
+    # the HUD
+    ok(hud.visible and hud.panel.visible, "the HUD shows for a selected unit")
+    ok(hud.hp_label.text.contains(str(shooter.hp)), "HUD shows the hp")
+    ok(hud.icon.texture != null, "HUD shows the unit icon")
+    eq(hud.ap_row.visible, shooter.show_action_points, "AP row follows the unit")
+    shooter.set_action_points(shooter.max_action_points - 1)
+    ok(hud.ap_label.text.contains(str(shooter.max_action_points - 1)), "HUD follows the AP")
+    _refill()
+    # modes from the HUD buttons
+    hud.attack_button.button_pressed = true
+    eq(m.action_mode, BattleUnitManager.ActionMode.ATTACK, "Attack button sets the attack mode")
+    hud.move_button.button_pressed = true
+    eq(m.action_mode, BattleUnitManager.ActionMode.MOVE, "Move button sets the move mode")
+    ok(not hud.attack_button.button_pressed, "buttons are exclusive")
+    hud.move_button.button_pressed = false
+    eq(m.action_mode, BattleUnitManager.ActionMode.AUTO, "no button: automatic")
+    # a tap on a free tile in attack mode previews nothing
+    m.set_action_mode(BattleUnitManager.ActionMode.ATTACK)
+    m.handle_tile_tap(_tile_at(shooter.tile, 1))
+    eq(m.preview_path.size(), 0, "attack mode does not preview a path")
+    m.set_action_mode(BattleUnitManager.ActionMode.AUTO)
+    # info
+    var info := m.get_attack_info(shooter, target)
+    eq(info["blocked"], false, "an open shot is not blocked")
+    ok(info["hit_chance"] > 0.5 and info["hit_chance"] < 1.0, "hit chance between 50 and 100%")
+    var near_chance := m.get_hit_chance(shooter, shooter.tile, target)
+    ok(near_chance <= 1.0 and near_chance >= 0.05, "hit chance clamped")
+    # first tap previews, nothing fired
+    var count_before := bm.bullets.size()
+    var hp_before := target.hp
+    m.handle_tile_tap(tile)
+    ok(m.is_attack_previewing(shooter, target), "the first tap previews the attack")
+    eq(shooter.get_action(), &"idle", "and does not shoot")
+    # a blocked shot: red, a second tap does nothing
+    scene.edge_service.add(wall_a, wall_b, "wall")
+    ok(m.get_attack_info(shooter, target)["blocked"], "a wall blocks the shot")
+    eq(m.get_attack_info(shooter, target)["reason"], "no line of sight", "reason is shown")
+    m.handle_tile_tap(tile)
+    eq(shooter.get_action(), &"idle", "a blocked shot is not confirmed")
+    scene.edge_service.remove(wall_a, wall_b)
+    # no AP
+    shooter.set_action_points(0)
+    if shooter.show_action_points:
+        eq(m.get_attack_info(shooter, target)["reason"], "no AP", "no AP blocks the shot")
+    _refill()
+    # confirm: a bullet flies, damage comes on arrival
+    m.clear_preview()
+    var arrived := []
+    bm.bullet_arrived.connect(func(b: Bullet) -> void: arrived.append(b))
+    var fired_bullets := []
+    bm.bullet_fired.connect(func(b: Bullet) -> void: fired_bullets.append(b))
+    _tap_twice(m, tile)
+    ok(await wait_until(func() -> bool: return fired_bullets.size() == 1, 3.0), "a bullet is spawned")
+    ok(fired_bullets[0].get_parent() == scene.bullet_container, "in the bullet container")
+    eq(target.hp, hp_before, "no damage before the bullet arrives")
+    ok(await wait_until(func() -> bool: return arrived.size() == 1, 3.0), "the bullet arrives")
+    eq(target.hp, hp_before - 20, "damage on arrival")
+    await process_frame
+    await process_frame
+    eq(scene.bullet_container.get_child_count(), 0, "the bullet is gone after it arrived")
+    eq(bm.bullets.size(), count_before, "and no longer listed")
+    # several bullets at once
+    var a := bm.fire(Vector2(0, 0), Vector2(600, 0), true)
+    var b := bm.fire(Vector2(0, 50), Vector2(600, 50), true)
+    var c := bm.fire(Vector2(0, 100), Vector2(900, 100), false)
+    eq(bm.bullets.size(), count_before + 3, "several bullets fly at the same time")
+    eq(scene.bullet_container.get_child_count(), 3, "all in the container")
+    ok(bm.has_bullets(), "has_bullets")
+    ok(await wait_until(func() -> bool: return not bm.has_bullets(), 4.0), "they all arrive")
+    # a miss with the roll on never damages
+    m.roll_hits = true
+    m.rng.seed = 7
+    var misses := 0
+    for i in 12:
+        _refill()
+        target.hp = 100
+        shooter.facing = scene.grid_service.get_orientation(shooter.tile, target.tile)
+        _tap_twice(m, tile)
+        await wait_until(func() -> bool: return shooter.get_action() == &"idle" and not bm.has_bullets(), 4.0)
+        if target.hp == 100:
+            misses += 1
+    ok(misses > 0 and misses < 12, "with the roll on, some shots miss and some hit (%d misses)" % misses)
+    m.roll_hits = false
+    # the preview goes when the selection changes
+    m.handle_tile_tap(tile)
+    m.select(null)
+    ok(m.preview_attack_target == null, "deselecting clears the preview")
+    await process_frame
+    ok(not hud.panel.visible, "the HUD hides when nothing is selected")
+    target.take_damage(1000)
+    await process_frame
 
 
 func _test_doors() -> void:
@@ -297,7 +405,7 @@ func _test_death() -> void:
     m.select(shooter)
     var died := []
     m.soldier_died.connect(func(s: Soldier) -> void: died.append(s))
-    m.handle_tile_tap(victim.tile)
+    _tap_twice(m, victim.tile)
     ok(await wait_until(func() -> bool: return not victim.is_alive()), "sniper kills a 30 hp target")
     await process_frame
     eq(victim.get_action(), &"dead", "dead action")
@@ -375,6 +483,11 @@ func _test_fog() -> void:
     ok(fog.visible and not _soldier("enemy", "pioneer").visible, "fog back on")
 
 
+# A tap on an enemy previews the shot, the same tap again fires
+func _tap_twice(m: BattleUnitManager, tile: Vector2i) -> void:
+    m.handle_tile_tap(tile)
+    m.handle_tile_tap(tile)
+
 # A tap on a free tile previews the path, the same tap again walks it
 func _walk_to(m: BattleUnitManager, tile: Vector2i) -> void:
     m.handle_tile_tap(tile)
@@ -410,7 +523,7 @@ func _test_path_overlay() -> void:
     scene.fog_manager.enabled = false
     await process_frame
     m.select(s)
-    m.handle_tile_tap(enemy.tile)
+    m.command_attack(s, enemy)
     await process_frame
     await process_frame
     eq(s.get_attack_target(), enemy, "the soldier's target is known while it walks to it")
@@ -611,6 +724,7 @@ func _test_rts() -> void:
     await process_frame
     await process_frame
     var m := scene.battle_unit_manager
+    m.roll_hits = false
     ok(scene.flow_manager == rts, "the scene runs in real time")
     eq(scene.end_turn_button.visible, false, "no End turn button in real time")
     eq(scene.pause_button.visible, true, "Pause button shown")
@@ -627,6 +741,7 @@ func _test_rts() -> void:
     # the enemy can be commanded too (no turns), and fights back on its own
     scene.fog_manager.enabled = false
     var victim := _soldier("player", "redops")
+    victim.hp = 60 # the weakest of those it can hit is the one it shoots
     var hp := victim.hp
     var shooter := _spawn_enemy_near(victim.tile, 3)
     ok(await wait_until(func() -> bool: return victim.hp < hp, 6.0), "an idle soldier shoots an enemy it sees (auto engage)")

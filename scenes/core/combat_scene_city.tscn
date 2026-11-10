@@ -19,6 +19,8 @@
 [ext_resource type="PackedScene" path="res://scenes/maps/combat_map_city.tscn" id="map"]
 [ext_resource type="Script" uid="uid://bts2pu8sooii4" path="res://scripts/combat/vision_overlay.gd" id="VisionOverlay"]
 [ext_resource type="Script" uid="uid://dh4sur3qrpgfl" path="res://scripts/combat/nav_graph_overlay.gd" id="NavGraphOverlay"]
+[ext_resource type="Script" path="res://scripts/combat/bullet_manager.gd" id="BulletManager"]
+[ext_resource type="PackedScene" path="res://scenes/UI/unit_hud.tscn" id="unit_hud"]
 
 [node name="CombatSceneCity" type="Node2D"]
 script = ExtResource("scene")
@@ -69,6 +71,9 @@ script = ExtResource("CombatInputManager")
 script = ExtResource("FogManager")
 enabled = false
 
+[node name="BulletManager" type="Node" parent="Managers"]
+script = ExtResource("BulletManager")
+
 [node name="TurnManager" type="Node" parent="Managers"]
 script = ExtResource("TurnManager")
 
@@ -79,6 +84,9 @@ y_sort_enabled = true
 
 [node name="UnitContainer" type="Node2D" parent="CombatMap"]
 y_sort_enabled = true
+
+[node name="BulletContainer" type="Node2D" parent="CombatMap"]
+z_index = 4
 
 [node name="Overlays" type="Node2D" parent="CombatMap"]
 z_index = 10
@@ -150,3 +158,5 @@ theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 18
+
+[node name="UnitHud" parent="HUD" instance=ExtResource("unit_hud")]

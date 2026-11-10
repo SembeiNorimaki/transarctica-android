@@ -6,16 +6,18 @@ extends RefCounted
 #   windup   : seconds between the order to fire and the shot
 #   cooldown : seconds after the shot before the soldier can do something else
 #   ap_cost  : action points a shot costs in turn based combat
+#   accuracy : the chance to hit a target right next to the shooter (0..1). It falls to half of it
+#              at the weapon's range (see BattleUnitManager.get_hit_chance)
 
-const DEFAULT := {"range": 6, "damage": 15, "windup": 0.3, "cooldown": 0.6, "ap_cost": 2.0}
+const DEFAULT := {"range": 6, "damage": 15, "windup": 0.3, "cooldown": 0.6, "ap_cost": 2.0, "accuracy": 0.95}
 
 const TYPES := {
     "AK47": {"range": 7, "damage": 20, "windup": 0.3, "cooldown": 0.6, "ap_cost": 2.0},
-    "SniperRifle": {"range": 12, "damage": 60, "windup": 0.6, "cooldown": 1.2, "ap_cost": 3.0},
+    "SniperRifle": {"range": 12, "damage": 60, "windup": 0.6, "cooldown": 1.2, "ap_cost": 3.0, "accuracy": 1.0},
     "TankCannon": {"range": 9, "damage": 45, "windup": 0.5, "cooldown": 1.2, "ap_cost": 4.0},
     "HeavyCannon": {"range": 11, "damage": 80, "windup": 0.7, "cooldown": 1.6, "ap_cost": 5.0},
-    "ArtilleryGun": {"range": 16, "damage": 100, "windup": 1.0, "cooldown": 2.0, "ap_cost": 6.0},
-    "VehicleMG": {"range": 7, "damage": 14, "windup": 0.2, "cooldown": 0.5, "ap_cost": 1.5},
+    "ArtilleryGun": {"range": 16, "damage": 100, "windup": 1.0, "cooldown": 2.0, "ap_cost": 6.0, "accuracy": 0.8},
+    "VehicleMG": {"range": 7, "damage": 14, "windup": 0.2, "cooldown": 0.5, "ap_cost": 1.5, "accuracy": 0.85},
     "GravCannon": {"range": 10, "damage": 60, "windup": 0.5, "cooldown": 1.2, "ap_cost": 4.0},
     "SpeederGun": {"range": 6, "damage": 22, "windup": 0.2, "cooldown": 0.5, "ap_cost": 2.0},
     "GunshipCannon": {"range": 9, "damage": 35, "windup": 0.3, "cooldown": 0.8, "ap_cost": 3.0},

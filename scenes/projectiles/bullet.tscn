@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/bullet.gd" id="1_bullet"]
+[ext_resource type="Texture2D" path="res://assets/projectiles/bullet.png" id="2_tex"]
+
+[node name="Bullet" type="Node2D"]
+script = ExtResource("1_bullet")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_tex")

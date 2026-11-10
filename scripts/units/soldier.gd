@@ -15,6 +15,8 @@ signal step_started(soldier: Soldier, from_tile: Vector2i, to_tile: Vector2i)
 signal step_finished(soldier: Soldier, tile: Vector2i)
 signal attack_fired(soldier: Soldier, target: Soldier)
 signal hp_changed(soldier: Soldier)
+## Only in turn based combat (see TurnManager): the action points changed.
+signal action_points_changed(soldier: Soldier)
 signal died(soldier: Soldier)
 
 const TEAM_PLAYER := "player"
@@ -210,6 +212,7 @@ func set_action_points(value: float, show := true) -> void:
     action_points = value
     show_action_points = show
     refresh_labels()
+    action_points_changed.emit(self)
 
 func is_alive() -> bool:
     return hp > 0

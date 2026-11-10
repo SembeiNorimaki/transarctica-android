@@ -1,0 +1,109 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/UI/unit_hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp"]
+bg_color = Color(0.85, 0.2, 0.2, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ap"]
+bg_color = Color(0.25, 0.7, 0.95, 1)
+
+[node name="UnitHud" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -340.0
+offset_top = -140.0
+offset_right = 340.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Icon" type="TextureRect" parent="Panel/Margin/Row"]
+custom_minimum_size = Vector2(104, 104)
+layout_mode = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Info" type="VBoxContainer" parent="Panel/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="Panel/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Unit"
+
+[node name="HpRow" type="HBoxContainer" parent="Panel/Margin/Row/Info"]
+layout_mode = 2
+
+[node name="HpLabel" type="Label" parent="Panel/Margin/Row/Info/HpRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "HP 0/0"
+
+[node name="HpBar" type="ProgressBar" parent="Panel/Margin/Row/Info/HpRow"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp")
+show_percentage = false
+
+[node name="ApRow" type="HBoxContainer" parent="Panel/Margin/Row/Info"]
+layout_mode = 2
+
+[node name="ApLabel" type="Label" parent="Panel/Margin/Row/Info/ApRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "AP 0/0"
+
+[node name="ApBar" type="ProgressBar" parent="Panel/Margin/Row/Info/ApRow"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/fill = SubResource("StyleBoxFlat_ap")
+show_percentage = false
+
+[node name="Buttons" type="VBoxContainer" parent="Panel/Margin/Row"]
+layout_mode = 2
+alignment = 1
+
+[node name="MoveButton" type="Button" parent="Panel/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(130, 46)
+layout_mode = 2
+toggle_mode = true
+text = "Move"
+
+[node name="AttackButton" type="Button" parent="Panel/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(130, 46)
+layout_mode = 2
+toggle_mode = true
+text = "Attack"

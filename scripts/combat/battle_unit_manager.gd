@@ -12,15 +12,30 @@ signal soldier_died(soldier: Soldier)
 ## The soldier left the battle alive (it boarded its train): it is gone from `soldiers`.
 signal soldier_removed(soldier: Soldier)
 signal shot_resolved(attacker: Soldier, target: Soldier, damage: int, cover: int)
-## The path preview appeared, changed or went away (see show_preview).
+## The path or attack preview appeared, changed or went away (see show_preview, show_attack_preview).
 signal preview_changed
+## The way a tap is understood changed (see ActionMode).
+signal mode_changed(mode: int)
+
+## What a tap on a tile means for the selected unit.
+##   AUTO   : a free tile is a move, an enemy is an attack (the default)
+##   MOVE   : every tile is a move
+##   ATTACK : only an enemy is a target
+enum ActionMode { AUTO, MOVE, ATTACK }
 
 const SOLDIER_SCENE: PackedScene = preload("res://scenes/units/soldier.tscn")
+## Where bullets leave and arrive, above the feet of a soldier (px).
+const BULLET_HEIGHT := -24.0
 ## Share of the damage that gets through, by CoverLevel.
 const COVER_DAMAGE := {CoverLevel.NONE: 1.0, CoverLevel.HALF: 0.75, CoverLevel.FULL: 0.5}
 
 ## The team the player commands. Soldiers of other teams can only be attacked.
 var player_team := Soldier.TEAM_PLAYER
+
+## false: every shot that is not blocked hits (for tests and for debugging). true: a shot hits with
+## the chance given by get_hit_chance().
+var roll_hits := true
+var rng := RandomNumberGenerator.new()
 
 # Injected by the scene
 var unit_container: Node2D
@@ -31,6 +46,8 @@ var vision_service: VisionService
 var cover_service: CoverService
 ## Decides what orders are allowed (see TurnManager and RtsManager). Optional: without it, anything goes.
 var flow_manager: CombatFlowManager
+## Optional: where the bullets of the shots come from. Without it a shot is resolved at once.
+var bullet_manager: BulletManager
 
 var soldiers: Array[Soldier] = []
 var selected: Soldier = null
@@ -42,6 +59,12 @@ var preview_soldier: Soldier = null
 ## How many tiles of preview_path (from the start) the soldier can walk now, with the action
 ## points it has: the rest does not fit. All of them where there is no such limit.
 var preview_reachable := 0
+## Who the previewed attack is aimed at (null when no attack is previewed). The soldier is
+## preview_soldier. What the preview shows is worked out live: see get_attack_info().
+var preview_attack_target: Soldier = null
+
+## How the selected unit understands a tap on a tile.
+var action_mode := ActionMode.AUTO
 
 var _profiles := {} # Soldier -> MoveProfile
 var _next_number := 0
@@ -52,7 +75,11 @@ func setup() -> void:
     assert(unit_container != null and grid_service != null and occupancy_service != null \
             and pathfinding_service != null and vision_service != null and cover_service != null,
             "BattleUnitManager: not injected")
-    selection_changed.connect(func(_soldier: Soldier) -> void: clear_preview())
+    selection_changed.connect(func(_soldier: Soldier) -> void:
+        clear_preview()
+        set_action_mode(ActionMode.AUTO))
+    if bullet_manager != null:
+        bullet_manager.bullet_arrived.connect(_on_bullet_arrived)
     if flow_manager != null:
         flow_manager.status_changed.connect(clear_preview) # a new turn, action points spent...
 
@@ -130,26 +157,46 @@ func select(soldier: Soldier) -> void:
         selected.selected = true
     selection_changed.emit(selected)
 
-## What a tap on a tile means: a soldier of the player's team is selected; an enemy is attacked by
-## the selected soldier; an empty tile shows the path the selected soldier would walk there (see
-## show_preview), and tapping that same tile again sends the soldier along it.
+## What a tap on a tile means: a soldier of the player's team is selected. Then, depending on the
+## action mode (AUTO: an enemy is attacked, a free tile is walked to):
+##   move:   the path to the tile is previewed (see show_preview); tapping the same tile again walks it
+##   attack: the shot at the enemy is previewed (see show_attack_preview); tapping it again fires
 func handle_tile_tap(tile: Vector2i) -> void:
     var tapped := occupancy_service.get_first_at(tile, TileOccupancyService.LAYER_UNIT) as Soldier
     if tapped != null and not tapped.visible:
         tapped = null # hidden in the fog: the player doesn't know it is there
-    if tapped != null:
+    if tapped != null and tapped.team == player_team:
         clear_preview()
-        if tapped.team == player_team:
-            select(null if tapped == selected else tapped)
-        elif selected != null:
-            command_attack(selected, tapped)
-    elif selected != null:
+        select(null if tapped == selected else tapped)
+        return
+    if selected == null:
+        return
+    var mode := action_mode
+    if mode == ActionMode.AUTO:
+        mode = ActionMode.ATTACK if tapped != null else ActionMode.MOVE
+    if mode == ActionMode.MOVE:
         if is_previewing(selected, tile):
             var walker := selected
             clear_preview()
             command_move(walker, tile)
         else:
             show_preview(selected, tile)
+    elif tapped == null:
+        clear_preview()
+        selected.show_event("pick a target")
+    elif is_attack_previewing(selected, tapped):
+        confirm_attack(selected, tapped)
+    else:
+        show_attack_preview(selected, tapped)
+
+## Chooses how the selected unit understands taps (the HUD buttons). It is AUTO again when the
+## selection changes.
+func set_action_mode(mode: int) -> void:
+    if mode == action_mode:
+        return
+    action_mode = mode
+    clear_preview()
+    mode_changed.emit(mode)
 
 #region path preview
 ## Is this the path being previewed for this soldier to this tile?
@@ -183,7 +230,70 @@ func clear_preview() -> void:
     preview_path = []
     preview_soldier = null
     preview_reachable = 0
+    preview_attack_target = null
     preview_changed.emit()
+
+## Is this the attack of this soldier on this target that is being previewed?
+func is_attack_previewing(soldier: Soldier, target: Soldier) -> bool:
+    return preview_soldier == soldier and preview_attack_target == target and target != null
+
+## Keeps the shot of the soldier at the target as the preview, for the path overlay to draw as a
+## crosshair with the hit chance: red if the shot is blocked. Nothing is fired.
+## Returns false (and shows no preview) if the soldier can't be commanded or can't target it.
+func show_attack_preview(soldier: Soldier, target: Soldier) -> bool:
+    if not _may_command(soldier):
+        clear_preview()
+        return false
+    if target.team == soldier.team or not target.is_alive():
+        clear_preview()
+        return false
+    preview_path = []
+    preview_reachable = 0
+    preview_soldier = soldier
+    preview_attack_target = target
+    preview_changed.emit()
+    return true
+
+## Fires the previewed shot, unless it is blocked (the soldier says why).
+func confirm_attack(soldier: Soldier, target: Soldier) -> bool:
+    var info := get_attack_info(soldier, target)
+    if info["blocked"]:
+        soldier.show_event(str(info["reason"]))
+        return false
+    clear_preview()
+    return command_attack(soldier, target)
+
+## What a shot of the soldier at the target would be like now:
+## {"distance": tiles, "hit_chance": 0..1, "cover": CoverLevel, "in_range": bool, "line_of_sight": bool,
+##  "has_ap": bool, "blocked": bool, "reason": why it is blocked ("" if it is not)}
+func get_attack_info(soldier: Soldier, target: Soldier) -> Dictionary:
+    var weapon := soldier.get_weapon()
+    var distance := Vector2(soldier.tile).distance_to(Vector2(target.tile))
+    var in_range := distance <= float(weapon["range"])
+    var sight := vision_service.has_line_of_sight(soldier.tile, target.tile)
+    var has_ap := flow_manager == null or flow_manager.can_attack(soldier)
+    var reason := ""
+    if not in_range:
+        reason = "out of range"
+    elif not sight:
+        reason = "no line of sight"
+    elif not has_ap:
+        reason = "no AP"
+    return {
+        "distance": distance, "hit_chance": get_hit_chance(soldier, soldier.tile, target),
+        "cover": cover_service.get_cover(soldier.tile, target.tile),
+        "in_range": in_range, "line_of_sight": sight, "has_ap": has_ap,
+        "blocked": reason != "", "reason": reason,
+    }
+
+## The chance that a shot of this soldier, from this tile, hits the target: the weapon's accuracy,
+## which falls to half of it at the end of the weapon's range.
+func get_hit_chance(soldier: Soldier, from_tile: Vector2i, target: Soldier) -> float:
+    var weapon := soldier.get_weapon()
+    var reach := maxf(float(weapon["range"]), 1.0)
+    var distance := Vector2(from_tile).distance_to(Vector2(target.tile))
+    var chance := float(weapon["accuracy"]) * (1.0 - 0.5 * clampf(distance / reach, 0.0, 1.0))
+    return clampf(chance, 0.05, 1.0)
 #endregion
 
 ## What a right click on a tile means: the selected unit turns to look at it. It costs nothing.
@@ -273,6 +383,8 @@ func _on_step_started(soldier: Soldier, _from: Vector2i, to: Vector2i) -> void:
     if soldier == preview_soldier:
         clear_preview()
 
+# The soldier fired. What happens is decided now (the cover, whether it hits); a bullet flies to the
+# target and the damage is done when it gets there.
 func _on_attack_fired(attacker: Soldier, target: Soldier) -> void:
     if not is_instance_valid(target) or not target.is_alive():
         return
@@ -281,13 +393,34 @@ func _on_attack_fired(attacker: Soldier, target: Soldier) -> void:
         return
     var cover := cover_service.get_cover(attacker.tile, target.tile)
     var damage := roundi(float(attacker.get_weapon()["damage"]) * float(COVER_DAMAGE[cover]))
+    var hits := not roll_hits or rng.randf() < get_hit_chance(attacker, attacker.tile, target)
     attacker.show_event("fire!")
-    target.take_damage(damage, attacker)
-    shot_resolved.emit(attacker, target, damage, cover)
+    var shot := {"attacker": attacker, "target": target, "damage": damage, "cover": cover, "hits": hits}
+    if bullet_manager == null:
+        _resolve_shot(shot)
+    else:
+        var aim := Vector2(0, BULLET_HEIGHT)
+        bullet_manager.fire(attacker.position + aim, target.position + aim, hits, shot)
+
+func _on_bullet_arrived(bullet: Bullet) -> void:
+    _resolve_shot(bullet.payload)
+
+# The bullet is there: damage if it hit
+func _resolve_shot(shot: Dictionary) -> void:
+    var attacker := shot.get("attacker") as Soldier
+    var target := shot.get("target") as Soldier
+    if not is_instance_valid(attacker) or not is_instance_valid(target):
+        return
+    var damage := int(shot["damage"]) if shot["hits"] else 0
+    if shot["hits"] and target.is_alive():
+        target.take_damage(damage, attacker)
+    elif not shot["hits"]:
+        target.show_event("miss")
+    shot_resolved.emit(attacker, target, damage, int(shot["cover"]))
 
 func _on_soldier_died(soldier: Soldier) -> void:
     occupancy_service.remove(soldier)
-    if soldier == preview_soldier:
+    if soldier == preview_soldier or soldier == preview_attack_target:
         clear_preview()
     if selected == soldier:
         select(null)

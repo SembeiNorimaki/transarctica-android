@@ -9,8 +9,9 @@ class_name CombatSceneBase
 # (turn based) or an RtsManager (real time). To change the mode, delete one and add the other.
 #
 # Controls: tap (left click) a soldier of yours to select it, tap an empty tile to preview the way there
-# (green: it has the action points for it, yellow: it does not), tap the same tile again to walk it,
-# tap an enemy to attack it (it walks into range first if it has to). Right click turns the selected unit
+# (green: it has the action points for it, yellow: it does not), tap the same tile again to walk it.
+# Tap an enemy to preview the shot (the hit chance, a red crosshair if it is blocked), tap it again to
+# fire. The Move and Attack buttons of the unit panel make every tap one or the other. Right click turns the selected unit
 # towards the tile. Drag to move the camera, wheel to zoom.
 
 # Services
@@ -30,17 +31,23 @@ class_name CombatSceneBase
 @onready var battle_unit_manager: BattleUnitManager = $Managers/BattleUnitManager
 @onready var combat_input_manager: CombatInputManager = $Managers/CombatInputManager
 @onready var fog_manager: FogManager = $Managers/FogManager
+## Optional: with it (and a BulletContainer) a shot is a bullet that flies to its target
+@onready var bullet_manager: BulletManager = get_node_or_null("Managers/BulletManager")
 
 # Map, containers and overlays
 @onready var combat_map: CombatMap = $CombatMap
 @onready var unit_container: Node2D = $CombatMap/UnitContainer
 ## Where the buildings of the map are put (only scenes whose map has a Buildings layer have one)
 @onready var building_container: Node2D = get_node_or_null("CombatMap/BuildingContainer")
+## Where the bullets of the BulletManager fly (above the units)
+@onready var bullet_container: Node2D = get_node_or_null("CombatMap/BulletContainer")
 @onready var path_overlay: PathOverlay = $CombatMap/Overlays/PathOverlay
 @onready var vision_overlay: VisionOverlay = $CombatMap/Overlays/VisionOverlay
 @onready var nav_graph_overlay: NavGraphOverlay = $CombatMap/Overlays/NavGraphOverlay
 
 # UI
+## Optional: the panel of the selected unit, at the bottom of the screen
+@onready var unit_hud: UnitHud = get_node_or_null("HUD/UnitHud")
 @onready var info_label: Label = $HUD/InfoLabel
 @onready var mode_label: Label = $HUD/ModeLabel
 @onready var doors_button: Button = $HUD/Buttons/DoorsButton
@@ -67,6 +74,8 @@ func _ready() -> void:
     _inject()
     combat_map_manager.setup()
     battle_unit_manager.setup()
+    if bullet_manager != null and bullet_container != null:
+        bullet_manager.setup()
     fog_manager.setup() # before the soldiers are deployed: it watches them arrive
     flow_manager.setup()
 
@@ -85,6 +94,10 @@ func _ready() -> void:
     paths_button.pressed.connect(func() -> void: path_overlay.show_all_paths = not path_overlay.show_all_paths)
     sight_button.pressed.connect(func() -> void: vision_overlay.visible = not vision_overlay.visible)
     graph_button.pressed.connect(func() -> void: nav_graph_overlay.visible = not nav_graph_overlay.visible)
+    if unit_hud != null:
+        battle_unit_manager.selection_changed.connect(unit_hud.set_unit)
+        battle_unit_manager.mode_changed.connect(unit_hud.set_mode)
+        unit_hud.mode_selected.connect(battle_unit_manager.set_action_mode)
     end_turn_button.pressed.connect(_on_end_turn_pressed)
     pause_button.pressed.connect(_on_pause_pressed)
 
@@ -165,6 +178,9 @@ func _inject() -> void:
     battle_unit_manager.vision_service = vision_service
     battle_unit_manager.cover_service = cover_service
     battle_unit_manager.flow_manager = flow_manager
+    if bullet_manager != null and bullet_container != null:
+        bullet_manager.bullet_container = bullet_container
+        battle_unit_manager.bullet_manager = bullet_manager
 
     flow_manager.battle_unit_manager = battle_unit_manager
     flow_manager.pathfinding_service = pathfinding_service
@@ -254,5 +270,8 @@ func _on_selection_changed(soldier: Soldier) -> void:
 
 func _on_shot_resolved(attacker: Soldier, target: Soldier, damage: int, cover: int) -> void:
     var cover_text: String = ["no cover", "half cover", "full cover"][cover]
-    info_label.text = "%s hit %s for %d (%s)" % [attacker.unit_id, target.unit_id, damage, cover_text]
+    if damage == 0:
+        info_label.text = "%s missed %s" % [attacker.unit_id, target.unit_id]
+    else:
+        info_label.text = "%s hit %s for %d (%s)" % [attacker.unit_id, target.unit_id, damage, cover_text]
 #endregion
