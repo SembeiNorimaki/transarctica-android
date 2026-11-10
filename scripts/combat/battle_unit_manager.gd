@@ -12,6 +12,8 @@ signal soldier_died(soldier: Soldier)
 ## The soldier left the battle alive (it boarded its train): it is gone from `soldiers`.
 signal soldier_removed(soldier: Soldier)
 signal shot_resolved(attacker: Soldier, target: Soldier, damage: int, cover: int)
+## The path preview appeared, changed or went away (see show_preview).
+signal preview_changed
 
 const SOLDIER_SCENE: PackedScene = preload("res://scenes/units/soldier.tscn")
 ## Share of the damage that gets through, by CoverLevel.
@@ -33,6 +35,14 @@ var flow_manager: CombatFlowManager
 var soldiers: Array[Soldier] = []
 var selected: Soldier = null
 
+## The path previewed for a soldier before it is ordered to walk it (see handle_tile_tap).
+## Empty when there is none. It starts on the soldier's tile and ends on the tile that was tapped.
+var preview_path: Array[Vector2i] = []
+var preview_soldier: Soldier = null
+## How many tiles of preview_path (from the start) the soldier can walk now, with the action
+## points it has: the rest does not fit. All of them where there is no such limit.
+var preview_reachable := 0
+
 var _profiles := {} # Soldier -> MoveProfile
 var _next_number := 0
 
@@ -42,6 +52,9 @@ func setup() -> void:
     assert(unit_container != null and grid_service != null and occupancy_service != null \
             and pathfinding_service != null and vision_service != null and cover_service != null,
             "BattleUnitManager: not injected")
+    selection_changed.connect(func(_soldier: Soldier) -> void: clear_preview())
+    if flow_manager != null:
+        flow_manager.status_changed.connect(clear_preview) # a new turn, action points spent...
 
 
 #region deploying
@@ -89,6 +102,8 @@ func remove_soldier(soldier: Soldier) -> void:
     soldiers.erase(soldier)
     _profiles.erase(soldier)
     occupancy_service.remove(soldier)
+    if soldier == preview_soldier:
+        clear_preview()
     if selected == soldier:
         select(null)
     soldier_removed.emit(soldier)
@@ -116,18 +131,60 @@ func select(soldier: Soldier) -> void:
     selection_changed.emit(selected)
 
 ## What a tap on a tile means: a soldier of the player's team is selected; an enemy is attacked by
-## the selected soldier; an empty tile is where the selected soldier walks.
+## the selected soldier; an empty tile shows the path the selected soldier would walk there (see
+## show_preview), and tapping that same tile again sends the soldier along it.
 func handle_tile_tap(tile: Vector2i) -> void:
     var tapped := occupancy_service.get_first_at(tile, TileOccupancyService.LAYER_UNIT) as Soldier
     if tapped != null and not tapped.visible:
         tapped = null # hidden in the fog: the player doesn't know it is there
     if tapped != null:
+        clear_preview()
         if tapped.team == player_team:
             select(null if tapped == selected else tapped)
         elif selected != null:
             command_attack(selected, tapped)
     elif selected != null:
-        command_move(selected, tile)
+        if is_previewing(selected, tile):
+            var walker := selected
+            clear_preview()
+            command_move(walker, tile)
+        else:
+            show_preview(selected, tile)
+
+#region path preview
+## Is this the path being previewed for this soldier to this tile?
+func is_previewing(soldier: Soldier, tile: Vector2i) -> bool:
+    return preview_soldier == soldier and not preview_path.is_empty() and preview_path[-1] == tile
+
+## Works out the path of the soldier to the tile and keeps it as the preview, for the path overlay to
+## draw: green as far as the soldier's action points go, yellow beyond. Nothing is ordered.
+## Returns false (and shows no preview) if the soldier can't be commanded or there is no path.
+func show_preview(soldier: Soldier, tile: Vector2i) -> bool:
+    if not _may_command(soldier):
+        clear_preview()
+        return false
+    var path := pathfinding_service.find_path(soldier.tile, tile, get_profile(soldier))
+    if path.size() < 2:
+        soldier.show_event("no path")
+        clear_preview()
+        return false
+    var reachable := path.size()
+    if flow_manager != null:
+        reachable = flow_manager.limit_move(soldier, path).size()
+    preview_soldier = soldier
+    preview_path = path
+    preview_reachable = reachable
+    preview_changed.emit()
+    return true
+
+func clear_preview() -> void:
+    if preview_path.is_empty() and preview_soldier == null:
+        return
+    preview_path = []
+    preview_soldier = null
+    preview_reachable = 0
+    preview_changed.emit()
+#endregion
 
 ## What a right click on a tile means: the selected unit turns to look at it. It costs nothing.
 ## A unit that is walking or shooting keeps going.
@@ -213,6 +270,8 @@ func _can_soldier_step(soldier: Soldier, from: Vector2i, to: Vector2i) -> bool:
 
 func _on_step_started(soldier: Soldier, _from: Vector2i, to: Vector2i) -> void:
     occupancy_service.move(soldier, to)
+    if soldier == preview_soldier:
+        clear_preview()
 
 func _on_attack_fired(attacker: Soldier, target: Soldier) -> void:
     if not is_instance_valid(target) or not target.is_alive():
@@ -228,6 +287,8 @@ func _on_attack_fired(attacker: Soldier, target: Soldier) -> void:
 
 func _on_soldier_died(soldier: Soldier) -> void:
     occupancy_service.remove(soldier)
+    if soldier == preview_soldier:
+        clear_preview()
     if selected == soldier:
         select(null)
     soldier_died.emit(soldier)

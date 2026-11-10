@@ -3,11 +3,14 @@ class_name PathOverlay
 # Draws where the soldiers are going: a line along the path they are following, a marker on the
 # tile they are walking to, and a red line to whoever they are about to shoot or are shooting.
 # The selected soldier's path is drawn stronger. Soldiers that are hidden (by the fog) draw nothing.
-# It only reads; it never changes a soldier.
+# It also draws the path being previewed (BattleUnitManager.preview_path): green where the soldier has
+# the action points to walk it, yellow beyond. It only reads; it never changes a soldier.
 
 const PLAYER_COLOR := Color(0.3, 0.75, 1.0)
 const ENEMY_COLOR := Color(1.0, 0.4, 0.35)
 const TARGET_COLOR := Color(1.0, 0.15, 0.15)
+const PREVIEW_OK_COLOR := Color(0.25, 0.95, 0.3)
+const PREVIEW_FAR_COLOR := Color(1.0, 0.85, 0.15)
 
 ## false: only the selected soldier's path is drawn.
 @export var show_all_paths := true
@@ -17,9 +20,13 @@ var grid_service: GridService
 var battle_unit_manager: BattleUnitManager
 
 var _was_drawing := false
+var _preview_listening := false
 
 
 func _process(_delta: float) -> void:
+    if not _preview_listening and battle_unit_manager != null:
+        _preview_listening = true
+        battle_unit_manager.preview_changed.connect(queue_redraw)
     # Soldiers move every frame, so redraw while anything is going on, and once more to clear
     var active := false
     if battle_unit_manager != null:
@@ -45,6 +52,34 @@ func _draw() -> void:
         color.a = 0.95 if selected else 0.55
         _draw_path(soldier, color, 4.0 if selected else 2.0)
         _draw_target(soldier, selected)
+    _draw_preview()
+
+
+# The previewed path: green up to the last tile the soldier can reach now, yellow from there on
+func _draw_preview() -> void:
+    var path := battle_unit_manager.preview_path
+    var soldier := battle_unit_manager.preview_soldier
+    if path.size() < 2 or not is_instance_valid(soldier):
+        return
+    var points := PackedVector2Array()
+    for tile in path:
+        points.append(soldier.get_world_position(tile))
+    var reachable := clampi(battle_unit_manager.preview_reachable, 1, path.size())
+    if reachable > 1:
+        draw_polyline(points.slice(0, reachable), PREVIEW_OK_COLOR, 5.0, true)
+    if reachable < path.size():
+        draw_polyline(points.slice(reachable - 1), PREVIEW_FAR_COLOR, 5.0, true)
+    for i in range(1, points.size() - 1):
+        draw_circle(points[i], 4.0, PREVIEW_OK_COLOR if i < reachable else PREVIEW_FAR_COLOR)
+    var goal_color := PREVIEW_OK_COLOR if reachable == path.size() else PREVIEW_FAR_COLOR
+    _draw_footprint_marker(soldier, path[-1], goal_color)
+    # where the soldier stops if the tile is too far
+    if reachable < path.size():
+        draw_circle(points[reachable - 1], 7.0, PREVIEW_OK_COLOR)
+
+func _draw_footprint_marker(soldier: Soldier, anchor: Vector2i, color: Color) -> void:
+    for offset in soldier.footprint.offsets:
+        draw_polyline(grid_service.get_tile_outline(anchor + offset, 0.85), color, 3.0, true)
 
 
 func _draw_path(soldier: Soldier, color: Color, width: float) -> void:

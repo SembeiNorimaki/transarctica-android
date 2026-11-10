@@ -139,7 +139,7 @@ func _test_move() -> void:
     m.handle_tile_tap(s.tile)
     eq(m.selected, s, "tapping own soldier selects it")
     var goal := start + Vector2i(0, 3)
-    m.handle_tile_tap(goal)
+    _walk_to(m, goal)
     await process_frame
     eq(s.get_action(), &"move", "moving after the order")
     ok(s.status_label.text.begins_with("MOVING"), "status label says moving")
@@ -151,14 +151,14 @@ func _test_move() -> void:
     eq(steps.size(), 3, "three steps")
     eq(actions, [&"move", &"idle"], "action changes reported")
     # unreachable: the tile of a rock
-    m.handle_tile_tap(Vector2i(6, 2))
+    _walk_to(m, Vector2i(6, 2))
     await process_frame
     eq(s.get_action(), &"idle", "no path to a rock: stays idle")
     _refill()
     # a new order while walking is followed after the current step
-    m.handle_tile_tap(goal + Vector2i(4, 0))
+    _walk_to(m, goal + Vector2i(4, 0))
     await create_timer(0.1, true, false, true).timeout
-    m.handle_tile_tap(goal + Vector2i(0, 2))
+    _walk_to(m, goal + Vector2i(0, 2))
     ok(await wait_until(func() -> bool: return s.get_action() == &"idle"), "idle after the redirected order")
     eq(s.tile, goal + Vector2i(0, 2), "ended at the second order's tile")
     ok(s.position.is_equal_approx(scene.grid_service.tile_to_world(Vector2(s.tile))), "no drift after the redirect")
@@ -375,6 +375,12 @@ func _test_fog() -> void:
     ok(fog.visible and not _soldier("enemy", "pioneer").visible, "fog back on")
 
 
+# A tap on a free tile previews the path, the same tap again walks it
+func _walk_to(m: BattleUnitManager, tile: Vector2i) -> void:
+    m.handle_tile_tap(tile)
+    m.handle_tile_tap(tile)
+
+
 func _test_path_overlay() -> void:
     var m := scene.battle_unit_manager
     var s := _soldier("player", "redops")
@@ -382,7 +388,7 @@ func _test_path_overlay() -> void:
     eq(s.get_path_ahead().size(), 0, "no path ahead when idle")
     m.select(s)
     var goal := s.tile + Vector2i(0, 4)
-    m.handle_tile_tap(goal)
+    _walk_to(m, goal)
     await process_frame
     await process_frame
     var ahead := s.get_path_ahead()
@@ -467,6 +473,76 @@ func _test_turns() -> void:
     s.set_action_points(0.0)
     eq(m.command_move(s, before_far), false, "no AP: refused")
     ok(s.event_label.text == "no AP", "player is told")
+
+    # PREVIEW: a tap on a free tile shows the path, it does not walk it
+    var previews := []
+    m.preview_changed.connect(func() -> void: previews.append(true))
+    s.set_action_points(5.0)
+    m.select(s)
+    var from_tile := s.tile
+    corners.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.distance_to(s.tile) > b.distance_to(s.tile))
+    var far_tile: Vector2i = corners[0]
+    m.handle_tile_tap(far_tile)
+    eq(s.get_action(), &"idle", "a first tap does not move the soldier")
+    eq(s.tile, from_tile, "it stays where it is")
+    ok(m.is_previewing(s, far_tile), "the path to the tapped tile is previewed")
+    eq(m.preview_path[0], from_tile, "the preview starts at the soldier")
+    eq(m.preview_path[-1], far_tile, "and ends at the tapped tile")
+    eq(m.preview_reachable, tm.limit_move(s, m.preview_path).size(), "the green part is what its action points allow")
+    ok(m.preview_reachable >= 2 and m.preview_reachable < m.preview_path.size(), "a far tile: green first, then yellow (%d of %d)" % [m.preview_reachable, m.preview_path.size()])
+    ok(previews.size() > 0, "the overlay is told")
+    # another tile: the preview moves there, still nothing walks
+    s.set_action_points(8.0)
+    var near_tile := _tile_at(s.tile, 2)
+    m.handle_tile_tap(near_tile)
+    ok(m.is_previewing(s, near_tile) and not m.is_previewing(s, far_tile), "a different tile previews the path to that one")
+    eq(m.preview_reachable, tm.limit_move(s, m.preview_path).size(), "with its own green part")
+    eq(m.preview_reachable, m.preview_path.size(), "a near tile is all green")
+    eq(s.tile, from_tile, "still not walking")
+    # the same tile again: walk it
+    m.handle_tile_tap(near_tile)
+    eq(m.preview_path.size(), 0, "the preview is gone once the soldier is sent")
+    await process_frame
+    eq(s.get_action(), &"move", "the second tap on the previewed tile walks")
+    ok(await wait_until(func() -> bool: return s.get_action() == &"idle"), "arrived")
+    eq(s.tile, near_tile, "at the tapped tile")
+    # a far tile: the second tap walks as far as the action points go
+    s.set_action_points(4.0)
+    var far_from := s.tile
+    m.handle_tile_tap(far_tile)
+    ok(m.preview_reachable < m.preview_path.size(), "yellow beyond the action points")
+    var green_end: Vector2i = m.preview_path[m.preview_reachable - 1]
+    m.handle_tile_tap(far_tile)
+    ok(await wait_until(func() -> bool: return s.get_action() == &"idle"), "walked")
+    eq(s.tile, green_end, "it stops where the green part ends")
+    ok(s.tile != far_from and s.tile != far_tile, "part of the way")
+    # the preview goes away with the selection, with a tap on a unit, with a new turn, and when there is no path
+    s.set_action_points(8.0)
+    m.handle_tile_tap(far_tile)
+    ok(m.preview_path.size() > 0, "a preview")
+    m.select(null)
+    eq(m.preview_path.size(), 0, "deselecting clears it")
+    m.select(s)
+    m.handle_tile_tap(far_tile)
+    m.handle_tile_tap(s.tile)
+    eq(m.preview_path.size(), 0, "tapping a unit clears it")
+    m.select(s)
+    m.handle_tile_tap(far_tile)
+    tm.status_changed.emit()
+    eq(m.preview_path.size(), 0, "a change of turn or of action points clears it")
+    m.handle_tile_tap(Vector2i(6, 2)) # a rock
+    eq(m.preview_path.size(), 0, "no path: no preview")
+    # with no action points everything is yellow and the second tap is refused
+    s.set_action_points(0.0)
+    m.handle_tile_tap(near_tile)
+    eq(m.preview_reachable, 1, "no AP: nothing is green")
+    eq(m.preview_path.size() > 1, true, "but the path is shown")
+    var stuck := s.tile
+    m.handle_tile_tap(near_tile)
+    await process_frame
+    eq(s.tile, stuck, "and the soldier does not move")
+    ok(s.event_label.text == "no AP", "it says so")
+    s.set_action_points(8.0)
     # an attack costs the weapon's AP and needs them
     var other := _soldier("player", "redops")
     var target := _spawn_enemy_near(other.tile, 2)

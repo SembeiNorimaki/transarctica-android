@@ -8,8 +8,9 @@ class_name CombatSceneBase
 # TURN BASED OR REAL TIME: the Managers node must have exactly ONE child that is a TurnManager
 # (turn based) or an RtsManager (real time). To change the mode, delete one and add the other.
 #
-# Controls: tap (left click) a soldier of yours to select it, tap an empty tile to walk there, tap an
-# enemy to attack it (it walks into range first if it has to). Right click turns the selected unit
+# Controls: tap (left click) a soldier of yours to select it, tap an empty tile to preview the way there
+# (green: it has the action points for it, yellow: it does not), tap the same tile again to walk it,
+# tap an enemy to attack it (it walks into range first if it has to). Right click turns the selected unit
 # towards the tile. Drag to move the camera, wheel to zoom.
 
 # Services
@@ -91,7 +92,7 @@ func _ready() -> void:
     flow_manager.start()
     _update_mode_ui()
     _start_scene()
-    info_label.text = "Left click one of your units (blue) to select it: left click to walk, right click to turn"
+    info_label.text = "Left click one of your units (blue) to select it: left click a tile to preview the way, again to walk, right click to turn"
 
 
 #region hooks for the scenes that extend this one
@@ -249,7 +250,7 @@ func _on_tile_hovered(tile: Vector2i) -> void:
 
 func _on_selection_changed(soldier: Soldier) -> void:
     info_label.text = "Nothing selected" if soldier == null \
-            else "Selected %s (%s). Tap a tile to walk, an enemy to attack" % [soldier.unit_id, soldier.unit_type]
+            else "Selected %s (%s). Tap a tile to preview the way, tap it again to walk, an enemy to attack" % [soldier.unit_id, soldier.unit_type]
 
 func _on_shot_resolved(attacker: Soldier, target: Soldier, damage: int, cover: int) -> void:
     var cover_text: String = ["no cover", "half cover", "full cover"][cover]

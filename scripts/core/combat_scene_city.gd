@@ -6,7 +6,8 @@ class_name CombatSceneCity
 #
 # Controls, besides those of CombatSceneBase: scroll the camera with the arrow keys or WASD, by
 # moving the mouse to the edge of the window, or by dragging; wheel to zoom.
-# Left click: select a unit of yours / walk to the tile / attack an enemy. Right click: turn the
+# Left click: select a unit of yours / preview the path to the tile (green: within its action points,
+# yellow: beyond), and click the same tile again to walk it / attack an enemy. Right click: turn the
 # selected unit towards the tile.
 
 
