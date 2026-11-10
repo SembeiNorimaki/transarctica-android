@@ -52,6 +52,11 @@ func add_wagon(wagon_data: Dictionary) -> GenericWagon:
     # Plain data only, so this is safe before the wagon is in the tree
     wagon.apply_data(wagon_data, wagon_info)
     wagon.set_team(team)
+    if wagon.has_method("set_unit_types"): # a wagon that shows what it carries: the types of its units
+        var unit_types: Array[String] = []
+        for unit_id in wagon_data.get("unit_ids", []):
+            unit_types.append(str(GameState.get_unit(str(unit_id)).get("unit_type", "")))
+        wagon.call("set_unit_types", unit_types)
 
     # The wagon is centered on its slot, then the slot is consumed
     wagon.position = last_wagon_position - Vector2(wagon_width / 2.0, 0.0)

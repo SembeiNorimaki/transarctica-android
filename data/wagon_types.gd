@@ -28,6 +28,21 @@ const TYPES = {
         "max_hp": 100,
         "footprint": "wagon_small"
     },
+    "VehicleCarrierWagon": {
+        "horizontal_scene": preload("res://scenes/wagons/vehicle_carrier_wagon.tscn"),
+        # TODO: draw nav_VehicleCarrierWagon.png. Until then it uses the barracks wagon
+        "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_BarracksWagon.png",
+        "navigation_atlas_orientations": ["SE", "S", "SW", "W", "NW", "N", "NE", "E"],
+        "navigation_atlas_cargo": ["Empty_Soldiers"],
+        "team": "Player",
+        "horizontal_size": Vector2i(128, 48),
+        "navigation_size": Vector2i(78, 55),
+        "stores": ["Vehicles"], # vehicles are units: their ids are in the wagon's unit_ids
+        "default_cargo": "Vehicles",
+        "capacity": 4,
+        "max_hp": 120,
+        "footprint": "wagon_small"
+    },
     "CannonWagon": {
         "horizontal_scene": preload("res://scenes/wagons/cannon_wagon.tscn"),
         "navigation_atlas_file": "res://assets/sprites/wagons/navigation/nav_CannonWagon.png",

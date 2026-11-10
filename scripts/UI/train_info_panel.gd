@@ -18,6 +18,7 @@ class_name TrainInfoPanel
 const RESOURCE_SHEET: Texture2D = preload("res://assets/resources/resources_120x46.png")
 const RESOURCE_SHEET_COLUMNS := 3
 const RESOURCE_SHEET_ROWS := 10 # 360 x 460 px: 3 columns of 120 px, 10 rows of 46 px (like the sprite in trade_resource.tscn)
+const VEHICLE_SIDE_SHEET: Texture2D = preload("res://assets/wagons/vehicles_east.png")
 const SOLDIER_FRAMES: SpriteFrames = preload("res://assets/tilesets/unit.tres")
 
 @export var font_size := 28
@@ -115,6 +116,10 @@ func _describe(wagon: Dictionary, train_data: Dictionary) -> String:
         lines.append("Soldiers %d / %d" % [wagon.get("unit_ids", []).size(), capacity])
         for unit_id in wagon.get("unit_ids", []):
             lines.append("  " + _describe_unit(str(unit_id)))
+    elif info.get("stores", []).has("Vehicles"):
+        lines.append("Vehicles %d / %d" % [wagon.get("unit_ids", []).size(), capacity])
+        for unit_id in wagon.get("unit_ids", []):
+            lines.append("  " + _describe_unit(str(unit_id)))
     elif capacity > 0:
         var cargo := str(wagon.get("cargo_name", ""))
         var qty := int(wagon.get("cargo_qty", 0))
@@ -157,9 +162,22 @@ func _get_wagon_icon(wagon_type: String) -> Texture2D:
     return icon
 
 
+# The side view of a vehicle (the picture the vehicle carrier shows)
+func _get_vehicle_icon(unit_id: String) -> Texture2D:
+    var frame := VehicleCarrierWagon.VEHICLE_FRAMES.find(str(GameState.get_unit(unit_id).get("unit_type", "")))
+    if frame < 0:
+        return null
+    var atlas := AtlasTexture.new()
+    atlas.atlas = VEHICLE_SIDE_SHEET
+    atlas.region = Rect2(frame * 96, 0, 96, 72)
+    return atlas
+
+
 # What the wagon holds: the resource it carries, or a soldier for a barracks with soldiers
 func _get_content_icon(wagon: Dictionary) -> Texture2D:
     if not wagon.get("unit_ids", []).is_empty():
+        if WagonTypes.TYPES.get(str(wagon.get("type", "")), {}).get("stores", []).has("Vehicles"):
+            return _get_vehicle_icon(str(wagon["unit_ids"][0]))
         return SOLDIER_FRAMES.get_frame_texture(&"S", 0)
     var cargo := str(wagon.get("cargo_name", ""))
     if cargo.is_empty() or int(wagon.get("cargo_qty", 0)) <= 0:

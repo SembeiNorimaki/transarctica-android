@@ -30,6 +30,32 @@
             "cargo_qty": 0
         },
         {
+            "type": "VehicleCarrierWagon",
+            "hp": 120,
+            "max_hp": 120,
+            "capacity": 4,
+            "cargo_name": "",
+            "cargo_qty": 0,
+            "unit_ids": [
+                "u20",
+                "u21",
+                "u22",
+                "u23"
+            ]
+        },
+        {
+            "type": "VehicleCarrierWagon",
+            "hp": 120,
+            "max_hp": 120,
+            "capacity": 4,
+            "cargo_name": "",
+            "cargo_qty": 0,
+            "unit_ids": [
+                "u24",
+                "u25"
+            ]
+        },
+        {
             "type": "MerchandiseWagon",
             "hp": 40,
             "max_hp": 40,
