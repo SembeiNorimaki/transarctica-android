@@ -46,6 +46,9 @@ func _run() -> void:
     await _test_units()
     await _test_buildings()
     _test_roads()
+    await _test_building_needs_road()
+    await _test_road_drag()
+    await _test_speed()
     _test_walls()
     _test_tools()
     scene.queue_free()
@@ -77,6 +80,52 @@ func _road_spot() -> Vector2i:
                     and not scene.combat_map.has_road(tile + Vector2i(-1, 0)) and not scene.combat_map.has_road(tile + Vector2i(2, 0)) \
                     and not scene.combat_map.has_road(tile + Vector2i(0, -1)) and not scene.combat_map.has_road(tile + Vector2i(0, 1)) \
                     and not scene.combat_map.has_road(tile + Vector2i(1, -1)) and not scene.combat_map.has_road(tile + Vector2i(1, 1)):
+                return tile
+    return Vector2i(-1, -1)
+
+# Where the pointer is on the screen when it is over a tile
+func _screen_of(tile: Vector2i) -> Vector2:
+    return scene.combat_map.get_global_transform_with_canvas() * (scene.grid_service.tile_to_world(Vector2(tile)))
+
+func _mouse(pressed: bool, at: Vector2) -> void:
+    var event := InputEventMouseButton.new()
+    event.button_index = MOUSE_BUTTON_LEFT
+    event.pressed = pressed
+    event.position = at
+    event.global_position = at
+    get_viewport().push_input(event, true)
+
+func _motion(at: Vector2) -> void:
+    var event := InputEventMouseMotion.new()
+    event.position = at
+    event.global_position = at
+    event.button_mask = MOUSE_BUTTON_MASK_LEFT
+    get_viewport().push_input(event, true)
+
+# A place for a building with a ring of free tiles round it (for roads), and no road along it
+func _bare_spot(building_type: String, avoid: Array[Vector2i] = []) -> Vector2i:
+    var size := BuildingTypes.get_size(building_type)
+    var rect := scene.grid_service.map_rect
+    var manager := scene.combat_map_manager
+    for y in range(rect.position.y + 1, rect.end.y - size.y - 1):
+        for x in range(rect.position.x + 1, rect.end.x - size.x - 1):
+            var tile := Vector2i(x, y)
+            var far := true
+            for other in avoid:
+                if Vector2(other).distance_to(Vector2(tile)) < 8.0:
+                    far = false
+            if not far:
+                continue
+            var clear := true
+            for dy in range(-1, size.y + 1):
+                for dx in range(-1, size.x + 1):
+                    var t := tile + Vector2i(dx, dy)
+                    var inside := dx >= 0 and dy >= 0 and dx < size.x and dy < size.y
+                    if inside:
+                        clear = clear and scene.terrain_service.is_walkable(t) and scene.terrain_service.get_type(t) != "road" and scene.occupancy_service.is_free(t)
+                    else:
+                        clear = clear and manager.why_not_road(t) == ""
+            if clear and manager.get_road_sides(building_type, tile).is_empty():
                 return tile
     return Vector2i(-1, -1)
 
@@ -259,3 +308,150 @@ func _test_tools() -> void:
     eq(bm.tool, BuildManager.Tool.NONE, "a right click puts the tool down")
     eq(scene.build_bar.roads_button.button_pressed, false, "and the button shows it")
     eq(bm.handle_tile_tap(Vector2i(2, 2)), false, "with no tool, taps are not for building")
+
+
+func _test_building_needs_road() -> void:
+    var manager := scene.combat_map_manager
+    var used: Array[Vector2i] = []
+    # a 2x2 house far from any road is refused, and the player is told why
+    var house := _bare_spot("house", used)
+    used.append(house)
+    ok(house != Vector2i(-1, -1), "found a bare place for a house")
+    eq(manager.why_not_building("house", house), "needs a road along one whole side", "no road: no house")
+    ok(manager.build_building("house", house) == null, "it is not built")
+    scene.build_manager.set_tool(BuildManager.Tool.BUILDING)
+    scene.build_manager.set_building_type("house")
+    scene._on_tile_tapped(house)
+    ok(scene.info_label.text.contains("road"), "the message says it needs a road")
+    # one road tile of the two along its north side is not enough
+    manager.build_road(house + Vector2i(0, -1))
+    eq(manager.get_road_sides("house", house).size(), 0, "half a side is not a side")
+    ok(manager.build_building("house", house) == null, "so it is still refused")
+    # the whole north side
+    manager.build_road(house + Vector2i(1, -1))
+    eq(manager.get_road_sides("house", house), [Vector2i(0, -1)] as Array[Vector2i], "the north side has a road along it")
+    eq(manager.why_not_building("house", house), "", "now it can be built")
+    var built := manager.build_building("house", house)
+    ok(built != null, "and it is built")
+    # a road beside only the corner does not count, nor does one that is not along the side
+    var apartment := _bare_spot("apartment", used)
+    used.append(apartment)
+    for i in 3:
+        manager.build_road(apartment + Vector2i(-1, i)) # the west side, three tiles
+    eq(manager.get_road_sides("apartment", apartment), [Vector2i(-1, 0)] as Array[Vector2i], "the west side of a 3x3 with its three tiles on a road")
+    ok(manager.build_building("apartment", apartment) != null, "so the apartment is built")
+    # 1x1 and 4x4 (east and south sides)
+    var post := _bare_spot("guard_post", used)
+    used.append(post)
+    manager.build_road(post + Vector2i(1, 0))
+    eq(manager.get_road_sides("guard_post", post), [Vector2i(1, 0)] as Array[Vector2i], "a guard post needs one road tile beside it")
+    ok(manager.build_building("guard_post", post) != null, "it is built")
+    var factory := _bare_spot("factory", used)
+    used.append(factory)
+    for i in 4:
+        manager.build_road(factory + Vector2i(i, 4)) # the south side
+    eq(manager.get_road_sides("factory", factory), [Vector2i(0, 1)] as Array[Vector2i], "the south side of a 4x4")
+    manager.build_road(factory + Vector2i(4, 0)) # only one tile of the east side
+    eq(manager.get_road_sides("factory", factory).size(), 1, "one road tile of four is not a side")
+    ok(manager.build_building("factory", factory) != null, "the factory is built")
+    scene.build_manager.set_tool(BuildManager.Tool.NONE)
+
+func _test_road_drag() -> void:
+    var manager := scene.combat_map_manager
+    var bm: BuildManager = scene.build_manager
+    # a free row of 6 tiles, with free tiles round it
+    var start := Vector2i(-1, -1)
+    var rect := scene.grid_service.map_rect
+    for y in range(rect.position.y + 2, rect.end.y - 2):
+        for x in range(rect.position.x + 2, rect.end.x - 10):
+            var row_free := true
+            for i in range(-1, 7):
+                for dy in range(-1, 2):
+                    row_free = row_free and manager.why_not_road(Vector2i(x + i, y + dy)) == ""
+            if start == Vector2i(-1, -1) and row_free:
+                start = Vector2i(x, y)
+    ok(start != Vector2i(-1, -1), "found room for a road line")
+    scene.build_bar.roads_button.button_pressed = true
+    eq(scene.combat_input_manager.drag_pans, false, "with the road tool a drag does not move the camera")
+    # snapping: the pointer is further along x than along y: the line goes east
+    bm.begin_drag(start)
+    bm.drag_to(start + Vector2i(4, 1))
+    eq(bm.get_ghost_tiles().size(), 5, "the line has 5 tiles")
+    eq(bm.drag_end, start + Vector2i(4, 0), "and stays in its row")
+    bm.drag_to(start + Vector2i(1, -3))
+    eq(bm.drag_end, start + Vector2i(0, -3), "further along y: a column, north")
+    eq(bm.get_ghost_tiles()[3], start + Vector2i(0, -3), "from the start to there")
+    bm.drag_to(start + Vector2i(-2, 0))
+    eq(bm.get_ghost_tiles().size(), 3, "west too")
+    bm.drag_to(start + Vector2i(3, 0))
+    eq(bm.end_drag(start + Vector2i(3, 0)), 4, "letting go builds the line: 4 tiles")
+    for i in 4:
+        ok(manager.combat_map.has_road(start + Vector2i(i, 0)), "road at %s" % (start + Vector2i(i, 0)))
+    eq(manager.combat_map.roads.get_cell_atlas_coords(start + Vector2i(1, 0)), Vector2i(10, 0), "the road tiles join: east and west arms")
+    ok(not manager.combat_map.has_road(start + Vector2i(4, 0)), "and no more")
+    eq(bm.is_dragging, false, "the drag is over")
+    # over what is there already: only the free tiles are built
+    bm.begin_drag(start + Vector2i(2, 0))
+    bm.drag_to(start + Vector2i(5, 0))
+    ok(bm.is_ghost_ok(start + Vector2i(3, 0)), "a road over a road is not an error")
+    eq(bm.end_drag(start + Vector2i(5, 0)), 2, "two new tiles")
+    # a column, south
+    var expected := 0
+    for t in bm.get_road_line(start + Vector2i(0, 1), start + Vector2i(0, 3)):
+        if manager.why_not_road(t) == "":
+            expected += 1
+    ok(expected > 0, "some of the column is free")
+    bm.begin_drag(start + Vector2i(0, 1))
+    eq(bm.end_drag(start + Vector2i(0, 3)), expected, "a column to the south: the free tiles are built")
+    # with the real pointer: press, move, release
+    var from := start + Vector2i(0, 5)
+    var camera_before: Vector2 = scene.camera_service.cam.global_position
+    _mouse(true, _screen_of(from))
+    await get_tree().process_frame
+    for i in range(1, 4):
+        _motion(_screen_of(from + Vector2i(i, 0)))
+        await get_tree().process_frame
+    ok(bm.is_dragging, "the real drag starts a line")
+    eq(bm.get_ghost_tiles().size(), 4, "the line follows the pointer")
+    _mouse(false, _screen_of(from + Vector2i(3, 0)))
+    await get_tree().process_frame
+    for i in 4:
+        ok(manager.combat_map.has_road(from + Vector2i(i, 0)) or not scene.terrain_service.is_walkable(from + Vector2i(i, 0)), "the real drag built %s" % (from + Vector2i(i, 0)))
+    eq(scene.camera_service.cam.global_position, camera_before, "the camera did not move")
+    # a tap is still one tile
+    var single := from + Vector2i(0, 2)
+    scene._on_tile_tapped(single)
+    ok(manager.combat_map.has_road(single) and not manager.combat_map.has_road(single + Vector2i(1, 0)), "a tap builds one tile")
+    # without the tool a drag pans again
+    scene.build_bar.roads_button.button_pressed = false
+    eq(scene.combat_input_manager.drag_pans, true, "no tool: dragging moves the camera")
+    bm.begin_drag(start)
+    eq(bm.is_dragging, false, "and no line is started")
+
+func _test_speed() -> void:
+    var m := scene.battle_unit_manager
+    eq(m.unit_speed_factor, BuildScene.UNIT_SPEED_FACTOR, "the build scene hurries its units")
+    ok(BuildScene.UNIT_SPEED_FACTOR > 1.0, "faster than in a battle")
+    for soldier in m.soldiers:
+        eq(soldier.speed_factor, BuildScene.UNIT_SPEED_FACTOR, "%s walks faster" % soldier.unit_id)
+    var one := m.soldiers[0]
+    var spawned := m.spawn("player", "liquidator", Vector2i(-1, -1))
+    m.unit_speed_factor = 3.0
+    eq(one.speed_factor, 3.0, "changing it changes every unit")
+    m.unit_speed_factor = BuildScene.UNIT_SPEED_FACTOR
+    # the step takes half the time: measure a walk of 1 tile
+    var unit: Soldier = null
+    for soldier in m.soldiers:
+        if soldier.footprint.tiles_at(Vector2i.ZERO).size() == 1 and unit == null:
+            for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+                var to: Vector2i = soldier.tile + step
+                if unit == null and scene.grid_service.is_inside_map(to) and scene.occupancy_service.is_free(to) and scene.terrain_service.is_walkable(to) \
+                        and not scene.edge_service.is_move_blocked(soldier.tile, to):
+                    unit = soldier
+                    var goal := to
+                    var started := Time.get_ticks_msec()
+                    m.command_move(soldier, goal)
+                    await wait_until(func() -> bool: return soldier.tile == goal and soldier.get_action() == &"idle", 3.0)
+                    var took := float(Time.get_ticks_msec() - started) / 1000.0
+                    var normal := 1.0 / soldier.move_speed
+                    ok(took < normal * 0.9, "a step takes %.2f s, less than the %.2f s of a battle" % [took, normal])

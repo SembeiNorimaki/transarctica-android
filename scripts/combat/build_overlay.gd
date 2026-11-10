@@ -21,10 +21,9 @@ func setup() -> void:
 func _draw() -> void:
     if build_manager == null or build_manager.tool == BuildManager.Tool.NONE:
         return
-    var problem := build_manager.get_problem()
-    var color := BAD_COLOR if problem != "" else OK_COLOR
+    var color := BAD_COLOR if build_manager.get_problem() != "" else OK_COLOR
     for tile in build_manager.get_ghost_tiles():
-        _draw_tile(tile, color)
+        _draw_tile(tile, OK_COLOR if build_manager.is_ghost_ok(tile) else BAD_COLOR)
     if build_manager.tool != BuildManager.Tool.WALL:
         return
     if build_manager.has_wall_start:

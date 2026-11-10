@@ -94,7 +94,7 @@ func _begin_step() -> void:
     _from_pos = unit.position
     _to_pos = unit.get_world_position(to)
     var diagonal := from.x != to.x and from.y != to.y
-    _duration = (1.4142135 if diagonal else 1.0) / maxf(unit.move_speed, 0.1)
+    _duration = (1.4142135 if diagonal else 1.0) / maxf(unit.move_speed * unit.speed_factor, 0.1)
     _time = 0.0
     _stepping = true
     unit.step_started.emit(unit, from, to)

@@ -65,6 +65,13 @@ var preview_reachable := 0
 var preview_attack_tile := Vector2i.ZERO
 var preview_attack_active := false
 
+## Multiplies the walking speed of every unit, those that join later too.
+var unit_speed_factor := 1.0:
+    set(value):
+        unit_speed_factor = maxf(value, 0.1)
+        for soldier in soldiers:
+            soldier.speed_factor = unit_speed_factor
+
 ## false: nobody can shoot (the build scene): no attack mode, no attack preview, no order to shoot.
 var attacks_enabled := true
 
@@ -116,6 +123,7 @@ func spawn_unit(team: String, unit_id: String, data: Dictionary, tile: Vector2i,
     var soldier := scene.instantiate() as Soldier
     soldier.setup(unit_id, data)
     soldier.grid_service = grid_service
+    soldier.speed_factor = unit_speed_factor
     soldier.can_step = _can_soldier_step
     soldier.step_started.connect(_on_step_started)
     soldier.attack_fired.connect(_on_attack_fired)

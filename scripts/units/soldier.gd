@@ -46,6 +46,8 @@ var hp := 0
 var max_hp := 0
 var weapon_type := ""
 var move_speed := 3.0 # tiles per second
+## Multiplies move_speed (the build scene hurries its units).
+var speed_factor := 1.0
 var view_range := 8 # tiles
 var view_angle := 120.0 # degrees
 var max_action_points := 8.0

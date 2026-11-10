@@ -8,6 +8,11 @@ signal tile_tapped(tile: Vector2i)
 ## A click of the right mouse button (the player turns a unit towards a tile).
 signal tile_right_tapped(tile: Vector2i)
 signal tile_hovered(tile: Vector2i)
+## With drag_pans off, a press that moves is a drag over the map instead of a camera pan: it starts
+## on the tile that was pressed, goes over the tiles under the pointer, and ends where it is let go.
+signal drag_started(tile: Vector2i)
+signal drag_moved(tile: Vector2i)
+signal drag_ended(tile: Vector2i)
 
 const DRAG_THRESHOLD := 12.0 # px the pointer must move before it counts as a drag and not a tap
 
@@ -15,6 +20,9 @@ const DRAG_THRESHOLD := 12.0 # px the pointer must move before it counts as a dr
 var grid_service: GridService
 var camera_service: CameraService
 var world: Node2D # the node the tiles are drawn in (the CombatMap)
+
+## false: dragging does not move the camera (see drag_started).
+var drag_pans := true
 
 var _pressed := false
 var _dragging := false
@@ -67,6 +75,9 @@ func _on_press_or_release(event: InputEvent) -> void:
         _pressed = false
         if not _dragging:
             tile_tapped.emit(tile_at_screen(position))
+        elif not drag_pans:
+            _dragging = false
+            drag_ended.emit(tile_at_screen(position))
 
 func _on_right_button(mouse: InputEventMouseButton) -> void:
     if mouse.pressed:
@@ -79,5 +90,11 @@ func _on_move(position: Vector2, relative: Vector2) -> void:
         return
     if not _dragging and position.distance_to(_press_position) > DRAG_THRESHOLD:
         _dragging = true
-    if _dragging and camera_service != null:
+        if not drag_pans:
+            drag_started.emit(tile_at_screen(_press_position))
+    if not _dragging:
+        return
+    if not drag_pans:
+        drag_moved.emit(tile_at_screen(position))
+    elif camera_service != null:
         camera_service.pan(relative)

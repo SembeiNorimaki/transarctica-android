@@ -124,7 +124,32 @@ func why_not_building(building_type: String, tile: Vector2i) -> String:
             return "bad ground"
     if not occupancy_service.is_footprint_free(tile, footprint, TileOccupancyService.LAYER_ALL):
         return "something is in the way"
+    if get_road_sides(building_type, tile).is_empty():
+        return "needs a road along one whole side"
     return ""
+
+## The sides of a building (its first tile on `tile`) that have a road along their whole length, as
+## unit steps: (0,-1) north, (1,0) east, (0,1) south, (-1,0) west. A building needs one.
+func get_road_sides(building_type: String, tile: Vector2i) -> Array[Vector2i]:
+    var size := BuildingTypes.get_size(building_type)
+    var sides: Array[Vector2i] = []
+    for step in CombatMap.ROAD_STEPS:
+        var along := Vector2i(1, 0) if step.x == 0 else Vector2i(0, 1)
+        var corner := tile
+        if step.x > 0:
+            corner.x += size.x
+        elif step.y > 0:
+            corner.y += size.y
+        else:
+            corner += step
+        var length := size.x if step.x == 0 else size.y
+        var all_road := true
+        for i in length:
+            if terrain_service.get_type(corner + along * i) != "road":
+                all_road = false
+        if all_road:
+            sides.append(step)
+    return sides
 
 ## Builds a building of this type, its first (north) tile on `tile`. Null if why_not_building().
 func build_building(building_type: String, tile: Vector2i) -> GenericBuilding:
