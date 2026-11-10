@@ -83,8 +83,8 @@ func _ready() -> void:
     camera_service.set_world_bounds(_get_camera_bounds())
     camera_service.center_at_tile(grid_service.map_rect.get_center())
 
-    combat_input_manager.tile_tapped.connect(battle_unit_manager.handle_tile_tap)
-    combat_input_manager.tile_right_tapped.connect(battle_unit_manager.handle_tile_right_tap)
+    combat_input_manager.tile_tapped.connect(_on_tile_tapped)
+    combat_input_manager.tile_right_tapped.connect(_on_tile_right_tapped)
     combat_input_manager.tile_hovered.connect(_on_tile_hovered)
     battle_unit_manager.selection_changed.connect(_on_selection_changed)
     battle_unit_manager.shot_resolved.connect(_on_shot_resolved)
@@ -109,6 +109,13 @@ func _ready() -> void:
 
 
 #region hooks for the scenes that extend this one
+# A tap or right click on a tile. The units have them by default.
+func _on_tile_tapped(tile: Vector2i) -> void:
+    battle_unit_manager.handle_tile_tap(tile)
+
+func _on_tile_right_tapped(tile: Vector2i) -> void:
+    battle_unit_manager.handle_tile_right_tap(tile)
+
 # Extra dependencies and nodes, after the managers are set up and before the soldiers are deployed
 func _setup_scene() -> void:
     pass

@@ -65,6 +65,9 @@ var preview_reachable := 0
 var preview_attack_tile := Vector2i.ZERO
 var preview_attack_active := false
 
+## false: nobody can shoot (the build scene): no attack mode, no attack preview, no order to shoot.
+var attacks_enabled := true
+
 ## How the selected unit understands a tap on a tile.
 var action_mode := ActionMode.AUTO
 
@@ -175,7 +178,9 @@ func handle_tile_tap(tile: Vector2i) -> void:
     if selected == null:
         return
     var mode := action_mode
-    if mode == ActionMode.AUTO:
+    if not attacks_enabled:
+        mode = ActionMode.MOVE
+    elif mode == ActionMode.AUTO:
         mode = ActionMode.ATTACK if tapped != null else ActionMode.MOVE
     if mode == ActionMode.MOVE:
         if is_previewing(selected, tile):
@@ -192,6 +197,8 @@ func handle_tile_tap(tile: Vector2i) -> void:
 ## Chooses how the selected unit understands taps (the HUD buttons). It is AUTO again when the
 ## selection changes.
 func set_action_mode(mode: int) -> void:
+    if mode == ActionMode.ATTACK and not attacks_enabled:
+        mode = ActionMode.AUTO
     if mode == action_mode:
         return
     action_mode = mode
@@ -241,7 +248,7 @@ func is_attack_previewing(soldier: Soldier, tile: Vector2i) -> bool:
 ## crosshair with the hit chance: red if the shot is blocked (then it can't hit anything there).
 ## Nothing is fired. Returns false (and shows no preview) if the soldier can't be commanded.
 func show_attack_preview(soldier: Soldier, tile: Vector2i) -> bool:
-    if not _may_command(soldier) or tile == soldier.tile:
+    if not attacks_enabled or not _may_command(soldier) or tile == soldier.tile:
         clear_preview()
         return false
     preview_path = []
@@ -260,7 +267,7 @@ func confirm_attack(soldier: Soldier, tile: Vector2i) -> bool:
 
 ## Shoots at a tile from where the soldier stands.
 func command_attack_tile(soldier: Soldier, tile: Vector2i) -> bool:
-    if not _may_command(soldier) or tile == soldier.tile:
+    if not attacks_enabled or not _may_command(soldier) or tile == soldier.tile:
         return false
     if flow_manager != null and not flow_manager.can_attack(soldier):
         flow_manager.refuse(soldier, "no AP")
@@ -354,7 +361,7 @@ func command_move(soldier: Soldier, tile: Vector2i) -> bool:
 ## Shoots from where it stands if the target is in range and in sight, otherwise walks towards the
 ## target until it is, then shoots.
 func command_attack(soldier: Soldier, target: Soldier) -> bool:
-    if target.team == soldier.team or not target.is_alive() or not _may_command(soldier):
+    if not attacks_enabled or target.team == soldier.team or not target.is_alive() or not _may_command(soldier):
         return false
     if can_shoot(soldier, soldier.tile, target):
         if flow_manager != null and not flow_manager.can_attack(soldier):

@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/UI/build_bar.gd" id="1_bar"]
+
+[node name="BuildBar" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_bar")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -140.0
+offset_right = 330.0
+offset_bottom = -16.0
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Column" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Panel/Margin/Column"]
+layout_mode = 2
+text = "Build"
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/Column"]
+layout_mode = 2
+
+[node name="BuildingsButton" type="Button" parent="Panel/Margin/Column/Buttons"]
+layout_mode = 2
+toggle_mode = true
+text = "Buildings"
+
+[node name="RoadsButton" type="Button" parent="Panel/Margin/Column/Buttons"]
+layout_mode = 2
+toggle_mode = true
+text = "Roads"
+
+[node name="WallsButton" type="Button" parent="Panel/Margin/Column/Buttons"]
+layout_mode = 2
+toggle_mode = true
+text = "Walls"
+
+[node name="BuildingSelect" type="OptionButton" parent="Panel/Margin/Column"]
+layout_mode = 2

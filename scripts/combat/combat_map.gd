@@ -36,6 +36,8 @@ class_name CombatMap
 @onready var spawns: TileMapLayer = $Spawns
 @onready var fog: TileMapLayer = $Fog
 
+const ROAD_STEPS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)] # N E S W
+
 # (edge_type, open) -> atlas coords in the wall tilesets, built once
 var _wall_tiles := {}
 
@@ -87,16 +89,18 @@ func read_buildings() -> Array[Dictionary]:
         if not BuildingTypes.exists(building_type):
             push_warning("CombatMap: tile %s of the Buildings layer (atlas %d, %s) is not a known building in %s" % [cell, source_id, coords, CombatTiles.PATH])
             continue
-        var source := buildings.tile_set.get_source(source_id) as TileSetAtlasSource
-        var tile_data := source.get_tile_data(coords, 0)
-        var texture := AtlasTexture.new()
-        texture.atlas = source.texture
-        texture.region = source.get_tile_texture_region(coords)
-        result.append({
-            "tile": cell, "type": building_type, "size": BuildingTypes.get_size(building_type),
-            "texture": texture, "texture_origin": Vector2(tile_data.texture_origin), "y_sort_origin": tile_data.y_sort_origin,
-        })
+        result.append(_building_data(source_id, coords, building_type, cell))
     return result
+
+## The same for a building of this type that is not painted: its picture is that of its placeholder
+## tile. Empty if the Buildings layer has no tile for this type (see data/combat_tiles.json).
+func make_building_data(building_type: String, tile: Vector2i) -> Dictionary:
+    if buildings == null:
+        return {}
+    for entry in CombatTiles.get_entries(buildings.tile_set.resource_path):
+        if str(entry.get("building_type", "")) == building_type:
+            return _building_data(int(entry["atlas_id"]), entry["coords"], building_type, tile)
+    return {}
 
 ## [{"a": Vector2i, "b": Vector2i, "type": String, "open": bool}] for each wall, fence, window or door.
 func read_edges() -> Array[Dictionary]:
@@ -120,6 +124,31 @@ func read_spawns() -> Array[Dictionary]:
             spawn["facing"] = str(entry["facing"])
         result.append(spawn)
     return result
+#endregion
+
+
+#region roads
+## Is there a road tile (of the Roads layer) here?
+func has_road(tile: Vector2i) -> bool:
+    return roads != null and roads.get_cell_source_id(tile) != -1
+
+## Draws a road on the tile. The roads join: this tile and its road neighbors are drawn with the
+## piece that has an arm towards each neighbor (the atlas column is a bit mask: north 1, east 2,
+## south 4, west 8, as the tiles are drawn).
+func set_road(tile: Vector2i) -> void:
+    if roads == null:
+        return
+    _draw_road(tile)
+    for step in ROAD_STEPS:
+        if has_road(tile + step):
+            _draw_road(tile + step)
+
+func _draw_road(tile: Vector2i) -> void:
+    var mask := 0
+    for i in ROAD_STEPS.size():
+        if has_road(tile + ROAD_STEPS[i]):
+            mask |= 1 << i
+    roads.set_cell(tile, 0, Vector2i(mask, 0))
 #endregion
 
 
@@ -150,6 +179,17 @@ func set_building_placeholders_visible(value: bool) -> void:
         buildings.visible = value
 #endregion
 
+
+func _building_data(source_id: int, coords: Vector2i, building_type: String, cell: Vector2i) -> Dictionary:
+    var source := buildings.tile_set.get_source(source_id) as TileSetAtlasSource
+    var tile_data := source.get_tile_data(coords, 0)
+    var texture := AtlasTexture.new()
+    texture.atlas = source.texture
+    texture.region = source.get_tile_texture_region(coords)
+    return {
+        "tile": cell, "type": building_type, "size": BuildingTypes.get_size(building_type),
+        "texture": texture, "texture_origin": Vector2(tile_data.texture_origin), "y_sort_origin": tile_data.y_sort_origin,
+    }
 
 func _read_wall_layer(layer: TileMapLayer, side: Vector2i, into: Array[Dictionary]) -> void:
     for cell in layer.get_used_cells():
