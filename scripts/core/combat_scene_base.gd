@@ -266,12 +266,13 @@ func _on_tile_hovered(tile: Vector2i) -> void:
 
 func _on_selection_changed(soldier: Soldier) -> void:
     info_label.text = "Nothing selected" if soldier == null \
-            else "Selected %s (%s). Tap a tile to preview the way, tap it again to walk, an enemy to attack" % [soldier.unit_id, soldier.unit_type]
+            else "Selected %s (%s). Tap a tile to preview the way, tap it again to walk, an enemy (or Attack, then any tile) to shoot" % [soldier.unit_id, soldier.unit_type]
 
 func _on_shot_resolved(attacker: Soldier, target: Soldier, damage: int, cover: int) -> void:
     var cover_text: String = ["no cover", "half cover", "full cover"][cover]
+    var at := target.unit_id if target != null else "that tile"
     if damage == 0:
-        info_label.text = "%s missed %s" % [attacker.unit_id, target.unit_id]
+        info_label.text = "%s missed %s" % [attacker.unit_id, at]
     else:
-        info_label.text = "%s hit %s for %d (%s)" % [attacker.unit_id, target.unit_id, damage, cover_text]
+        info_label.text = "%s hit %s for %d (%s)" % [attacker.unit_id, at, damage, cover_text]
 #endregion

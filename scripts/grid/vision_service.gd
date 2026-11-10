@@ -133,6 +133,10 @@ func can_see(origin: Vector2i, orientation: String, view_angle: float, view_rang
 #endregion
 
 
+## Does the tile itself (terrain or what stands on it) hide what is behind it?
+func tile_blocks_vision(tile: Vector2i) -> bool:
+    return _tile_blocks_vision(tile)
+
 func _tile_blocks_vision(tile: Vector2i) -> bool:
     if terrain_service != null and terrain_service.blocks_vision(tile):
         return true

@@ -39,7 +39,7 @@ func _process(_delta: float) -> void:
             if soldier.get_action() == &"move" or soldier.get_action() == &"attack":
                 active = true
                 break
-    if battle_unit_manager != null and battle_unit_manager.preview_attack_target != null:
+    if battle_unit_manager != null and battle_unit_manager.preview_attack_active:
         active = true # the hit chance and the line of sight change while units move
     if active or _was_drawing:
         queue_redraw()
@@ -66,14 +66,17 @@ func _draw() -> void:
 # The previewed shot: a line from the shooter to a crosshair on the target, the hit chance beside it
 func _draw_attack_preview() -> void:
     var shooter := battle_unit_manager.preview_soldier
-    var target := battle_unit_manager.preview_attack_target
-    if target == null or not is_instance_valid(shooter) or not is_instance_valid(target):
+    if not battle_unit_manager.preview_attack_active or not is_instance_valid(shooter):
         return
-    var info := battle_unit_manager.get_attack_info(shooter, target)
+    var tile := battle_unit_manager.preview_attack_tile
+    var info := battle_unit_manager.get_attack_info(shooter, tile)
     var color := CROSSHAIR_BLOCKED_COLOR if info["blocked"] else CROSSHAIR_COLOR
     var from := shooter.position + AIM_OFFSET
-    var to := target.position + AIM_OFFSET
+    var target := info["target"] as Soldier
+    var to := (target.position if target != null else grid_service.tile_to_world(Vector2(tile))) + AIM_OFFSET
     draw_dashed_line(from, to, color, 2.0, 8.0)
+    if info["blocked"]:
+        draw_circle(Vector2(info["impact_position"]) + AIM_OFFSET, 5.0, color) # where the shot would stop
     draw_arc(to, 20.0, 0.0, TAU, 32, color, 3.0, true)
     for angle in [0.0, PI * 0.5, PI, PI * 1.5]:
         var direction := Vector2.from_angle(angle)

@@ -300,28 +300,28 @@ func _test_attack_preview_and_bullets() -> void:
     eq(m.preview_path.size(), 0, "attack mode does not preview a path")
     m.set_action_mode(BattleUnitManager.ActionMode.AUTO)
     # info
-    var info := m.get_attack_info(shooter, target)
+    var info := m.get_attack_info(shooter, tile)
     eq(info["blocked"], false, "an open shot is not blocked")
     ok(info["hit_chance"] > 0.5 and info["hit_chance"] < 1.0, "hit chance between 50 and 100%")
-    var near_chance := m.get_hit_chance(shooter, shooter.tile, target)
+    var near_chance := m.get_hit_chance(shooter, shooter.tile, tile)
     ok(near_chance <= 1.0 and near_chance >= 0.05, "hit chance clamped")
     # first tap previews, nothing fired
     var count_before := bm.bullets.size()
     var hp_before := target.hp
     m.handle_tile_tap(tile)
-    ok(m.is_attack_previewing(shooter, target), "the first tap previews the attack")
+    ok(m.is_attack_previewing(shooter, tile), "the first tap previews the attack")
     eq(shooter.get_action(), &"idle", "and does not shoot")
     # a blocked shot: red, a second tap does nothing
     scene.edge_service.add(wall_a, wall_b, "wall")
-    ok(m.get_attack_info(shooter, target)["blocked"], "a wall blocks the shot")
-    eq(m.get_attack_info(shooter, target)["reason"], "no line of sight", "reason is shown")
-    m.handle_tile_tap(tile)
-    eq(shooter.get_action(), &"idle", "a blocked shot is not confirmed")
+    ok(m.get_attack_info(shooter, tile)["blocked"], "a wall blocks the shot")
+    eq(m.get_attack_info(shooter, tile)["reason"], "no line of sight", "reason is shown")
+    eq(m.get_attack_info(shooter, tile)["hit_chance"], 0.0, "a blocked shot has no chance")
+    eq(m.get_attack_info(shooter, tile)["impact_edge"], [wall_a, wall_b], "it would stop at the wall")
     scene.edge_service.remove(wall_a, wall_b)
     # no AP
     shooter.set_action_points(0)
     if shooter.show_action_points:
-        eq(m.get_attack_info(shooter, target)["reason"], "no AP", "no AP blocks the shot")
+        eq(m.get_attack_info(shooter, tile)["reason"], "no AP", "no AP blocks the shot")
     _refill()
     # confirm: a bullet flies, damage comes on arrival
     m.clear_preview()
@@ -361,10 +361,54 @@ func _test_attack_preview_and_bullets() -> void:
             misses += 1
     ok(misses > 0 and misses < 12, "with the roll on, some shots miss and some hit (%d misses)" % misses)
     m.roll_hits = false
+    # any tile can be shot at: the empty ground...
+    m.select(shooter)
+    m.set_action_mode(BattleUnitManager.ActionMode.ATTACK) # any tile is a target
+    _refill()
+    var ground := _tile_at(shooter.tile, 2)
+    var hp_all := target.hp
+    var shots_before := arrived.size()
+    _tap_twice(m, ground)
+    ok(await wait_until(func() -> bool: return arrived.size() == shots_before + 1, 3.0), "a shot at empty ground flies and lands")
+    eq(target.hp, hp_all, "and hurts nobody")
+    m.clear_preview()
+    ok(await wait_until(func() -> bool: return shooter.get_action() == &"idle", 3.0), "the shooter is idle again")
+    # ...and a wall: a blocked shot is shot anyway, and the wall takes it
+    scene.edge_service.add(wall_a, wall_b, "wall")
+    var wall := scene.edge_service.get_edge(wall_a, wall_b)
+    var wall_before := wall.hp
+    _refill()
+    m.handle_tile_tap(tile)
+    eq(m.get_attack_info(shooter, tile)["blocked"], true, "blocked by the wall")
+    m.handle_tile_tap(tile)
+    eq(shooter.get_action(), &"attack", "a blocked shot is shot on the second tap")
+    shots_before = arrived.size()
+    ok(await wait_until(func() -> bool: return arrived.size() == shots_before + 1, 3.0), "the bullet stops at the wall")
+    ok(wall.hp < wall_before or scene.edge_service.get_edge(wall_a, wall_b) == null, "the wall took the hit")
+    eq(target.hp, hp_all, "the target behind it did not")
+    scene.edge_service.remove(wall_a, wall_b)
+    ok(await wait_until(func() -> bool: return shooter.get_action() == &"idle", 3.0), "idle again")
+    # out of range: red and 0%, and still fired
+    var far := Vector2i(-1, -1)
+    var farthest := 0.0
+    for fy in range(scene.grid_service.map_rect.position.y, scene.grid_service.map_rect.end.y):
+        for fx in range(scene.grid_service.map_rect.position.x, scene.grid_service.map_rect.end.x):
+            var d := Vector2(shooter.tile).distance_to(Vector2(fx, fy))
+            if d > farthest:
+                farthest = d
+                far = Vector2i(fx, fy)
+    if farthest > float(shooter.get_weapon()["range"]):
+        var far_info := m.get_attack_info(shooter, far)
+        eq(far_info["blocked"], true, "out of range is blocked")
+        eq(far_info["hit_chance"], 0.0, "with no chance")
+        _refill()
+        eq(m.command_attack_tile(shooter, far), true, "and can be shot at")
+        await wait_until(func() -> bool: return shooter.get_action() == &"idle" and not bm.has_bullets(), 4.0)
+    m.set_action_mode(BattleUnitManager.ActionMode.AUTO)
     # the preview goes when the selection changes
     m.handle_tile_tap(tile)
     m.select(null)
-    ok(m.preview_attack_target == null, "deselecting clears the preview")
+    ok(not m.preview_attack_active, "deselecting clears the preview")
     await process_frame
     ok(not hud.panel.visible, "the HUD hides when nothing is selected")
     target.take_damage(1000)

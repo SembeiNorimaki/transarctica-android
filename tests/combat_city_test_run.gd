@@ -47,6 +47,7 @@ func _run() -> void:
     await _test_units()
     await _test_tank_pathfinding()
     await _test_vehicles_get_out()
+    await _test_shooting_buildings()
     await _test_destroying_buildings()
     await _test_clicks()
     await _test_camera()
@@ -209,6 +210,47 @@ func _test_vehicles_get_out() -> void:
 
 
 # a building is destroyed when its hp run out: it leaves rubble and its tiles are free
+func _test_shooting_buildings() -> void:
+    var m := scene.battle_unit_manager
+    m.roll_hits = false
+    var building: GenericBuilding = null
+    var spot := Vector2i.ZERO
+    for candidate in scene.combat_map_manager.buildings:
+        if candidate.size != Vector2i(2, 2) or candidate.is_destroyed:
+            continue
+        for tile in candidate.get_tiles():
+            for dy in range(-3, 4):
+                for dx in range(-3, 4):
+                    var from := tile + Vector2i(dx, dy)
+                    if building == null and scene.grid_service.is_inside_map(from) and scene.terrain_service.is_walkable(from) \
+                            and scene.occupancy_service.is_free(from) and not candidate.get_tiles().has(from) \
+                            and scene.vision_service.has_line_of_sight(from, tile) and Vector2(from).distance_to(Vector2(tile)) <= 3.0:
+                        building = candidate
+                        spot = from
+                        building.set_meta("aim", tile)
+    ok(building != null, "found a 2x2 building with a place to shoot it from")
+    var aim: Vector2i = building.get_meta("aim")
+    var shooter := m.spawn("player", "liquidator", spot, scene.grid_service.get_orientation(spot, aim))
+    ok(shooter != null, "a shooter in front of the building")
+    shooter.set_action_points(shooter.max_action_points)
+    m.select(shooter)
+    m.set_action_mode(BattleUnitManager.ActionMode.ATTACK)
+    var info := m.get_attack_info(shooter, aim)
+    eq(info["blocked"], false, "a building can be shot at")
+    ok(info["hit_chance"] > 0.0, "with a chance to hit")
+    var hp_before := building.hp
+    m.handle_tile_tap(aim)
+    ok(m.is_attack_previewing(shooter, aim), "the first tap previews the shot at the building")
+    eq(building.hp, hp_before, "and does not fire")
+    m.handle_tile_tap(aim)
+    ok(await wait_until(func() -> bool: return building.hp < hp_before, 4.0), "the second tap shoots it: the building takes damage")
+    eq(building.hp, hp_before - int(shooter.get_weapon()["damage"]), "as much as the weapon does")
+    ok(await wait_until(func() -> bool: return shooter.get_action() == &"idle", 4.0), "the shooter is idle again")
+    m.set_action_mode(BattleUnitManager.ActionMode.AUTO)
+    m.select(null)
+    m.remove_soldier(shooter)
+
+
 func _test_destroying_buildings() -> void:
     var manager := scene.combat_map_manager
     var building: GenericBuilding = null

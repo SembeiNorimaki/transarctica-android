@@ -13,6 +13,7 @@ signal action_changed(soldier: Soldier, action: StringName)
 signal facing_changed(soldier: Soldier)
 signal step_started(soldier: Soldier, from_tile: Vector2i, to_tile: Vector2i)
 signal step_finished(soldier: Soldier, tile: Vector2i)
+## `target` is null for a shot at a tile (see order_attack_tile): the tile is attack_tile.
 signal attack_fired(soldier: Soldier, target: Soldier)
 signal hp_changed(soldier: Soldier)
 ## Only in turn based combat (see TurnManager): the action points changed.
@@ -180,6 +181,14 @@ func order_attack(target: Soldier) -> void:
     else:
         state_machine.set_state(&"AttackState", {"target": target})
 
+## Shoots at a tile (a building, a wall, the ground...) from where it stands. Only when it is idle.
+func order_attack_tile(tile: Vector2i) -> bool:
+    if not is_alive() or get_action() != &"idle":
+        return false
+    attack_tile = tile
+    state_machine.set_state(&"AttackState", {"tile": tile})
+    return true
+
 func order_stop() -> void:
     if not is_alive():
         return
@@ -199,6 +208,9 @@ func get_path_ahead() -> Array[Vector2i]:
     return []
 
 ## Who it is going to shoot, or is shooting. null if nobody.
+## The tile it is shooting at, or shot at last (the target's tile for a shot at a soldier).
+var attack_tile := Vector2i.ZERO
+
 func get_attack_target() -> Soldier:
     if state_machine == null:
         return null
