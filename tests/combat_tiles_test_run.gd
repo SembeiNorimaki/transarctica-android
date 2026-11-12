@@ -6,7 +6,10 @@ extends Node
 const BUILDINGS := "res://assets/combat/combat_buildings.tres"
 const SPAWNS := "res://assets/combat/combat_spawns.tres"
 const SQUARE_SPAWNS := "res://assets/combat/sq_spawns.tres"
-const FRAME := Vector2i(96, 72) # a frame of the vehicle atlas
+const FRAME := Vector2i(70, 54) # a frame of assets/combat/FHUnits.png and of the placeholders
+const UNITS_PNG := "res://assets/combat/FHUnits.png"
+const PLACEHOLDERS_PNG := "res://assets/combat/unitsFH_placeholder.png"
+const VEHICLES: Array[String] = ["artillery", "tank", "buggy", "grav_tank", "speeder", "humvee"] # the rows, in the order of the pictures
 
 var _failed := 0
 var _checks := 0
@@ -65,10 +68,10 @@ func _test_lookup() -> void:
     var copy := CombatTiles.lookup(BUILDINGS, 2, Vector2i(0, 0))
     copy["building_type"] = "changed"
     eq(CombatTiles.lookup(BUILDINGS, 2, Vector2i(0, 0))["building_type"], "apartment", "lookup returns a copy")
-    var tank := CombatTiles.lookup(SPAWNS, 1, Vector2i(0, 0))
-    eq([tank["team"], tank["unit_type"], tank["facing"]], ["player", "tank", facings[0]], "the first column of the first row of atlas 1 is the player's tank, facing %s" % facings[0])
-    var enemy := CombatTiles.lookup(SPAWNS, 2, Vector2i(5, 5))
-    eq([enemy["team"], enemy["unit_type"], enemy["facing"]], ["enemy", "gunship", facings[5]], "atlas 2, (5, 5) is the enemy's gunship")
+    var tank := CombatTiles.lookup(SPAWNS, 1, Vector2i(0, 1))
+    eq([tank["team"], tank["unit_type"], tank["facing"]], ["player", "tank", "NE"], "atlas 1, (0, 1) is the player's tank, looking east on the screen")
+    var enemy := CombatTiles.lookup(SPAWNS, 1, Vector2i(1, 5))
+    eq([enemy["team"], enemy["unit_type"], enemy["facing"]], ["enemy", "humvee", "NE"], "atlas 1, (1, 5) is the enemy's humvee")
     ok(CombatTiles.lookup(SPAWNS, 0, Vector2i(0, 0)).get("facing") == null, "a soldier tile has no facing")
 
 
@@ -101,54 +104,52 @@ func _test_buildings() -> void:
 func _test_vehicles() -> void:
     var tile_set := load(SPAWNS) as TileSet
     eq(tile_set.get_custom_data_layers_count(), 0, "the spawn TileSet holds only pictures")
-    eq(tile_set.get_source_count(), 3, "soldiers, player vehicles, enemy vehicles")
+    eq(tile_set.get_source_count(), 2, "soldiers, and the placeholders of the vehicles")
     var grid := GridService.new()
     grid.set_projection(GridService.TileProjection.ISOMETRIC)
     grid.set_tile_size(Vector2i(64, 32))
     var facings := CombatTiles.get_column_facings()
-    var types := {}
-    for atlas_id in [1, 2]:
-        var source := tile_set.get_source(atlas_id) as TileSetAtlasSource
-        var team := "player" if atlas_id == 1 else "enemy"
-        eq(_tiles_of(source).size(), 6 * 8, "atlas %d is 8 columns by 6 rows" % atlas_id)
-        eq(source.texture_region_size, FRAME * 2, "its frames are the unit frames at the size the units are drawn")
-        for coords in _tiles_of(source):
-            var entry := CombatTiles.lookup(SPAWNS, atlas_id, coords)
-            eq(entry.get("team"), team, "atlas %d %s is a %s unit" % [atlas_id, coords, team])
-            eq(entry.get("facing"), facings[coords.x], "column %d faces %s" % [coords.x, facings[coords.x]])
-            var unit_type := str(entry.get("unit_type", ""))
-            ok(UnitTypes.exists(unit_type), "'%s' is a unit type" % unit_type)
-            if types.has(unit_type) and atlas_id == 1:
-                eq(types[unit_type], coords.y, "%s is one row" % unit_type)
-            if atlas_id == 1:
-                types[unit_type] = coords.y
-    eq(types.keys().size(), 6, "six vehicles")
-    for unit_type in ["tank", "artillery", "buggy", "grav_tank", "speeder", "gunship"]:
-        ok(types.has(unit_type), "%s has a row" % unit_type)
-        var row: int = types.get(unit_type, 0)
-        eq(CombatTiles.lookup(SPAWNS, 2, Vector2i(0, row)).get("unit_type"), unit_type, "the enemy's row %d is the same %s" % [row, unit_type])
-        # the unit scene shows the same row of the same picture, and each column is the facing the json says
+    eq(facings, ["S", "SW", "W", "NW", "N", "NE", "E", "SE"] as Array[String], "the columns of FHUnits.png: SW W NW N NE E SE S on the screen")
+    # the placeholders: a column per team, a row per vehicle
+    var source := tile_set.get_source(1) as TileSetAtlasSource
+    eq(source.texture.resource_path, PLACEHOLDERS_PNG, "the vehicle tiles are the pictures of unitsFH_placeholder.png")
+    eq((source.texture as Texture2D).get_size(), Vector2(FRAME.x * 2, FRAME.y * 7), "2 columns (player, enemy) by 7 rows (the turret too)")
+    eq(source.texture_region_size, FRAME, "a placeholder is a frame of the pictures")
+    eq(_tiles_of(source).size(), 2 * 6, "2 columns by 6 rows (no turret)")
+    for coords in _tiles_of(source):
+        var entry := CombatTiles.lookup(SPAWNS, 1, coords)
+        var team := "player" if coords.x == 0 else "enemy"
+        eq(entry.get("team"), team, "(%d, %d) is a %s unit" % [coords.x, coords.y, team])
+        eq(entry.get("unit_type"), VEHICLES[coords.y], "row %d is the %s" % [coords.y, VEHICLES[coords.y]])
+        eq(entry.get("facing"), "NE", "it looks east on the screen")
+        eq(source.get_tile_data(coords, 0).texture_origin, Vector2i(0, 6), "its feet are on the middle of its tile")
+    for row in VEHICLES.size():
+        var unit_type := VEHICLES[row]
+        ok(UnitTypes.exists(unit_type), "%s is a unit type" % unit_type)
         var scene := load(UnitTypes.get_scene_path(unit_type)) as PackedScene
         ok(scene != null, "%s has a scene" % unit_type)
         if scene == null:
             continue
         var unit := scene.instantiate() as Soldier
-        var frames := unit.get_node("AnimatedSprite2D").sprite_frames as SpriteFrames
-        for column in facings.size():
-            var animation := StringName(grid.orientation_to_screen_direction(facings[column]))
-            ok(frames.has_animation(animation), "%s has an animation '%s'" % [unit_type, animation])
-            if not frames.has_animation(animation):
+        # the unit shows its row of FHUnits.png (the enemy's is 7 rows below) and each column is the facing the json says
+        var player_frames := unit.get_node("AnimatedSprite2D").sprite_frames as SpriteFrames
+        ok(unit.enemy_frames != null, "%s has pictures for the enemy" % unit_type)
+        for pair in [[player_frames, row], [unit.enemy_frames, row + 7]]:
+            var frames := pair[0] as SpriteFrames
+            if frames == null:
                 continue
-            var texture := frames.get_frame_texture(animation, 0) as AtlasTexture
-            eq(texture.region, Rect2(column * FRAME.x, row * FRAME.y, FRAME.x, FRAME.y), "%s: column %d (%s) is the picture of '%s'" % [unit_type, column, facings[column], animation])
-            eq(texture.atlas.resource_path, "res://assets/tilesets/imgs/vehicles.png", "%s uses the vehicle atlas" % unit_type)
+            for column in facings.size():
+                var animation := StringName(grid.orientation_to_screen_direction(facings[column]))
+                ok(frames.has_animation(animation), "%s has an animation '%s'" % [unit_type, animation])
+                if not frames.has_animation(animation):
+                    continue
+                var texture := frames.get_frame_texture(animation, 0) as AtlasTexture
+                eq(texture.region, Rect2(column * FRAME.x, pair[1] * FRAME.y, FRAME.x, FRAME.y), "%s: column %d (%s) of row %d is the picture of '%s'" % [unit_type, column, facings[column], pair[1], animation])
+                eq(texture.atlas.resource_path, UNITS_PNG, "%s uses FHUnits.png" % unit_type)
         var size: Vector2i = UnitTypes.TYPES[unit_type].get("size", Vector2i.ONE)
         eq(UnitTypes.get_footprint(unit_type).size(), size.x * size.y, "%s covers %dx%d tiles" % [unit_type, size.x, size.y])
-        # the marker is centered on the middle of its tiles, whatever the size
-        var origin_y := (tile_set.get_source(1) as TileSetAtlasSource).get_tile_data(Vector2i(0, row), 0).texture_origin.y
-        eq(origin_y, 32 - 16 * (size.x - 1), "the marker of %s is placed on its %dx%d tiles" % [unit_type, size.x, size.x])
         unit.free()
-    ok(not UnitTypes.exists("light_tank") and not UnitTypes.exists("heavy_tank"), "the old tanks are gone")
+    ok(not UnitTypes.exists("gunship") and not UnitTypes.exists("light_tank") and not UnitTypes.exists("heavy_tank"), "the old vehicles are gone")
     grid.free()
 
 

@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_generic"]
 [ext_resource type="Script" path="res://scripts/wagons/vehicle_carrier_wagon.gd" id="2_script"]
 [ext_resource type="Texture2D" path="res://assets/wagons/vehicle_carrier_tr.png" id="3_wagon"]
-[ext_resource type="Texture2D" path="res://assets/wagons/vehicles_east.png" id="4_vehicles"]
+[ext_resource type="Texture2D" path="res://assets/combat/unitsFH_placeholder.png" id="4_vehicles"]
 
 [node name="VehicleCarrierWagon" instance=ExtResource("1_generic")]
 script = ExtResource("2_script")
@@ -14,25 +14,29 @@ texture = ExtResource("3_wagon")
 [node name="Vehicles" type="Node2D" parent="." index="2"]
 
 [node name="Vehicle1" type="Sprite2D" parent="Vehicles" index="0"]
-position = Vector2(-48, -31)
+position = Vector2(-48, -26)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_vehicles")
-hframes = 6
+hframes = 2
+vframes = 7
 
 [node name="Vehicle2" type="Sprite2D" parent="Vehicles" index="1"]
-position = Vector2(-16, -31)
+position = Vector2(-16, -26)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_vehicles")
-hframes = 6
+hframes = 2
+vframes = 7
 
 [node name="Vehicle3" type="Sprite2D" parent="Vehicles" index="2"]
-position = Vector2(16, -31)
+position = Vector2(16, -26)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_vehicles")
-hframes = 6
+hframes = 2
+vframes = 7
 
 [node name="Vehicle4" type="Sprite2D" parent="Vehicles" index="3"]
-position = Vector2(48, -31)
+position = Vector2(48, -26)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_vehicles")
-hframes = 6
+hframes = 2
+vframes = 7

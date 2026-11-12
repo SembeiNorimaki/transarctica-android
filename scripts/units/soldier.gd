@@ -27,6 +27,10 @@ const ENEMY_COLOR := Color(1.0, 0.45, 0.45)
 const DEAD_COLOR := Color(0.35, 0.35, 0.35)
 
 ## Labels above the head: who it is, what it is doing, and the last event.
+## The pictures of the enemy's version of this unit (vehicles have their own). If there are none the
+## enemy is drawn with the player's pictures in ENEMY_COLOR.
+@export var enemy_frames: SpriteFrames
+
 @export var show_debug_labels := true:
     set(value):
         show_debug_labels = value
@@ -42,6 +46,7 @@ const DEAD_COLOR := Color(0.35, 0.35, 0.35)
 var unit_id := ""
 var unit_type := ""
 var team := TEAM_PLAYER
+var _player_frames: SpriteFrames
 var hp := 0
 var max_hp := 0
 var weapon_type := ""
@@ -74,6 +79,7 @@ var _event_tween: Tween
 
 
 func _ready() -> void:
+    _update_frames()
     sprite.play(StringName(facing)) # deployed facing north
     $Area2D.input_event.connect(_on_area_input_event)
     state_machine.state_changed.connect(_on_state_changed)
@@ -100,6 +106,7 @@ func setup(id: String, data: Dictionary) -> void:
         view_angle = float(stats["view_angle"])
         max_action_points = float(stats["max_ap"])
     if is_node_ready():
+        _update_frames()
         _update_color()
         refresh_labels()
 
@@ -290,6 +297,17 @@ func show_event(text: String) -> void:
 #endregion
 
 
+# The enemy's own pictures, if the unit has them
+func _update_frames() -> void:
+    if sprite == null or enemy_frames == null:
+        return
+    if team == TEAM_ENEMY:
+        if sprite.sprite_frames != enemy_frames:
+            _player_frames = sprite.sprite_frames
+            sprite.sprite_frames = enemy_frames
+    elif _player_frames != null:
+        sprite.sprite_frames = _player_frames
+
 func _update_color() -> void:
     if sprite == null:
         return
@@ -298,7 +316,7 @@ func _update_color() -> void:
     elif selected:
         sprite.modulate = SELECTED_COLOR
     else:
-        sprite.modulate = ENEMY_COLOR if team == TEAM_ENEMY else Color.WHITE
+        sprite.modulate = ENEMY_COLOR if team == TEAM_ENEMY and enemy_frames == null else Color.WHITE
 
 func _on_state_changed(_previous: StringName, _next: StringName) -> void:
     refresh_labels()

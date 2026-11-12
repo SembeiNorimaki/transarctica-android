@@ -132,7 +132,7 @@ func _test_map() -> void:
     ok(not scene.combat_map.read_edges().is_empty(), "the walls are edges of the grid")
 
 func _test_units() -> void:
-    var types := ["liquidator", "pioneer", "redops", "tank", "artillery", "buggy", "grav_tank", "speeder", "gunship"]
+    var types := ["liquidator", "pioneer", "redops", "tank", "artillery", "buggy", "grav_tank", "speeder", "humvee"]
     for team in ["player", "enemy"]:
         for unit_type in types:
             var count := 0
@@ -152,10 +152,12 @@ func _test_units() -> void:
         if size == Vector2i(2, 2):
             big += 1
         ok(soldier.sprite.sprite_frames != null and soldier.sprite.sprite_frames.has_animation(StringName(scene.grid_service.orientation_to_screen_direction(soldier.facing))), "%s has a picture for the way it faces" % soldier.unit_id)
-    eq(big, 8, "4 big vehicles a side (tank, artillery, grav tank, gunship)")
-    # the markers say which way the vehicles face: the player's look up the screen, the enemy's down
-    eq(_first("player", "tank").facing, "NW", "the player's vehicles face up the screen")
-    eq(_first("enemy", "gunship").facing, "SE", "the enemy's face down")
+    eq(big, 8, "4 big vehicles a side (tank, artillery, grav tank, humvee)")
+    # the placeholders say which way the vehicles face: all look east on the screen
+    eq(_first("player", "tank").facing, "NE", "the player's vehicles face east")
+    eq(_first("enemy", "humvee").facing, "NE", "and so do the enemy's")
+    ok(_first("enemy", "tank").sprite.sprite_frames == _first("enemy", "tank").enemy_frames, "the enemy's units show the enemy pictures")
+    ok(_first("player", "tank").sprite.sprite_frames != _first("enemy", "tank").sprite.sprite_frames, "and the player's the player's")
     ok(WeaponTypes.get_def(_first("player", "artillery").weapon_type)["range"] > WeaponTypes.get_def(_first("player", "tank").weapon_type)["range"], "artillery outranges a tank")
     ok(_first("player", "grav_tank").max_hp > _first("player", "buggy").max_hp, "a grav tank has more hp than a buggy")
     ok(WeaponTypes.get_def(_first("player", "tank").weapon_type)["range"] > WeaponTypes.get_def("AK47")["range"], "tank cannons outrange rifles")
@@ -199,7 +201,7 @@ func _test_tank_pathfinding() -> void:
 
 # every vehicle can leave the yard: 2x2 ones through the 2-wide gaps, and reach the avenue
 func _test_vehicles_get_out() -> void:
-    for unit_type in ["tank", "artillery", "buggy", "grav_tank", "speeder", "gunship"]:
+    for unit_type in ["tank", "artillery", "buggy", "grav_tank", "speeder", "humvee"]:
         var unit := _first("player", unit_type)
         var profile := scene.battle_unit_manager.get_profile(unit)
         var path := scene.pathfinding_service.find_path(unit.tile, Vector2i(40, 46), profile)

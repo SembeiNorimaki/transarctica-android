@@ -46,11 +46,11 @@
     },
     "u25": {
         "id": "u25",
-        "unit_type": "gunship",
+        "unit_type": "humvee",
         "hp": 260,
         "max_hp": 260,
         "experience": 0,
-        "weapon_type": "GunshipCannon",
+        "weapon_type": "HumveeGun",
         "owner_id": "Player"
     }
 }

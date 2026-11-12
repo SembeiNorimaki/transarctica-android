@@ -18,7 +18,7 @@ class_name TrainInfoPanel
 const RESOURCE_SHEET: Texture2D = preload("res://assets/resources/resources_120x46.png")
 const RESOURCE_SHEET_COLUMNS := 3
 const RESOURCE_SHEET_ROWS := 10 # 360 x 460 px: 3 columns of 120 px, 10 rows of 46 px (like the sprite in trade_resource.tscn)
-const VEHICLE_SIDE_SHEET: Texture2D = preload("res://assets/wagons/vehicles_east.png")
+const VEHICLE_SIDE_SHEET: Texture2D = preload("res://assets/combat/unitsFH_placeholder.png")
 const SOLDIER_FRAMES: SpriteFrames = preload("res://assets/tilesets/unit.tres")
 
 @export var font_size := 28
@@ -169,7 +169,7 @@ func _get_vehicle_icon(unit_id: String) -> Texture2D:
         return null
     var atlas := AtlasTexture.new()
     atlas.atlas = VEHICLE_SIDE_SHEET
-    atlas.region = Rect2(frame * 96, 0, 96, 72)
+    atlas.region = Rect2(0, frame * 54, 70, 54) # the player's column
     return atlas
 
 

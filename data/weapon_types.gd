@@ -20,7 +20,7 @@ const TYPES := {
     "VehicleMG": {"range": 7, "damage": 14, "windup": 0.2, "cooldown": 0.5, "ap_cost": 1.5, "accuracy": 0.85},
     "GravCannon": {"range": 10, "damage": 60, "windup": 0.5, "cooldown": 1.2, "ap_cost": 4.0},
     "SpeederGun": {"range": 6, "damage": 22, "windup": 0.2, "cooldown": 0.5, "ap_cost": 2.0},
-    "GunshipCannon": {"range": 9, "damage": 35, "windup": 0.3, "cooldown": 0.8, "ap_cost": 3.0},
+    "HumveeGun": {"range": 9, "damage": 35, "windup": 0.3, "cooldown": 0.8, "ap_cost": 3.0},
 }
 
 

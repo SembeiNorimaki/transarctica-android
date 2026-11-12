@@ -4,47 +4,317 @@
     "Buildings layer: {atlas_id, coords, building_type}  (BuildingTypes has the size and hp of each type).",
     "Spawns layer:    {atlas_id, coords, team, unit_type}, with an optional facing (N NE E SE S SW W NW).",
     "An entry with \"row\" instead of \"coords\" covers the whole row of the atlas: each column is one facing, in the order of column_facings.",
-    "Facings are tile-space orientations, as units use them. On the isometric maps tile-space NW is drawn looking up the screen, so the columns of the vehicle atlas (looking up, up-right, right, down-right... the screen) are NW, N, NE, E, SE, S, SW, W."
+    "Facings are tile-space orientations, as units use them. On the isometric maps tile-space NW is drawn looking up the screen, so the columns of assets/combat/FHUnits.png (looking SW, W, NW, N, NE, E, SE, S on the screen) are S, SW, W, NW, N, NE, E, SE.",
+    "The vehicles of the Spawns layer are the placeholders of assets/combat/unitsFH_placeholder.png: column 0 is the player's, column 1 the enemy's, a row per type. They look east on the screen, which is NE here."
   ],
-  "column_facings": ["NW", "N", "NE", "E", "SE", "S", "SW", "W"],
+  "column_facings": [
+    "S",
+    "SW",
+    "W",
+    "NW",
+    "N",
+    "NE",
+    "E",
+    "SE"
+  ],
   "tilesets": {
     "res://assets/combat/combat_buildings.tres": [
-      {"atlas_id": 0, "coords": [0, 0], "building_type": "guard_post"},
-      {"atlas_id": 0, "coords": [1, 0], "building_type": "generator"},
-      {"atlas_id": 1, "coords": [0, 0], "building_type": "house"},
-      {"atlas_id": 1, "coords": [1, 0], "building_type": "workshop"},
-      {"atlas_id": 2, "coords": [0, 0], "building_type": "apartment"},
-      {"atlas_id": 2, "coords": [1, 0], "building_type": "warehouse"},
-      {"atlas_id": 3, "coords": [0, 0], "building_type": "factory"},
-      {"atlas_id": 3, "coords": [1, 0], "building_type": "bunker"}
+      {
+        "atlas_id": 0,
+        "coords": [
+          0,
+          0
+        ],
+        "building_type": "guard_post"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          1,
+          0
+        ],
+        "building_type": "generator"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          0,
+          0
+        ],
+        "building_type": "house"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          1,
+          0
+        ],
+        "building_type": "workshop"
+      },
+      {
+        "atlas_id": 2,
+        "coords": [
+          0,
+          0
+        ],
+        "building_type": "apartment"
+      },
+      {
+        "atlas_id": 2,
+        "coords": [
+          1,
+          0
+        ],
+        "building_type": "warehouse"
+      },
+      {
+        "atlas_id": 3,
+        "coords": [
+          0,
+          0
+        ],
+        "building_type": "factory"
+      },
+      {
+        "atlas_id": 3,
+        "coords": [
+          1,
+          0
+        ],
+        "building_type": "bunker"
+      }
     ],
     "res://assets/combat/combat_spawns.tres": [
-      {"atlas_id": 0, "coords": [0, 0], "team": "player", "unit_type": "liquidator"},
-      {"atlas_id": 0, "coords": [1, 0], "team": "player", "unit_type": "pioneer"},
-      {"atlas_id": 0, "coords": [2, 0], "team": "player", "unit_type": "redops"},
-      {"atlas_id": 0, "coords": [3, 0], "team": "enemy", "unit_type": "liquidator"},
-      {"atlas_id": 0, "coords": [4, 0], "team": "enemy", "unit_type": "pioneer"},
-      {"atlas_id": 0, "coords": [5, 0], "team": "enemy", "unit_type": "redops"},
-      {"atlas_id": 1, "row": 0, "team": "player", "unit_type": "tank"},
-      {"atlas_id": 1, "row": 1, "team": "player", "unit_type": "artillery"},
-      {"atlas_id": 1, "row": 2, "team": "player", "unit_type": "buggy"},
-      {"atlas_id": 1, "row": 3, "team": "player", "unit_type": "grav_tank"},
-      {"atlas_id": 1, "row": 4, "team": "player", "unit_type": "speeder"},
-      {"atlas_id": 1, "row": 5, "team": "player", "unit_type": "gunship"},
-      {"atlas_id": 2, "row": 0, "team": "enemy", "unit_type": "tank"},
-      {"atlas_id": 2, "row": 1, "team": "enemy", "unit_type": "artillery"},
-      {"atlas_id": 2, "row": 2, "team": "enemy", "unit_type": "buggy"},
-      {"atlas_id": 2, "row": 3, "team": "enemy", "unit_type": "grav_tank"},
-      {"atlas_id": 2, "row": 4, "team": "enemy", "unit_type": "speeder"},
-      {"atlas_id": 2, "row": 5, "team": "enemy", "unit_type": "gunship"}
+      {
+        "atlas_id": 0,
+        "coords": [
+          0,
+          0
+        ],
+        "team": "player",
+        "unit_type": "liquidator"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          1,
+          0
+        ],
+        "team": "player",
+        "unit_type": "pioneer"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          2,
+          0
+        ],
+        "team": "player",
+        "unit_type": "redops"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          3,
+          0
+        ],
+        "team": "enemy",
+        "unit_type": "liquidator"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          4,
+          0
+        ],
+        "team": "enemy",
+        "unit_type": "pioneer"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          5,
+          0
+        ],
+        "team": "enemy",
+        "unit_type": "redops"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          0,
+          0
+        ],
+        "team": "player",
+        "unit_type": "artillery",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          1,
+          0
+        ],
+        "team": "enemy",
+        "unit_type": "artillery",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          0,
+          1
+        ],
+        "team": "player",
+        "unit_type": "tank",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          1,
+          1
+        ],
+        "team": "enemy",
+        "unit_type": "tank",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          0,
+          2
+        ],
+        "team": "player",
+        "unit_type": "buggy",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          1,
+          2
+        ],
+        "team": "enemy",
+        "unit_type": "buggy",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          0,
+          3
+        ],
+        "team": "player",
+        "unit_type": "grav_tank",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          1,
+          3
+        ],
+        "team": "enemy",
+        "unit_type": "grav_tank",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          0,
+          4
+        ],
+        "team": "player",
+        "unit_type": "speeder",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          1,
+          4
+        ],
+        "team": "enemy",
+        "unit_type": "speeder",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          0,
+          5
+        ],
+        "team": "player",
+        "unit_type": "humvee",
+        "facing": "NE"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          1,
+          5
+        ],
+        "team": "enemy",
+        "unit_type": "humvee",
+        "facing": "NE"
+      }
     ],
     "res://assets/combat/sq_spawns.tres": [
-      {"atlas_id": 0, "coords": [0, 0], "team": "player", "unit_type": "liquidator"},
-      {"atlas_id": 0, "coords": [1, 0], "team": "player", "unit_type": "pioneer"},
-      {"atlas_id": 0, "coords": [2, 0], "team": "player", "unit_type": "redops"},
-      {"atlas_id": 0, "coords": [3, 0], "team": "enemy", "unit_type": "liquidator"},
-      {"atlas_id": 0, "coords": [4, 0], "team": "enemy", "unit_type": "pioneer"},
-      {"atlas_id": 0, "coords": [5, 0], "team": "enemy", "unit_type": "redops"}
+      {
+        "atlas_id": 0,
+        "coords": [
+          0,
+          0
+        ],
+        "team": "player",
+        "unit_type": "liquidator"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          1,
+          0
+        ],
+        "team": "player",
+        "unit_type": "pioneer"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          2,
+          0
+        ],
+        "team": "player",
+        "unit_type": "redops"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          3,
+          0
+        ],
+        "team": "enemy",
+        "unit_type": "liquidator"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          4,
+          0
+        ],
+        "team": "enemy",
+        "unit_type": "pioneer"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          5,
+          0
+        ],
+        "team": "enemy",
+        "unit_type": "redops"
+      }
     ]
   }
 }

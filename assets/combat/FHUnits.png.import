@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chbtf53aakj30"
-path="res://.godot/imported/vehicles_player.png-6b7a18ba38318ba1821bfcc1a7bfb113.ctex"
+uid="uid://py6bofhsjhex"
+path="res://.godot/imported/FHUnits.png-a65fe89ff4f66fbe724406afd350041d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/combat/vehicles_player.png"
-dest_files=["res://.godot/imported/vehicles_player.png-6b7a18ba38318ba1821bfcc1a7bfb113.ctex"]
+source_file="res://assets/combat/FHUnits.png"
+dest_files=["res://.godot/imported/FHUnits.png-a65fe89ff4f66fbe724406afd350041d.ctex"]
 
 [params]
 

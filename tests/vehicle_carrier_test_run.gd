@@ -1,6 +1,6 @@
 extends Node
 # Headless test of the vehicle carrier wagon: its wagon type, its four spots, the vehicle pictures
-# (the E frames of the vehicle atlas), and the sample train of the trade scene that carries vehicles.
+# (the placeholder pictures of the map tileset), and the sample train of the trade scene that carries vehicles.
 # It is a scene because the trade scene uses autoloads.
 # Run:  godot --headless --path . res://tests/vehicle_carrier_test_run.tscn
 
@@ -39,30 +39,17 @@ func _test_type_and_picture() -> void:
     var info: Dictionary = WagonTypes.TYPES["VehicleCarrierWagon"]
     eq(info["capacity"], 4, "it carries 4 vehicles")
     ok(info["stores"].has("Vehicles") and not info["stores"].has("Soldiers"), "it stores vehicles, not soldiers")
-    # the picture: one E frame of the atlas for each vehicle type
-    var strip := (load("res://assets/wagons/vehicles_east.png") as Texture2D).get_image()
-    var atlas := (load("res://assets/tilesets/imgs/vehicles.png") as Texture2D).get_image()
-    var frame_width := atlas.get_width() / 8
-    var frame_height := atlas.get_height() / 6
-    eq(strip.get_size(), Vector2i(frame_width * 6, frame_height), "the picture has 6 frames, one per vehicle")
-    for row in 6:
-        var east := atlas.get_region(Rect2i(2 * frame_width, row * frame_height, frame_width, frame_height)) # column 2 looks east
-        var mine := strip.get_region(Rect2i(row * frame_width, 0, frame_width, frame_height))
-        ok(_same_picture(east, mine), "frame %d (%s) is the E frame of its row of the atlas" % [row, VehicleCarrierWagon.VEHICLE_FRAMES[row]])
+    # the picture: the placeholders of the maps, a column per team and a row per vehicle type
+    var sheet := load("res://assets/combat/unitsFH_placeholder.png") as Texture2D
+    eq(sheet.get_size(), Vector2(140, 378), "the placeholder pictures: 2 columns by 7 rows of 70x54")
+    var wagon := (info["horizontal_scene"] as PackedScene).instantiate() as VehicleCarrierWagon
+    for spot in wagon.get_node("Vehicles").get_children():
+        eq((spot as Sprite2D).texture.resource_path, "res://assets/combat/unitsFH_placeholder.png", "a spot uses the placeholder pictures")
+        eq([(spot as Sprite2D).hframes, (spot as Sprite2D).vframes], [2, 7], "as 2 columns by 7 rows")
+    wagon.free()
+    eq(VehicleCarrierWagon.VEHICLE_FRAMES, ["artillery", "tank", "buggy", "grav_tank", "speeder", "humvee"] as Array[String], "the rows are in the order of the pictures")
     for unit_type in VehicleCarrierWagon.VEHICLE_FRAMES:
         ok(UnitTypes.exists(unit_type), "%s is a unit type" % unit_type)
-
-# The same pixels (what a fully transparent pixel holds does not matter)
-func _same_picture(a: Image, b: Image) -> bool:
-    if a.get_size() != b.get_size():
-        return false
-    for y in a.get_height():
-        for x in a.get_width():
-            var pa := a.get_pixel(x, y)
-            var pb := b.get_pixel(x, y)
-            if pa.a != pb.a or (pa.a > 0.0 and pa != pb):
-                return false
-    return true
 
 func _test_wagon() -> void:
     var wagon := (WagonTypes.TYPES["VehicleCarrierWagon"]["horizontal_scene"] as PackedScene).instantiate() as VehicleCarrierWagon
@@ -77,15 +64,18 @@ func _test_wagon() -> void:
     wagon.set_unit_types([])
     for i in 4:
         ok(not wagon.is_spot_filled(i), "empty: spot %d shows nothing" % i)
-    wagon.set_unit_types(["tank", "gunship"])
+    wagon.set_unit_types(["tank", "humvee"])
     ok(wagon.is_spot_filled(0) and wagon.is_spot_filled(1), "two vehicles: two spots filled")
     ok(not wagon.is_spot_filled(2) and not wagon.is_spot_filled(3), "and two empty")
-    eq((wagon.get_node("Vehicles").get_child(0) as Sprite2D).frame, 0, "the tank is the first frame")
-    eq((wagon.get_node("Vehicles").get_child(1) as Sprite2D).frame, 5, "the gunship the last")
+    eq((wagon.get_node("Vehicles").get_child(0) as Sprite2D).frame_coords, Vector2i(0, 1), "the tank: player column, second row")
+    eq((wagon.get_node("Vehicles").get_child(1) as Sprite2D).frame_coords, Vector2i(0, 5), "the humvee the last row")
     wagon.set_unit_types(["speeder", "buggy", "artillery", "grav_tank", "tank"])
     ok(wagon.is_spot_filled(3), "four fill it")
-    eq((wagon.get_node("Vehicles").get_child(0) as Sprite2D).frame, 4, "speeder")
-    eq((wagon.get_node("Vehicles").get_child(3) as Sprite2D).frame, 3, "grav tank")
+    eq((wagon.get_node("Vehicles").get_child(0) as Sprite2D).frame_coords, Vector2i(0, 4), "speeder")
+    eq((wagon.get_node("Vehicles").get_child(3) as Sprite2D).frame_coords, Vector2i(0, 3), "grav tank")
+    wagon.set_team("enemy")
+    eq((wagon.get_node("Vehicles").get_child(3) as Sprite2D).frame_coords, Vector2i(1, 3), "an enemy wagon shows the other column")
+    wagon.set_team("player")
     wagon.set_unit_types(["soldier-that-is-not-a-vehicle"])
     ok(not wagon.is_spot_filled(0), "something that is not a vehicle is not drawn")
     wagon.queue_free()
@@ -103,7 +93,7 @@ func _test_sample_train() -> void:
     eq(carriers.size(), 2, "the sample train has two vehicle carriers")
     if carriers.size() == 2:
         eq(carriers[0].unit_types, ["tank", "artillery", "buggy", "speeder"] as Array[String], "the first carries 4 vehicles")
-        eq(carriers[1].unit_types, ["grav_tank", "gunship"] as Array[String], "the second has two empty spots")
+        eq(carriers[1].unit_types, ["grav_tank", "humvee"] as Array[String], "the second has two empty spots")
         for i in 4:
             ok(carriers[0].is_spot_filled(i), "first carrier, spot %d is filled" % i)
         ok(carriers[1].is_spot_filled(1) and not carriers[1].is_spot_filled(2), "second carrier: 2 filled, 2 free")

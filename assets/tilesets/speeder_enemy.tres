@@ -1,0 +1,102 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/combat/FHUnits.png" id="1_tex"]
+
+[sub_resource type="AtlasTexture" id="A_SW"]
+atlas = ExtResource("1_tex")
+region = Rect2(0, 594, 70, 54)
+
+[sub_resource type="AtlasTexture" id="A_W"]
+atlas = ExtResource("1_tex")
+region = Rect2(70, 594, 70, 54)
+
+[sub_resource type="AtlasTexture" id="A_NW"]
+atlas = ExtResource("1_tex")
+region = Rect2(140, 594, 70, 54)
+
+[sub_resource type="AtlasTexture" id="A_N"]
+atlas = ExtResource("1_tex")
+region = Rect2(210, 594, 70, 54)
+
+[sub_resource type="AtlasTexture" id="A_NE"]
+atlas = ExtResource("1_tex")
+region = Rect2(280, 594, 70, 54)
+
+[sub_resource type="AtlasTexture" id="A_E"]
+atlas = ExtResource("1_tex")
+region = Rect2(350, 594, 70, 54)
+
+[sub_resource type="AtlasTexture" id="A_SE"]
+atlas = ExtResource("1_tex")
+region = Rect2(420, 594, 70, 54)
+
+[sub_resource type="AtlasTexture" id="A_S"]
+atlas = ExtResource("1_tex")
+region = Rect2(490, 594, 70, 54)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_E")
+}],
+"loop": true,
+"name": &"E",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_N")
+}],
+"loop": true,
+"name": &"N",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_NE")
+}],
+"loop": true,
+"name": &"NE",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_NW")
+}],
+"loop": true,
+"name": &"NW",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_S")
+}],
+"loop": true,
+"name": &"S",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_SE")
+}],
+"loop": true,
+"name": &"SE",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_SW")
+}],
+"loop": true,
+"name": &"SW",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A_W")
+}],
+"loop": true,
+"name": &"W",
+"speed": 5.0
+}]

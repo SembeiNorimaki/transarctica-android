@@ -12,7 +12,7 @@ const TYPES := {
     "pioneer": {"max_hp": 100, "weapon_type": "SniperRifle", "combat": {"view_range": 12, "view_angle": 90.0}},
     "redops": {"max_hp": 100, "weapon_type": "AK47"},
     # Vehicles. "size" is the tiles they cover (2 x 2 for the big ones), "scene" the unit scene to use
-    # instead of the soldier's. Their pictures are the rows of assets/tilesets/imgs/vehicles.png.
+    # instead of the soldier's. Their pictures are the rows of assets/combat/FHUnits.png (the enemy's are the rows 7 below).
     "tank": {
         "max_hp": 300, "weapon_type": "TankCannon", "size": Vector2i(2, 2),
         "scene": "res://scenes/units/tank.tscn",
@@ -38,9 +38,9 @@ const TYPES := {
         "scene": "res://scenes/units/speeder.tscn",
         "combat": {"move_speed": 5.5, "view_range": 11, "view_angle": 130.0, "max_ap": 14.0},
     },
-    "gunship": {
-        "max_hp": 260, "weapon_type": "GunshipCannon", "size": Vector2i(2, 2),
-        "scene": "res://scenes/units/gunship.tscn",
+    "humvee": {
+        "max_hp": 260, "weapon_type": "HumveeGun", "size": Vector2i(2, 2),
+        "scene": "res://scenes/units/humvee.tscn",
         "combat": {"move_speed": 4.0, "view_range": 12, "view_angle": 140.0, "max_ap": 12.0},
     },
 }
