@@ -98,11 +98,14 @@ func setup() -> void:
 
 #region deploying
 ## Puts a new soldier of this type on a free tile. Returns null (with a warning) if it can't.
-func spawn(team: String, unit_type: String, tile: Vector2i, facing := "S") -> Soldier:
+## `role` ("guard" or "patrol") is for the AI; "" is what the type is like (UnitTypes.default_role).
+func spawn(team: String, unit_type: String, tile: Vector2i, facing := "S", role := "") -> Soldier:
     if not UnitTypes.exists(unit_type):
         push_warning("BattleUnitManager: unknown unit type '%s'" % unit_type)
         return null
     var data := UnitTypes.make_unit(unit_type)
+    if role in UnitTypes.ROLES:
+        data["role"] = role
     var unit_id := "%s%d" % [team.left(1), _next_number]
     _next_number += 1
     return spawn_unit(team, unit_id, data, tile, facing)
@@ -150,12 +153,12 @@ func remove_soldier(soldier: Soldier) -> void:
     soldier.queue_free()
 
 ## Deploys the soldiers of CombatMapManager.get_spawns(). A spawn marker may say which way its unit
-## faces; otherwise the player's face north-west and the enemy's south-east, so they look at each
+## faces (and which role it has, see UnitTypes.default_role); otherwise the player's face north-west and the enemy's south-east, so they look at each
 ## other on a map laid out corner to corner.
 func spawn_all(spawns: Array[Dictionary]) -> void:
     for spawn_data in spawns:
         var facing := "SE" if spawn_data["team"] == Soldier.TEAM_ENEMY else "NW"
-        spawn(spawn_data["team"], spawn_data["unit_type"], spawn_data["tile"], str(spawn_data.get("facing", facing)))
+        spawn(spawn_data["team"], spawn_data["unit_type"], spawn_data["tile"], str(spawn_data.get("facing", facing)), str(spawn_data.get("role", "")))
 #endregion
 
 

@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" uid="uid://c38h40g7yk2nx" path="res://scenes/managers/horizontal_train_manager.tscn" id="train_manager"]
 [ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="train"]
 [ext_resource type="Script" path="res://scripts/combat/wagon_deploy_manager.gd" id="WagonDeployManager"]
+[ext_resource type="Script" path="res://scripts/combat/ai/field_ai.gd" id="FieldAI"]
 
 [node name="CombatSceneCity" type="Node2D"]
 script = ExtResource("scene")
@@ -113,6 +114,11 @@ script = ExtResource("VisionOverlay")
 z_index = 25
 visible = false
 script = ExtResource("NavGraphOverlay")
+
+[node name="AI" type="Node" parent="."]
+
+[node name="FieldAI" type="Node" parent="AI"]
+script = ExtResource("FieldAI")
 
 [node name="TrainContainer" type="Node2D" parent="."]
 

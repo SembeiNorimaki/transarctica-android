@@ -122,6 +122,8 @@ func read_spawns() -> Array[Dictionary]:
         var spawn := {"tile": cell, "team": str(entry["team"]), "unit_type": str(entry["unit_type"])}
         if entry.has("facing"):
             spawn["facing"] = str(entry["facing"])
+        if entry.has("role"):
+            spawn["role"] = str(entry["role"])
         result.append(spawn)
     return result
 #endregion

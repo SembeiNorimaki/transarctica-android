@@ -16,6 +16,10 @@ class_name CombatSceneCity
 # what it carries); a barracks or a vehicle carrier shows its units, and tapping one gets it off the
 # train, on the free tiles of the deploy area nearest to the wagon (see WagonDeployManager).
 # If the train has no units, the player's units are those of the map's Spawns layer.
+#
+# The enemy's units are played by the FieldAI: each guards its post or patrols until it sees one of
+# yours; then it is alert and engages. Turn based, the enemy's turn is its thinking; with the AI off
+# (AI/FieldAI, enabled) the enemy's turn passes by itself.
 
 ## The player's units are the ones aboard the train. Off: they start where the map's Spawns layer says.
 @export var player_units_from_train := true
@@ -27,6 +31,7 @@ class_name CombatSceneCity
 @onready var train_container: Node2D = $TrainContainer
 @onready var player_train: HorizontalTrain = $TrainContainer/PlayerTrain
 @onready var brake_marker: Marker2D = $TrainBrakeStart
+@onready var field_ai: FieldAI = $AI/FieldAI
 
 var _train_arriving := false
 var _shown_wagon: GenericWagon = null # the wagon the bottom panel shows
@@ -35,6 +40,7 @@ var _shown_wagon: GenericWagon = null # the wagon the bottom panel shows
 # The debug labels of 12 units on top of each other hide everything: only the selected unit shows its
 # labels (hp, action points, tile...)
 func _setup_scene() -> void:
+    _setup_field_ai()
     _setup_train()
     battle_unit_manager.soldier_spawned.connect(func(soldier: Soldier) -> void: soldier.show_debug_labels = false)
     battle_unit_manager.selection_changed.connect(_on_selection_labels)
@@ -88,6 +94,20 @@ func _get_camera_bounds() -> Rect2:
         var train_box := Rect2(brake_marker.global_position + Vector2(-2500.0, -300.0), Vector2(3500.0, 600.0))
         bounds = bounds.merge(train_box)
     return bounds
+
+
+func _setup_field_ai() -> void:
+    field_ai.battle_unit_manager = battle_unit_manager
+    field_ai.vision_service = vision_service
+    field_ai.pathfinding_service = pathfinding_service
+    field_ai.occupancy_service = occupancy_service
+    field_ai.grid_service = grid_service
+    field_ai.flow_manager = flow_manager
+    field_ai.setup()
+    field_ai.awareness_range = fog_manager.awareness_range
+    var turn_manager := flow_manager as TurnManager
+    if turn_manager != null:
+        turn_manager.auto_pass_computer_turns = not field_ai.enabled # the AI ends its turns itself
 
 
 #region the train

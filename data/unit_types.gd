@@ -56,6 +56,14 @@ static var _footprints := {}
 #   view_range : tiles
 #   view_angle : degrees, the width of the vision cone
 #   max_ap     : action points per turn in turn based combat (a step on flat ground costs 1)
+# The role of a unit when nobody tells it (what the AI does with it while it has seen no enemy, see FieldAI):
+#   "patrol" : walks around its post. Fast units, from PATROL_MOVE_SPEED tiles per second.
+#   "guard"  : stands at its post, looking around. Slow units: soldiers, tanks, artillery.
+# A type can say its own in its "combat" dictionary ("role": "guard"), and a unit of the map's Spawns
+# layer in combat_tiles.json.
+const PATROL_MOVE_SPEED := 3.5
+const ROLES: Array[String] = ["guard", "patrol"]
+
 const DEFAULT_COMBAT := {"move_speed": 3.0, "view_range": 8, "view_angle": 120.0, "max_ap": 8.0}
 
 
@@ -63,6 +71,15 @@ static func combat_stats(unit_type: String) -> Dictionary:
     var stats := DEFAULT_COMBAT.duplicate()
     stats.merge(TYPES.get(unit_type, {}).get("combat", {}), true)
     return stats
+
+
+## "guard" or "patrol": what units of this type do when they have seen no enemy.
+static func default_role(unit_type: String) -> String:
+    var stats := combat_stats(unit_type)
+    var role := str(stats.get("role", ""))
+    if role in ROLES:
+        return role
+    return "patrol" if float(stats["move_speed"]) >= PATROL_MOVE_SPEED else "guard"
 
 
 static func exists(unit_type: String) -> bool:

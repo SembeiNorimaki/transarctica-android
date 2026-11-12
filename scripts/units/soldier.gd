@@ -51,6 +51,8 @@ var hp := 0
 var max_hp := 0
 var weapon_type := ""
 var move_speed := 3.0 # tiles per second
+## What the AI makes of it while it sees no enemy: "guard" or "patrol" (see UnitTypes.default_role)
+var role := "guard"
 ## Multiplies move_speed (the build scene hurries its units).
 var speed_factor := 1.0
 var view_range := 8 # tiles
@@ -99,6 +101,7 @@ func setup(id: String, data: Dictionary) -> void:
     weapon_type = str(data.get("weapon_type", ""))
     team = str(data.get("team", TEAM_PLAYER))
     footprint = UnitTypes.get_footprint(unit_type)
+    role = str(data.get("role", UnitTypes.default_role(unit_type)))
     if UnitTypes.exists(unit_type):
         var stats := UnitTypes.combat_stats(unit_type)
         move_speed = float(stats["move_speed"])

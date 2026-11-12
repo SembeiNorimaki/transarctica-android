@@ -2,7 +2,7 @@
   "_help": [
     "Which building or unit a tile of the combat maps stands for. A tile is found by the TileSet file of its layer, its atlas id (the source) and its atlas coords.",
     "Buildings layer: {atlas_id, coords, building_type}  (BuildingTypes has the size and hp of each type).",
-    "Spawns layer:    {atlas_id, coords, team, unit_type}, with an optional facing (N NE E SE S SW W NW).",
+    "Spawns layer:    {atlas_id, coords, team, unit_type}, with an optional facing (N NE E SE S SW W NW) and an optional role (\"guard\" or \"patrol\", what the AI does with the unit when it sees no enemy; without it the type decides, see UnitTypes.default_role).",
     "An entry with \"row\" instead of \"coords\" covers the whole row of the atlas: each column is one facing, in the order of column_facings.",
     "Facings are tile-space orientations, as units use them. On the isometric maps tile-space NW is drawn looking up the screen, so the columns of assets/combat/FHUnits.png (looking SW, W, NW, N, NE, E, SE, S on the screen) are S, SW, W, NW, N, NE, E, SE.",
     "The vehicles of the Spawns layer are the placeholders of assets/combat/unitsFH_placeholder.png: column 0 is the player's, column 1 the enemy's, a row per type. They look east on the screen, which is NE here."

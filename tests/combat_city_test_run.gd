@@ -39,6 +39,7 @@ func wait_until(condition: Callable, timeout := 8.0) -> bool:
 
 func _run() -> void:
     scene = load("res://scenes/core/combat_scene_city.tscn").instantiate()
+    scene.get_node("AI/FieldAI").enabled = false # and the enemy does not move by itself: see field_ai_test_run
     scene.player_units_from_train = false # these tests are about the units of the map's spawns; city_train_test_run has the train
     get_tree().root.add_child(scene)
     await get_tree().process_frame
