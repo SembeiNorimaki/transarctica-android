@@ -107,3 +107,80 @@ custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
 toggle_mode = true
 text = "Attack"
+
+[node name="WagonPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -420.0
+offset_top = -140.0
+offset_right = 420.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="WagonPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="WagonPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Icon" type="TextureRect" parent="WagonPanel/Margin/Row"]
+custom_minimum_size = Vector2(180, 104)
+layout_mode = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Info" type="VBoxContainer" parent="WagonPanel/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="WagonPanel/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Wagon"
+
+[node name="HpRow" type="HBoxContainer" parent="WagonPanel/Margin/Row/Info"]
+layout_mode = 2
+
+[node name="HpLabel" type="Label" parent="WagonPanel/Margin/Row/Info/HpRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "HP 0/0"
+
+[node name="HpBar" type="ProgressBar" parent="WagonPanel/Margin/Row/Info/HpRow"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp")
+show_percentage = false
+
+[node name="CargoRow" type="HBoxContainer" parent="WagonPanel/Margin/Row/Info"]
+layout_mode = 2
+
+[node name="CargoIcon" type="TextureRect" parent="WagonPanel/Margin/Row/Info/CargoRow"]
+custom_minimum_size = Vector2(60, 28)
+layout_mode = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CargoLabel" type="Label" parent="WagonPanel/Margin/Row/Info/CargoRow"]
+layout_mode = 2
+text = "Empty"
+
+[node name="Slots" type="HBoxContainer" parent="WagonPanel/Margin/Row/Info"]
+layout_mode = 2
+theme_override_constants/separation = 8

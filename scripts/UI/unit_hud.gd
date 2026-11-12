@@ -5,11 +5,20 @@ class_name UnitHud
 # it is given (set_unit, set_mode) and emits mode_selected when the player presses a button; the
 # scene connects that to BattleUnitManager.set_action_mode.
 #
+# The same panel shows a wagon of the player's train when it is selected (show_wagon): its picture, its
+# hp and what it carries. If it carries units (a barracks, a vehicle carrier) each is a button that asks
+# for it to get off (deploy_requested). Selecting a unit takes the wagon away, and the other way round.
+#
 # The two buttons are switches: pressed, the taps are that action (a move, an attack); released
 # again, the unit is back to the default (a free tile is a move, an enemy is an attack).
 
 ## The player chose how taps are understood: a BattleUnitManager.ActionMode.
 signal mode_selected(mode: int)
+
+## The player pressed a unit of the wagon on show: it should get off the train.
+signal deploy_requested(unit_id: String)
+
+const SLOT_SIZE := Vector2(112, 76)
 
 @onready var panel: PanelContainer = $Panel
 @onready var icon: TextureRect = $Panel/Margin/Row/Icon
@@ -21,6 +30,15 @@ signal mode_selected(mode: int)
 @onready var ap_bar: ProgressBar = $Panel/Margin/Row/Info/ApRow/ApBar
 @onready var move_button: Button = $Panel/Margin/Row/Buttons/MoveButton
 @onready var attack_button: Button = $Panel/Margin/Row/Buttons/AttackButton
+
+@onready var wagon_panel: PanelContainer = $WagonPanel
+@onready var wagon_icon: TextureRect = $WagonPanel/Margin/Row/Icon
+@onready var wagon_name_label: Label = $WagonPanel/Margin/Row/Info/NameLabel
+@onready var wagon_hp_label: Label = $WagonPanel/Margin/Row/Info/HpRow/HpLabel
+@onready var wagon_hp_bar: ProgressBar = $WagonPanel/Margin/Row/Info/HpRow/HpBar
+@onready var cargo_icon: TextureRect = $WagonPanel/Margin/Row/Info/CargoRow/CargoIcon
+@onready var cargo_label: Label = $WagonPanel/Margin/Row/Info/CargoRow/CargoLabel
+@onready var slots: HBoxContainer = $WagonPanel/Margin/Row/Info/Slots
 
 var _soldier: Soldier = null
 
@@ -40,6 +58,7 @@ func set_unit(soldier: Soldier) -> void:
     if is_instance_valid(_soldier):
         _soldier.hp_changed.connect(_on_unit_changed)
         _soldier.action_points_changed.connect(_on_unit_changed)
+        clear_wagon()
     set_mode(BattleUnitManager.ActionMode.AUTO)
     refresh()
 
@@ -47,6 +66,48 @@ func set_unit(soldier: Soldier) -> void:
 func set_mode(mode: int) -> void:
     move_button.set_pressed_no_signal(mode == BattleUnitManager.ActionMode.MOVE)
     attack_button.set_pressed_no_signal(mode == BattleUnitManager.ActionMode.ATTACK)
+
+## Shows a wagon (null or an empty dictionary: the wagon is taken away). `info` has:
+##   name: String, icon: Texture2D, hp, max_hp: int,
+##   cargo_text: String and cargo_icon: Texture2D (what it carries; the icon may be null),
+##   units: Array of {id: String, icon: Texture2D, label: String, enabled: bool}, one button each.
+func show_wagon(info: Dictionary) -> void:
+    if info.is_empty():
+        clear_wagon()
+        return
+    wagon_panel.visible = true
+    wagon_name_label.text = str(info.get("name", ""))
+    wagon_icon.texture = info.get("icon")
+    var max_hp := int(info.get("max_hp", 0))
+    wagon_hp_label.text = "HP %d/%d" % [int(info.get("hp", 0)), max_hp]
+    wagon_hp_bar.max_value = maxf(float(max_hp), 1.0)
+    wagon_hp_bar.value = int(info.get("hp", 0))
+    cargo_label.text = str(info.get("cargo_text", ""))
+    cargo_icon.texture = info.get("cargo_icon")
+    cargo_icon.visible = cargo_icon.texture != null
+    for child in slots.get_children():
+        slots.remove_child(child)
+        child.queue_free()
+    for unit: Dictionary in info.get("units", []):
+        var button := Button.new()
+        button.icon = unit.get("icon")
+        button.expand_icon = true
+        button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+        button.custom_minimum_size = SLOT_SIZE
+        button.text = str(unit.get("label", ""))
+        button.tooltip_text = "Get %s off the train" % str(unit.get("label", ""))
+        button.disabled = not bool(unit.get("enabled", true))
+        button.pressed.connect(deploy_requested.emit.bind(str(unit.get("id", ""))))
+        slots.add_child(button)
+    if is_instance_valid(_soldier): # one thing at a time: the unit goes
+        set_unit(null)
+
+func clear_wagon() -> void:
+    wagon_panel.visible = false
+
+func is_showing_wagon() -> bool:
+    return wagon_panel.visible
 
 func refresh() -> void:
     if not is_instance_valid(_soldier):

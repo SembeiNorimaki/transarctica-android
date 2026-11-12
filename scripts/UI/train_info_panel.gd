@@ -15,12 +15,6 @@ class_name TrainInfoPanel
 #   └── ScrollContainer
 #       └── Grid (GridContainer, columns = 3, "Access as Unique Name" ON)
 
-const RESOURCE_SHEET: Texture2D = preload("res://assets/resources/resources_120x46.png")
-const RESOURCE_SHEET_COLUMNS := 3
-const RESOURCE_SHEET_ROWS := 10 # 360 x 460 px: 3 columns of 120 px, 10 rows of 46 px (like the sprite in trade_resource.tscn)
-const VEHICLE_SIDE_SHEET: Texture2D = preload("res://assets/combat/unitsFH_placeholder.png")
-const SOLDIER_FRAMES: SpriteFrames = preload("res://assets/tilesets/unit.tres")
-
 @export var font_size := 28
 @export var wagon_picture_size := Vector2(256, 96) # the 1st column
 @export var content_picture_size := Vector2(120, 96) # the 2nd column
@@ -162,34 +156,13 @@ func _get_wagon_icon(wagon_type: String) -> Texture2D:
     return icon
 
 
-# The side view of a vehicle (the picture the vehicle carrier shows)
-func _get_vehicle_icon(unit_id: String) -> Texture2D:
-    var frame := VehicleCarrierWagon.VEHICLE_FRAMES.find(str(GameState.get_unit(unit_id).get("unit_type", "")))
-    if frame < 0:
-        return null
-    var atlas := AtlasTexture.new()
-    atlas.atlas = VEHICLE_SIDE_SHEET
-    atlas.region = Rect2(0, frame * 54, 70, 54) # the player's column
-    return atlas
-
-
-# What the wagon holds: the resource it carries, or a soldier for a barracks with soldiers
+# What the wagon holds: the resource it carries, or a unit (the first one) for a barracks or a vehicle carrier
 func _get_content_icon(wagon: Dictionary) -> Texture2D:
     if not wagon.get("unit_ids", []).is_empty():
-        if WagonTypes.TYPES.get(str(wagon.get("type", "")), {}).get("stores", []).has("Vehicles"):
-            return _get_vehicle_icon(str(wagon["unit_ids"][0]))
-        return SOLDIER_FRAMES.get_frame_texture(&"S", 0)
-    var cargo := str(wagon.get("cargo_name", ""))
-    if cargo.is_empty() or int(wagon.get("cargo_qty", 0)) <= 0:
+        return WagonPictures.unit_icon(str(GameState.get_unit(str(wagon["unit_ids"][0])).get("unit_type", "")))
+    if int(wagon.get("cargo_qty", 0)) <= 0:
         return null
-    var frame := ResourceTypes.frame_for(cargo)
-    if frame < 0:
-        return null
-    var cell := RESOURCE_SHEET.get_size() / Vector2(RESOURCE_SHEET_COLUMNS, RESOURCE_SHEET_ROWS)
-    var atlas := AtlasTexture.new()
-    atlas.atlas = RESOURCE_SHEET
-    atlas.region = Rect2(Vector2(frame % RESOURCE_SHEET_COLUMNS, floori(frame / float(RESOURCE_SHEET_COLUMNS))) * cell, cell)
-    return atlas
+    return WagonPictures.resource_icon(str(wagon.get("cargo_name", "")))
 #endregion
 
 

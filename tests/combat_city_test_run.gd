@@ -39,6 +39,7 @@ func wait_until(condition: Callable, timeout := 8.0) -> bool:
 
 func _run() -> void:
     scene = load("res://scenes/core/combat_scene_city.tscn").instantiate()
+    scene.player_units_from_train = false # these tests are about the units of the map's spawns; city_train_test_run has the train
     get_tree().root.add_child(scene)
     await get_tree().process_frame
     await get_tree().process_frame

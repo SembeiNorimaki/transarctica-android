@@ -32,6 +32,8 @@ var stores: Array = [] # cargo categories this wagon accepts
 var cargo_type := ""
 var cargo_amount := 0
 var max_cargo_amount := 0 # capacity
+## The ids of the units it carries (soldiers, vehicles), as the train data had them when it was applied.
+var unit_ids: Array[String] = []
 
 
 # If a wagon variant overrides _ready(), it must call super() so the visuals are refreshed.
@@ -76,6 +78,9 @@ func apply_data(wagon_data: Dictionary, type_info: Dictionary) -> void:
     if amount > max_cargo_amount:
         push_warning("GenericWagon: %s holds %d but its capacity is %d" % [wagon_type, amount, max_cargo_amount])
     cargo_amount = clampi(amount, 0, max_cargo_amount)
+    unit_ids.clear()
+    for id in wagon_data.get("unit_ids", []):
+        unit_ids.append(str(id))
 
     max_hp = maxi(int(type_info.get("max_hp", 100)), 1)
     hp = clampi(int(wagon_data.get("hp", max_hp)), 0, max_hp)

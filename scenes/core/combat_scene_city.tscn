@@ -21,6 +21,9 @@
 [ext_resource type="Script" uid="uid://dh4sur3qrpgfl" path="res://scripts/combat/nav_graph_overlay.gd" id="NavGraphOverlay"]
 [ext_resource type="Script" path="res://scripts/combat/bullet_manager.gd" id="BulletManager"]
 [ext_resource type="PackedScene" path="res://scenes/UI/unit_hud.tscn" id="unit_hud"]
+[ext_resource type="PackedScene" uid="uid://c38h40g7yk2nx" path="res://scenes/managers/horizontal_train_manager.tscn" id="train_manager"]
+[ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="train"]
+[ext_resource type="Script" path="res://scripts/combat/wagon_deploy_manager.gd" id="WagonDeployManager"]
 
 [node name="CombatSceneCity" type="Node2D"]
 script = ExtResource("scene")
@@ -77,6 +80,13 @@ script = ExtResource("BulletManager")
 [node name="TurnManager" type="Node" parent="Managers"]
 script = ExtResource("TurnManager")
 
+[node name="HorizontalTrainManager" parent="Managers" instance=ExtResource("train_manager")]
+
+[node name="WagonDeployManager" type="Node" parent="Managers"]
+script = ExtResource("WagonDeployManager")
+deploy_area = Rect2i(46, 46, 10, 10)
+exit_tile = Vector2i(40, 46)
+
 [node name="CombatMap" parent="." instance=ExtResource("map")]
 
 [node name="BuildingContainer" type="Node2D" parent="CombatMap"]
@@ -103,6 +113,15 @@ script = ExtResource("VisionOverlay")
 z_index = 25
 visible = false
 script = ExtResource("NavGraphOverlay")
+
+[node name="TrainContainer" type="Node2D" parent="."]
+
+[node name="PlayerTrain" parent="TrainContainer" instance=ExtResource("train")]
+position = Vector2(-950, 1900)
+scale = Vector2(2, 2)
+
+[node name="TrainBrakeStart" type="Marker2D" parent="."]
+position = Vector2(724, 1900)
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
