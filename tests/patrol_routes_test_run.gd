@@ -40,6 +40,7 @@ func _run() -> void:
     _test_tileset()
     _test_reading()
     _test_units_on_routes()
+    _test_guards()
     await _test_city_map()
     await _test_ai_walks_routes()
     print("%d checks, %d failed" % [_checks, _failed])
@@ -170,6 +171,28 @@ func _test_units_on_routes() -> void:
     map = null
 
 
+func _test_guards() -> void:
+    var tileset: TileSet = load("res://assets/combat/combat_guards.tres")
+    eq((tileset.get_source(0) as TileSetAtlasSource).get_tiles_count(), 1, "one guard post tile")
+    eq(tileset.tile_size, Vector2i(64, 32), "same tile size as the other layers")
+    _new_map()
+    ok(map.guards != null, "the map has a Guards layer")
+    map.guards.set_cell(Vector2i(3, 3), 0, Vector2i.ZERO)
+    map.guards.set_cell(Vector2i(5, 5), 0, Vector2i.ZERO)
+    _paint_route([Vector2i(5, 5), Vector2i(6, 5)], false)
+    map.spawns.set_cell(Vector2i(3, 3), 1, Vector2i(1, 4)) # an enemy speeder (a patrol by type) on a guard post
+    map.spawns.set_cell(Vector2i(8, 8), 1, Vector2i(1, 4)) # one on nothing
+    map.spawns.set_cell(Vector2i(5, 5), 1, Vector2i(1, 2)) # a buggy on a guard post that is also a route
+    var by_tile := {}
+    for spawn in map.read_spawns():
+        by_tile[spawn["tile"]] = spawn
+    eq(by_tile[Vector2i(3, 3)].get("role", ""), "guard", "a unit on a guard post guards")
+    ok(not by_tile[Vector2i(3, 3)].has("route"), "and has no route")
+    eq(by_tile[Vector2i(8, 8)].get("role", ""), "", "a unit on nothing is what its type says")
+    eq(by_tile[Vector2i(5, 5)].get("role", ""), "patrol", "on a route that wins")
+    map.free()
+    map = null
+
 func _test_city_map() -> void:
     scene = load("res://scenes/core/combat_scene_city.tscn").instantiate()
     scene.player_units_from_train = false
@@ -193,6 +216,13 @@ func _test_city_map() -> void:
             ok(soldier.role == "patrol", "%s on a route is a patrol" % soldier.unit_id)
             ok(soldier.patrol_route.has(soldier.tile), "and stands on its route")
     eq(patrols, 2, "one unit on each route")
+    var posts := 0
+    for soldier in scene.battle_unit_manager.soldiers:
+        if soldier.unit_type == "humvee" and soldier.team == "enemy":
+            posts += 1
+            eq(soldier.role, "guard", "the enemy humvee, a patrol by type, guards its post")
+    eq(posts, 1, "one enemy humvee")
+    ok(not city.guards.visible, "the guard posts are hidden during the battle")
 
 
 # The enemy's units walk their routes
@@ -260,7 +290,10 @@ func _test_ai_walks_routes() -> void:
     if target == null:
         scene.queue_free()
         return
-    for i in 3:
+    open_unit.look_at_tile(spot) # it looks at it
+    for i in 8: # a few rounds at most
+        if ai.get_mode(open_unit) == FieldAI.Mode.ALERT or not target.is_alive():
+            break
         var number := turns.turn_number
         turns.end_turn()
         await wait_until(func() -> bool: return turns.turn_number > number and turns.current_team == Soldier.TEAM_PLAYER, 20.0)

@@ -20,6 +20,8 @@ class_name CombatMap
 #              a dot on the center. Routes do not overlap, and are either closed (a cycle) or open (two
 #              ends). A spawn marker standing on a route is a patrol that follows it (see read_routes).
 #              Hidden at run time, like Spawns.
+#   Guards   : optional. Placeholders of guard posts: a unit that starts on one guards its position,
+#              whatever its type (see read_spawns). On a route, the route wins. Hidden at run time.
 #   Fog      : drawn by FogManager over everything (unexplored, explored; visible = no tile)
 # Each border between two tiles belongs to exactly one wall layer cell, so a tile can have walls on
 # all its sides. To put a wall on the north or west side of a tile, paint it in the neighbor.
@@ -40,6 +42,7 @@ class_name CombatMap
 @onready var buildings: TileMapLayer = get_node_or_null("Buildings") # optional
 @onready var spawns: TileMapLayer = $Spawns
 @onready var routes: TileMapLayer = get_node_or_null("Routes") # optional
+@onready var guards: TileMapLayer = get_node_or_null("Guards") # optional
 @onready var fog: TileMapLayer = $Fog
 
 const SIDE_STEPS := {"N": Vector2i(0, -1), "E": Vector2i(1, 0), "S": Vector2i(0, 1), "W": Vector2i(-1, 0)}
@@ -121,6 +124,7 @@ func read_edges() -> Array[Dictionary]:
 ## marker. "facing" is only there for the markers that say it (the vehicle markers: one per facing).
 ## A marker on a tile of a route (the first one, if two are on the same route) is a patrol: "role" is
 ## "patrol", "route" the tiles of the route in order and "route_cyclic" whether it is closed.
+## A marker on a tile of the Guards layer (and not on a route) has "role" "guard".
 func read_spawns() -> Array[Dictionary]:
     var result: Array[Dictionary] = []
     var tileset_path := spawns.tile_set.resource_path
@@ -136,6 +140,10 @@ func read_spawns() -> Array[Dictionary]:
             spawn["role"] = str(entry["role"])
         result.append(spawn)
     _put_units_on_routes(result)
+    if guards != null:
+        for spawn in result:
+            if not spawn.has("route") and guards.get_cell_source_id(spawn["tile"]) != -1:
+                spawn["role"] = "guard"
     return result
 
 ## [{"tiles": Array[Vector2i], "cyclic": bool}] for each route of the Routes layer. The tiles are in
@@ -241,6 +249,10 @@ func clear_edge_visual(a: Vector2i, b: Vector2i) -> void:
 func set_routes_visible(value: bool) -> void:
     if routes != null:
         routes.visible = value
+
+func set_guards_visible(value: bool) -> void:
+    if guards != null:
+        guards.visible = value
 
 func set_spawns_visible(value: bool) -> void:
     spawns.visible = value

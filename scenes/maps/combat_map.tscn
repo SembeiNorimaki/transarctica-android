@@ -8,6 +8,7 @@
 [ext_resource type="TileSet" path="res://assets/combat/combat_walls_sw.tres" id="ts_sw"]
 [ext_resource type="TileSet" path="res://assets/combat/combat_spawns.tres" id="ts_spawns"]
 [ext_resource type="TileSet" path="res://assets/combat/combat_routes.tres" id="ts_routes"]
+[ext_resource type="TileSet" path="res://assets/combat/combat_guards.tres" id="ts_guards"]
 
 [node name="CombatMap" type="Node2D"]
 y_sort_enabled = true
@@ -41,6 +42,10 @@ tile_set = ExtResource("ts_spawns")
 [node name="Routes" type="TileMapLayer" parent="."]
 z_index = -6
 tile_set = ExtResource("ts_routes")
+
+[node name="Guards" type="TileMapLayer" parent="."]
+z_index = -6
+tile_set = ExtResource("ts_guards")
 
 [node name="Fog" type="TileMapLayer" parent="."]
 z_index = 20
