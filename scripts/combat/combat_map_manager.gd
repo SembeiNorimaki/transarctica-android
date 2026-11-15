@@ -39,6 +39,7 @@ func setup() -> void:
     _load_objects()
     _load_buildings()
     combat_map.set_spawns_visible(false)
+    combat_map.set_routes_visible(false)
     combat_map.set_building_placeholders_visible(false)
     edge_service.edge_changed.connect(_on_edge_changed)
 

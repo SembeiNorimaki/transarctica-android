@@ -15,6 +15,11 @@ class_name CombatMap
 #              CombatMapManager hides this layer and puts a GenericBuilding where each tile is.
 #   Spawns   : markers where units start. Which unit (and which way it faces) a tile is comes from
 #              data/combat_tiles.json too.
+#   Routes   : optional. Placeholders of patrol routes: a red line through a tile joins two of its sides
+#              (custom data "route_sides", like "NE": tile-space N, E, S, W), an end tile has one side and
+#              a dot on the center. Routes do not overlap, and are either closed (a cycle) or open (two
+#              ends). A spawn marker standing on a route is a patrol that follows it (see read_routes).
+#              Hidden at run time, like Spawns.
 #   Fog      : drawn by FogManager over everything (unexplored, explored; visible = no tile)
 # Each border between two tiles belongs to exactly one wall layer cell, so a tile can have walls on
 # all its sides. To put a wall on the north or west side of a tile, paint it in the neighbor.
@@ -34,8 +39,11 @@ class_name CombatMap
 @onready var roads: TileMapLayer = get_node_or_null("Roads") # optional
 @onready var buildings: TileMapLayer = get_node_or_null("Buildings") # optional
 @onready var spawns: TileMapLayer = $Spawns
+@onready var routes: TileMapLayer = get_node_or_null("Routes") # optional
 @onready var fog: TileMapLayer = $Fog
 
+const SIDE_STEPS := {"N": Vector2i(0, -1), "E": Vector2i(1, 0), "S": Vector2i(0, 1), "W": Vector2i(-1, 0)}
+const OPPOSITE_SIDE := {"N": "S", "E": "W", "S": "N", "W": "E"}
 const ROAD_STEPS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)] # N E S W
 
 # (edge_type, open) -> atlas coords in the wall tilesets, built once
@@ -111,6 +119,8 @@ func read_edges() -> Array[Dictionary]:
 
 ## [{"tile": Vector2i, "team": String, "unit_type": String, "facing": String}] for each spawn
 ## marker. "facing" is only there for the markers that say it (the vehicle markers: one per facing).
+## A marker on a tile of a route (the first one, if two are on the same route) is a patrol: "role" is
+## "patrol", "route" the tiles of the route in order and "route_cyclic" whether it is closed.
 func read_spawns() -> Array[Dictionary]:
     var result: Array[Dictionary] = []
     var tileset_path := spawns.tile_set.resource_path
@@ -125,7 +135,63 @@ func read_spawns() -> Array[Dictionary]:
         if entry.has("role"):
             spawn["role"] = str(entry["role"])
         result.append(spawn)
+    _put_units_on_routes(result)
     return result
+
+## [{"tiles": Array[Vector2i], "cyclic": bool}] for each route of the Routes layer. The tiles are in
+## walking order: an open route starts at its end that is further north (smallest y, then x), a closed
+## one at its smallest tile. Two tiles are joined when each has the side that faces the other; a side
+## that leads nowhere simply ends the route there.
+func read_routes() -> Array[Dictionary]:
+    var result: Array[Dictionary] = []
+    if routes == null:
+        return result
+    var sides := {} # tile -> String of its sides
+    for cell in routes.get_used_cells():
+        sides[cell] = _custom(routes, cell, "route_sides")
+    var links := {} # tile -> Array[Vector2i] of the tiles it is joined to
+    for tile: Vector2i in sides:
+        var joined: Array[Vector2i] = []
+        for side: String in sides[tile]:
+            var other: Vector2i = tile + SIDE_STEPS[side]
+            if sides.has(other) and (sides[other] as String).contains(OPPOSITE_SIDE[side]):
+                joined.append(other)
+        links[tile] = joined
+    var seen := {}
+    var tiles: Array = sides.keys()
+    tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
+    # open routes first (they start at an end), then what is left is closed
+    for pass_number in 2:
+        for tile: Vector2i in tiles:
+            if seen.has(tile):
+                continue
+            var is_end: bool = (links[tile] as Array).size() <= 1
+            if (pass_number == 0) != is_end:
+                continue
+            var path: Array[Vector2i] = []
+            var current := tile
+            var previous := Vector2i(-99999, -99999)
+            while not seen.has(current):
+                seen[current] = true
+                path.append(current)
+                var next := Vector2i(-99999, -99999)
+                for other: Vector2i in links[current]:
+                    if other != previous and not seen.has(other):
+                        next = other
+                        break
+                if next.x == -99999:
+                    break
+                previous = current
+                current = next
+            result.append({"tiles": path, "cyclic": pass_number == 1 and path.size() > 2})
+    return result
+
+## The route that goes through this tile, {} if none.
+func get_route_at(tile: Vector2i) -> Dictionary:
+    for route in read_routes():
+        if (route["tiles"] as Array).has(tile):
+            return route
+    return {}
 #endregion
 
 
@@ -171,6 +237,10 @@ func clear_edge_visual(a: Vector2i, b: Vector2i) -> void:
     var spot := _wall_cell(a, b)
     if not spot.is_empty():
         (spot["layer"] as TileMapLayer).erase_cell(spot["cell"])
+
+func set_routes_visible(value: bool) -> void:
+    if routes != null:
+        routes.visible = value
 
 func set_spawns_visible(value: bool) -> void:
     spawns.visible = value
@@ -222,6 +292,28 @@ func _index_wall_tiles(layer: TileMapLayer) -> Dictionary:
         var data := source.get_tile_data(coords, 0)
         index[[str(data.get_custom_data("edge_type")), bool(data.get_custom_data("edge_open"))]] = coords
     return index
+
+# Each route has one unit: the first marker on it, in reading order, becomes its patrol
+func _put_units_on_routes(spawns_read: Array[Dictionary]) -> void:
+    if routes == null:
+        return
+    var all_routes := read_routes()
+    var taken := {} # route index -> true
+    var ordered := spawns_read.duplicate()
+    ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+        return a["tile"].y < b["tile"].y or (a["tile"].y == b["tile"].y and a["tile"].x < b["tile"].x))
+    for spawn: Dictionary in ordered:
+        for i in all_routes.size():
+            if not (all_routes[i]["tiles"] as Array).has(spawn["tile"]):
+                continue
+            if taken.has(i):
+                push_warning("CombatMap: a second unit at %s is on a route that already has one" % spawn["tile"])
+            else:
+                taken[i] = true
+                spawn["role"] = "patrol"
+                spawn["route"] = all_routes[i]["tiles"]
+                spawn["route_cyclic"] = all_routes[i]["cyclic"]
+            break
 
 func _custom(layer: TileMapLayer, cell: Vector2i, key: String) -> String:
     var data := layer.get_cell_tile_data(cell)

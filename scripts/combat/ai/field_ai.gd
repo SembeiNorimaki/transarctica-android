@@ -69,6 +69,9 @@ class Brain extends RefCounted:
     var last_seen := NO_TILE # where an enemy was last seen
     var route: Array[Vector2i] = [] # the stops of a patrol
     var route_built := false
+    var route_fixed := false # the route is the one of the map (Soldier.patrol_route): walked tile by tile
+    var cyclic := false # a fixed route that is a loop
+    var direction := 1 # along a fixed route: 1 forwards, -1 backwards
     var next_stop := 0
     var rest := 0 # rounds it still rests
     var scan := 0 # rounds since a guard turned
@@ -192,6 +195,8 @@ func _go_alert(soldier: Soldier, brain: Brain, enemy_tile: Vector2i) -> void:
     if brain.mode == Mode.ALERT:
         return
     brain.mode = Mode.ALERT
+    if brain.route_fixed:
+        brain.home = soldier.tile # a patrol is not tied to where it started: its leash is from here
     soldier.show_event("ALERT!")
     alerted.emit(soldier, enemy_tile)
 
@@ -274,6 +279,8 @@ func _guard(soldier: Soldier, brain: Brain) -> bool:
 
 # Walks the stops of its round one after the other, resting at each
 func _patrol(soldier: Soldier, brain: Brain) -> bool:
+    if brain.route_fixed:
+        return _walk_fixed_route(soldier, brain)
     if not brain.route_built:
         _build_route(soldier, brain)
     if brain.route.is_empty():
@@ -290,6 +297,39 @@ func _patrol(soldier: Soldier, brain: Brain) -> bool:
         return true
     # Blocked or no action points: the next time
     return false
+
+# Walks the route the map gives it along its tiles: round and round if it is a loop, otherwise to the
+# end and back. It rests a while at the ends of an open route. After a fight it first goes back to it.
+func _walk_fixed_route(soldier: Soldier, brain: Brain) -> bool:
+    if brain.rest > 0:
+        brain.rest -= 1
+        return false
+    var route := brain.route
+    var index := route.find(soldier.tile)
+    if index == -1:
+        return _step_towards(soldier, _nearest_route_tile(soldier, brain), 99)
+    if not brain.cyclic:
+        if (brain.direction == 1 and index == route.size() - 1) or (brain.direction == -1 and index == 0):
+            brain.direction = -brain.direction # the end: turn round
+            brain.rest = _rng.randi_range(patrol_rest_min, patrol_rest_max)
+            return false
+    var path: Array[Vector2i] = [soldier.tile]
+    var i := index
+    for step in route.size():
+        i += brain.direction
+        if brain.cyclic:
+            i = posmod(i, route.size())
+        elif i < 0 or i >= route.size():
+            break
+        path.append(route[i])
+    return battle_unit_manager.command_follow(soldier, path)
+
+func _nearest_route_tile(soldier: Soldier, brain: Brain) -> Vector2i:
+    var best: Vector2i = brain.route[0]
+    for tile in brain.route:
+        if Vector2(tile).distance_squared_to(Vector2(soldier.tile)) < Vector2(best).distance_squared_to(Vector2(soldier.tile)):
+            best = tile
+    return best
 
 # Some free places around the post, reachable and not too close to each other
 func _build_route(soldier: Soldier, brain: Brain) -> void:
@@ -353,6 +393,12 @@ func _on_soldier_spawned(soldier: Soldier) -> void:
     var brain := Brain.new()
     brain.home = soldier.tile
     brain.rest = _rng.randi_range(0, patrol_rest_max) # the patrols do not all set off together
+    if soldier.role == "patrol" and not soldier.patrol_route.is_empty():
+        brain.route.assign(soldier.patrol_route)
+        brain.route_built = true
+        brain.route_fixed = true
+        brain.cyclic = soldier.patrol_cyclic
+        brain.rest = 0
     _brains[soldier] = brain
 
 func _forget(soldier: Soldier) -> void:

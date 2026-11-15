@@ -99,13 +99,17 @@ func setup() -> void:
 #region deploying
 ## Puts a new soldier of this type on a free tile. Returns null (with a warning) if it can't.
 ## `role` ("guard" or "patrol") is for the AI; "" is what the type is like (UnitTypes.default_role).
-func spawn(team: String, unit_type: String, tile: Vector2i, facing := "S", role := "") -> Soldier:
+## A patrol may have a `route` (tiles, in order) that it walks, closed (`cyclic`) or back and forth.
+func spawn(team: String, unit_type: String, tile: Vector2i, facing := "S", role := "", route: Array = [], cyclic := false) -> Soldier:
     if not UnitTypes.exists(unit_type):
         push_warning("BattleUnitManager: unknown unit type '%s'" % unit_type)
         return null
     var data := UnitTypes.make_unit(unit_type)
     if role in UnitTypes.ROLES:
         data["role"] = role
+    if not route.is_empty():
+        data["route"] = route
+        data["route_cyclic"] = cyclic
     var unit_id := "%s%d" % [team.left(1), _next_number]
     _next_number += 1
     return spawn_unit(team, unit_id, data, tile, facing)
@@ -158,7 +162,8 @@ func remove_soldier(soldier: Soldier) -> void:
 func spawn_all(spawns: Array[Dictionary]) -> void:
     for spawn_data in spawns:
         var facing := "SE" if spawn_data["team"] == Soldier.TEAM_ENEMY else "NW"
-        spawn(spawn_data["team"], spawn_data["unit_type"], spawn_data["tile"], str(spawn_data.get("facing", facing)), str(spawn_data.get("role", "")))
+        spawn(spawn_data["team"], spawn_data["unit_type"], spawn_data["tile"], str(spawn_data.get("facing", facing)), str(spawn_data.get("role", "")),
+                spawn_data.get("route", []), bool(spawn_data.get("route_cyclic", false)))
 #endregion
 
 
@@ -356,7 +361,21 @@ func command_face(soldier: Soldier, tile: Vector2i) -> bool:
 func command_move(soldier: Soldier, tile: Vector2i) -> bool:
     if not _may_command(soldier):
         return false
-    var path := pathfinding_service.find_path(soldier.tile, tile, get_profile(soldier))
+    return _order_path(soldier, pathfinding_service.find_path(soldier.tile, tile, get_profile(soldier)))
+
+## Walks exactly this path (it starts at the soldier's tile, and the tiles are next to each other), as
+## far as the tiles are free and the action points allow. For routes: command_move would cut corners.
+func command_follow(soldier: Soldier, path: Array[Vector2i]) -> bool:
+    if not _may_command(soldier) or path.size() < 2 or path[0] != soldier.tile:
+        return false
+    var free: Array[Vector2i] = [path[0]]
+    for i in range(1, path.size()):
+        if not occupancy_service.is_footprint_free(path[i], soldier.footprint, TileOccupancyService.LAYER_ALL, soldier):
+            break
+        free.append(path[i])
+    return _order_path(soldier, free)
+
+func _order_path(soldier: Soldier, path: Array[Vector2i]) -> bool:
     if path.size() < 2:
         soldier.show_event("no path")
         return false

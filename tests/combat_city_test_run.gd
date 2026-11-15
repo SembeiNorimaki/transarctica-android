@@ -141,8 +141,10 @@ func _test_units() -> void:
             for soldier in scene.battle_unit_manager.soldiers:
                 if soldier.team == team and soldier.unit_type == unit_type:
                     count += 1
-            eq(count, 1, "%s has exactly one %s" % [team, unit_type])
-    eq(scene.battle_unit_manager.soldiers.size(), 18, "9 units a side")
+            # the enemy has one more buggy and speeder: the patrols of the two routes (see the Routes layer)
+            var expected := 2 if team == "enemy" and unit_type in ["buggy", "speeder"] else 1
+            eq(count, expected, "%s has %d %s" % [team, expected, unit_type])
+    eq(scene.battle_unit_manager.soldiers.size(), 20, "9 units for the player, 11 for the enemy")
     var big := 0
     for soldier in scene.battle_unit_manager.soldiers:
         var tiles := scene.occupancy_service.get_tiles_of(soldier)

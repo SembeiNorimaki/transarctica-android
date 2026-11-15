@@ -102,7 +102,7 @@ func _test_arrival() -> void:
 # The player's units start aboard; the enemy's are on the map
 func _test_units_aboard() -> void:
     eq(_field("player").size(), 0, "no player unit on the map")
-    eq(_field("enemy").size(), 9, "the enemy has its 9 units")
+    eq(_field("enemy").size(), 11, "the enemy has its 9 units and the 2 patrols of the routes")
     var expected := 0
     for wagon_data: Dictionary in GameState.get_player_train().get("wagons", []):
         expected += wagon_data.get("unit_ids", []).size()

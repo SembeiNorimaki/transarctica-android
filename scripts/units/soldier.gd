@@ -53,6 +53,10 @@ var weapon_type := ""
 var move_speed := 3.0 # tiles per second
 ## What the AI makes of it while it sees no enemy: "guard" or "patrol" (see UnitTypes.default_role)
 var role := "guard"
+## The tiles of the route it patrols, in order (from the Routes layer of the map). Empty: no fixed route.
+var patrol_route: Array[Vector2i] = []
+## The route is a closed loop; otherwise the unit turns round at its ends.
+var patrol_cyclic := false
 ## Multiplies move_speed (the build scene hurries its units).
 var speed_factor := 1.0
 var view_range := 8 # tiles
@@ -102,6 +106,8 @@ func setup(id: String, data: Dictionary) -> void:
     team = str(data.get("team", TEAM_PLAYER))
     footprint = UnitTypes.get_footprint(unit_type)
     role = str(data.get("role", UnitTypes.default_role(unit_type)))
+    patrol_route.assign(data.get("route", []))
+    patrol_cyclic = bool(data.get("route_cyclic", false))
     if UnitTypes.exists(unit_type):
         var stats := UnitTypes.combat_stats(unit_type)
         move_speed = float(stats["move_speed"])
