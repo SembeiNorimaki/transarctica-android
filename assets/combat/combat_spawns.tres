@@ -1,7 +1,7 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://bl7lrwne5ya0q"]
 
-[ext_resource type="Texture2D" path="res://assets/combat/combat_spawns.png" id="1_soldiers"]
-[ext_resource type="Texture2D" path="res://assets/combat/unitsFH_placeholder.png" id="2_units"]
+[ext_resource type="Texture2D" uid="uid://3by3sv6tsqt0" path="res://assets/combat/combat_spawns.png" id="1_soldiers"]
+[ext_resource type="Texture2D" uid="uid://bx13fntx36ox5" path="res://assets/combat/unitsFH_placeholder.png" id="2_units"]
 
 [sub_resource type="TileSetAtlasSource" id="Src_soldiers"]
 texture = ExtResource("1_soldiers")
@@ -12,7 +12,6 @@ texture_region_size = Vector2i(64, 32)
 3:0/0 = 0
 4:0/0 = 0
 5:0/0 = 0
-
 
 [sub_resource type="TileSetAtlasSource" id="Src_units"]
 texture = ExtResource("2_units")

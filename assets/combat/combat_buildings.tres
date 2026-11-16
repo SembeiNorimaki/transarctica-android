@@ -1,25 +1,21 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://dvnqkgp62fddh"]
 
-[ext_resource type="Texture2D" path="res://assets/combat/combat_buildings_1x1.png" id="1_tex"]
-[ext_resource type="Texture2D" path="res://assets/combat/combat_buildings_2x2.png" id="2_tex"]
-[ext_resource type="Texture2D" path="res://assets/combat/combat_buildings_3x3.png" id="3_tex"]
-[ext_resource type="Texture2D" path="res://assets/combat/combat_buildings_4x4.png" id="4_tex"]
+[ext_resource type="Texture2D" uid="uid://cl85ww2nrcjit" path="res://assets/combat/combat_buildings_1x1.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://cd52g4hrdqgnw" path="res://assets/combat/combat_buildings_2x2.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://ciplr06laqj7h" path="res://assets/combat/combat_buildings_3x3.png" id="3_tex"]
+[ext_resource type="Texture2D" uid="uid://bdkix06qm1c31" path="res://assets/combat/combat_buildings_4x4.png" id="4_tex"]
 
 [sub_resource type="TileSetAtlasSource" id="Src_1"]
 texture = ExtResource("1_tex")
 texture_region_size = Vector2i(64, 106)
 0:0/0 = 0
 0:0/0/texture_origin = Vector2i(0, 37)
-0:0/0/y_sort_origin = 0
 1:0/0 = 0
 1:0/0/texture_origin = Vector2i(0, 37)
-1:0/0/y_sort_origin = 0
 2:0/0 = 0
 2:0/0/texture_origin = Vector2i(0, 37)
-2:0/0/y_sort_origin = 0
 3:0/0 = 0
 3:0/0/texture_origin = Vector2i(0, 37)
-3:0/0/y_sort_origin = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_2"]
 texture = ExtResource("2_tex")

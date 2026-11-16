@@ -1,42 +1,45 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bv1hx0qyddnff"]
 
 [ext_resource type="PackedScene" uid="uid://c5shnpxi4qi1b" path="res://scenes/wagons/generic_wagon.tscn" id="1_generic"]
-[ext_resource type="Script" path="res://scripts/wagons/vehicle_carrier_wagon.gd" id="2_script"]
-[ext_resource type="Texture2D" path="res://assets/wagons/vehicle_carrier_tr.png" id="3_wagon"]
-[ext_resource type="Texture2D" path="res://assets/combat/unitsFH_placeholder.png" id="4_vehicles"]
+[ext_resource type="Script" uid="uid://vdo0ytqjlgqy" path="res://scripts/wagons/vehicle_carrier_wagon.gd" id="2_script"]
+[ext_resource type="Texture2D" uid="uid://bfnf4rs64frwu" path="res://assets/wagons/13387_zi4.png" id="3_qibp8"]
+[ext_resource type="Texture2D" uid="uid://bx13fntx36ox5" path="res://assets/combat/unitsFH_placeholder.png" id="4_vehicles"]
 
-[node name="VehicleCarrierWagon" instance=ExtResource("1_generic")]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_qibp8"]
+size = Vector2(288, 47)
+
+[node name="VehicleCarrierWagon" unique_id=621163322 instance=ExtResource("1_generic")]
 script = ExtResource("2_script")
 
-[node name="Sprite2D" parent="." index="0"]
-texture = ExtResource("3_wagon")
+[node name="Sprite2D" parent="." index="0" unique_id=1095718610]
+texture = ExtResource("3_qibp8")
 
-[node name="Vehicles" type="Node2D" parent="." index="2"]
+[node name="CollisionShape2D" parent="Area2D" parent_id_path=PackedInt32Array(389534507) index="0" unique_id=2099382771]
+position = Vector2(3, 0.5)
+shape = SubResource("RectangleShape2D_qibp8")
 
-[node name="Vehicle1" type="Sprite2D" parent="Vehicles" index="0"]
-position = Vector2(-48, -26)
-scale = Vector2(0.5, 0.5)
+[node name="Vehicles" type="Node2D" parent="." index="2" unique_id=1557985551]
+
+[node name="Vehicle1" type="Sprite2D" parent="Vehicles" index="0" unique_id=1843713658]
+position = Vector2(-103, -35)
 texture = ExtResource("4_vehicles")
 hframes = 2
 vframes = 7
 
-[node name="Vehicle2" type="Sprite2D" parent="Vehicles" index="1"]
-position = Vector2(-16, -26)
-scale = Vector2(0.5, 0.5)
+[node name="Vehicle2" type="Sprite2D" parent="Vehicles" index="1" unique_id=714520711]
+position = Vector2(-33, -35)
 texture = ExtResource("4_vehicles")
 hframes = 2
 vframes = 7
 
-[node name="Vehicle3" type="Sprite2D" parent="Vehicles" index="2"]
-position = Vector2(16, -26)
-scale = Vector2(0.5, 0.5)
+[node name="Vehicle3" type="Sprite2D" parent="Vehicles" index="2" unique_id=550567801]
+position = Vector2(35, -35)
 texture = ExtResource("4_vehicles")
 hframes = 2
 vframes = 7
 
-[node name="Vehicle4" type="Sprite2D" parent="Vehicles" index="3"]
-position = Vector2(48, -26)
-scale = Vector2(0.5, 0.5)
+[node name="Vehicle4" type="Sprite2D" parent="Vehicles" index="3" unique_id=1745416538]
+position = Vector2(105, -35)
 texture = ExtResource("4_vehicles")
 hframes = 2
 vframes = 7

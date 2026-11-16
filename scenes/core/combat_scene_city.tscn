@@ -1,138 +1,137 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://brui4f4bhwafs"]
 
-[ext_resource type="Script" path="res://scripts/core/combat_scene_city.gd" id="scene"]
-[ext_resource type="Script" uid="uid://b0wjmro28mq80" path="res://scripts/services/grid_service.gd" id="GridService"]
-[ext_resource type="Script" uid="uid://con8sxgh1hofp" path="res://scripts/grid/terrain_service.gd" id="TerrainService"]
-[ext_resource type="Script" uid="uid://d21eyt11j1p5u" path="res://scripts/grid/edge_occupancy_service.gd" id="EdgeOccupancyService"]
-[ext_resource type="Script" uid="uid://2fpo5b7djvmu" path="res://scripts/grid/tile_occupancy_service.gd" id="TileOccupancyService"]
-[ext_resource type="Script" uid="uid://bqkksgi08vhf6" path="res://scripts/grid/vision_service.gd" id="VisionService"]
-[ext_resource type="Script" uid="uid://cqxlrn2lj1pir" path="res://scripts/grid/pathfinding_service.gd" id="PathfindingService"]
-[ext_resource type="Script" uid="uid://crg30p3nruyu2" path="res://scripts/grid/cover_service.gd" id="CoverService"]
-[ext_resource type="Script" uid="uid://rr8kc6v15xta" path="res://scripts/grid/visibility_service.gd" id="VisibilityService"]
-[ext_resource type="Script" uid="uid://s6yx8u7k8xa8" path="res://scripts/combat/combat_map_manager.gd" id="CombatMapManager"]
 [ext_resource type="Script" uid="uid://jhc8oe407f01" path="res://scripts/combat/battle_unit_manager.gd" id="BattleUnitManager"]
-[ext_resource type="Script" uid="uid://dtcatxttwgnl" path="res://scripts/combat/combat_input_manager.gd" id="CombatInputManager"]
-[ext_resource type="Script" uid="uid://cuvyu7tv21dsq" path="res://scripts/combat/fog_manager.gd" id="FogManager"]
-[ext_resource type="Script" uid="uid://b5dwo7ch7xvbo" path="res://scripts/combat/turn_manager.gd" id="TurnManager"]
-[ext_resource type="Script" uid="uid://de376lmpw5tq3" path="res://scripts/combat/path_overlay.gd" id="PathOverlay"]
+[ext_resource type="Script" uid="uid://ch302fcleqlbr" path="res://scripts/combat/bullet_manager.gd" id="BulletManager"]
 [ext_resource type="PackedScene" uid="uid://dodp70bgkluj6" path="res://scenes/services/camera_service.tscn" id="camera"]
+[ext_resource type="Script" uid="uid://dtcatxttwgnl" path="res://scripts/combat/combat_input_manager.gd" id="CombatInputManager"]
+[ext_resource type="Script" uid="uid://s6yx8u7k8xa8" path="res://scripts/combat/combat_map_manager.gd" id="CombatMapManager"]
+[ext_resource type="Script" uid="uid://crg30p3nruyu2" path="res://scripts/grid/cover_service.gd" id="CoverService"]
+[ext_resource type="Script" uid="uid://d21eyt11j1p5u" path="res://scripts/grid/edge_occupancy_service.gd" id="EdgeOccupancyService"]
+[ext_resource type="Script" uid="uid://duaf2d5cl7pck" path="res://scripts/combat/ai/field_ai.gd" id="FieldAI"]
+[ext_resource type="Script" uid="uid://cuvyu7tv21dsq" path="res://scripts/combat/fog_manager.gd" id="FogManager"]
+[ext_resource type="Script" uid="uid://b0wjmro28mq80" path="res://scripts/services/grid_service.gd" id="GridService"]
 [ext_resource type="PackedScene" path="res://scenes/maps/combat_map_city.tscn" id="map"]
-[ext_resource type="Script" uid="uid://bts2pu8sooii4" path="res://scripts/combat/vision_overlay.gd" id="VisionOverlay"]
 [ext_resource type="Script" uid="uid://dh4sur3qrpgfl" path="res://scripts/combat/nav_graph_overlay.gd" id="NavGraphOverlay"]
-[ext_resource type="Script" path="res://scripts/combat/bullet_manager.gd" id="BulletManager"]
-[ext_resource type="PackedScene" path="res://scenes/UI/unit_hud.tscn" id="unit_hud"]
-[ext_resource type="PackedScene" uid="uid://c38h40g7yk2nx" path="res://scenes/managers/horizontal_train_manager.tscn" id="train_manager"]
+[ext_resource type="Script" uid="uid://cqxlrn2lj1pir" path="res://scripts/grid/pathfinding_service.gd" id="PathfindingService"]
+[ext_resource type="Script" uid="uid://de376lmpw5tq3" path="res://scripts/combat/path_overlay.gd" id="PathOverlay"]
+[ext_resource type="Script" uid="uid://ddxgu4xksu7ep" path="res://scripts/core/combat_scene_city.gd" id="scene"]
+[ext_resource type="Script" uid="uid://con8sxgh1hofp" path="res://scripts/grid/terrain_service.gd" id="TerrainService"]
+[ext_resource type="Script" uid="uid://2fpo5b7djvmu" path="res://scripts/grid/tile_occupancy_service.gd" id="TileOccupancyService"]
 [ext_resource type="PackedScene" uid="uid://btugnyquyw30q" path="res://scenes/trains/horizontal_train.tscn" id="train"]
-[ext_resource type="Script" path="res://scripts/combat/wagon_deploy_manager.gd" id="WagonDeployManager"]
-[ext_resource type="Script" path="res://scripts/combat/ai/field_ai.gd" id="FieldAI"]
+[ext_resource type="PackedScene" uid="uid://c38h40g7yk2nx" path="res://scenes/managers/horizontal_train_manager.tscn" id="train_manager"]
+[ext_resource type="Script" uid="uid://b5dwo7ch7xvbo" path="res://scripts/combat/turn_manager.gd" id="TurnManager"]
+[ext_resource type="PackedScene" path="res://scenes/UI/unit_hud.tscn" id="unit_hud"]
+[ext_resource type="Script" uid="uid://rr8kc6v15xta" path="res://scripts/grid/visibility_service.gd" id="VisibilityService"]
+[ext_resource type="Script" uid="uid://bts2pu8sooii4" path="res://scripts/combat/vision_overlay.gd" id="VisionOverlay"]
+[ext_resource type="Script" uid="uid://bqkksgi08vhf6" path="res://scripts/grid/vision_service.gd" id="VisionService"]
+[ext_resource type="Script" uid="uid://dco6shwof8wsf" path="res://scripts/combat/wagon_deploy_manager.gd" id="WagonDeployManager"]
 
-[node name="CombatSceneCity" type="Node2D"]
+[node name="CombatSceneCity" type="Node2D" unique_id=92563366]
 script = ExtResource("scene")
 
-[node name="Services" type="Node" parent="."]
+[node name="Services" type="Node" parent="." unique_id=1431537737]
 
-[node name="GridService" type="Node" parent="Services"]
+[node name="GridService" type="Node" parent="Services" unique_id=1554008763]
 script = ExtResource("GridService")
 
-[node name="TerrainService" type="Node" parent="Services"]
+[node name="TerrainService" type="Node" parent="Services" unique_id=1195630144]
 script = ExtResource("TerrainService")
 
-[node name="EdgeOccupancyService" type="Node" parent="Services"]
+[node name="EdgeOccupancyService" type="Node" parent="Services" unique_id=667685469]
 script = ExtResource("EdgeOccupancyService")
 
-[node name="TileOccupancyService" type="Node" parent="Services"]
+[node name="TileOccupancyService" type="Node" parent="Services" unique_id=1602647489]
 script = ExtResource("TileOccupancyService")
 
-[node name="VisionService" type="Node" parent="Services"]
+[node name="VisionService" type="Node" parent="Services" unique_id=1755894507]
 script = ExtResource("VisionService")
 
-[node name="PathfindingService" type="Node" parent="Services"]
+[node name="PathfindingService" type="Node" parent="Services" unique_id=1472578202]
 script = ExtResource("PathfindingService")
 
-[node name="CoverService" type="Node" parent="Services"]
+[node name="CoverService" type="Node" parent="Services" unique_id=2044883478]
 script = ExtResource("CoverService")
 
-[node name="VisibilityService" type="Node" parent="Services"]
+[node name="VisibilityService" type="Node" parent="Services" unique_id=904545917]
 script = ExtResource("VisibilityService")
 
-[node name="CameraService" parent="Services" instance=ExtResource("camera")]
-initial_zoom = 1.0
+[node name="CameraService" parent="Services" unique_id=1141054666 instance=ExtResource("camera")]
 keyboard_scroll = true
 edge_scroll = true
 
-[node name="Managers" type="Node" parent="."]
+[node name="Managers" type="Node" parent="." unique_id=62474902]
 
-[node name="CombatMapManager" type="Node" parent="Managers"]
+[node name="CombatMapManager" type="Node" parent="Managers" unique_id=370866777]
 script = ExtResource("CombatMapManager")
 
-[node name="BattleUnitManager" type="Node" parent="Managers"]
+[node name="BattleUnitManager" type="Node" parent="Managers" unique_id=1590388191]
 script = ExtResource("BattleUnitManager")
 
-[node name="CombatInputManager" type="Node" parent="Managers"]
+[node name="CombatInputManager" type="Node" parent="Managers" unique_id=1321567884]
 script = ExtResource("CombatInputManager")
 
-[node name="FogManager" type="Node" parent="Managers"]
+[node name="FogManager" type="Node" parent="Managers" unique_id=1542784703]
 script = ExtResource("FogManager")
 enabled = false
 
-[node name="BulletManager" type="Node" parent="Managers"]
+[node name="BulletManager" type="Node" parent="Managers" unique_id=1548407014]
 script = ExtResource("BulletManager")
 
-[node name="TurnManager" type="Node" parent="Managers"]
+[node name="TurnManager" type="Node" parent="Managers" unique_id=739229905]
 script = ExtResource("TurnManager")
 
-[node name="HorizontalTrainManager" parent="Managers" instance=ExtResource("train_manager")]
+[node name="HorizontalTrainManager" parent="Managers" unique_id=1213509878 instance=ExtResource("train_manager")]
 
-[node name="WagonDeployManager" type="Node" parent="Managers"]
+[node name="WagonDeployManager" type="Node" parent="Managers" unique_id=80701636]
 script = ExtResource("WagonDeployManager")
 deploy_area = Rect2i(0, 0, 81, 81)
 deploy_band = Vector2i(100, 119)
 exit_tile = Vector2i(55, 55)
 
-[node name="CombatMap" parent="." instance=ExtResource("map")]
+[node name="CombatMap" parent="." unique_id=405474136 instance=ExtResource("map")]
 
-[node name="BuildingContainer" type="Node2D" parent="CombatMap"]
+[node name="BuildingContainer" type="Node2D" parent="CombatMap" unique_id=892278731]
 y_sort_enabled = true
 
-[node name="UnitContainer" type="Node2D" parent="CombatMap"]
+[node name="UnitContainer" type="Node2D" parent="CombatMap" unique_id=1983799860]
 y_sort_enabled = true
 
-[node name="BulletContainer" type="Node2D" parent="CombatMap"]
+[node name="BulletContainer" type="Node2D" parent="CombatMap" unique_id=1296155739]
 z_index = 4
 
-[node name="Overlays" type="Node2D" parent="CombatMap"]
+[node name="Overlays" type="Node2D" parent="CombatMap" unique_id=314933828]
 z_index = 10
 
-[node name="PathOverlay" type="Node2D" parent="CombatMap/Overlays"]
+[node name="PathOverlay" type="Node2D" parent="CombatMap/Overlays" unique_id=1865053367]
 script = ExtResource("PathOverlay")
 
-[node name="VisionOverlay" type="Node2D" parent="CombatMap/Overlays"]
-z_index = 25
+[node name="VisionOverlay" type="Node2D" parent="CombatMap/Overlays" unique_id=1750562804]
 visible = false
+z_index = 25
 script = ExtResource("VisionOverlay")
 
-[node name="NavGraphOverlay" type="Node2D" parent="CombatMap/Overlays"]
-z_index = 25
+[node name="NavGraphOverlay" type="Node2D" parent="CombatMap/Overlays" unique_id=513193371]
 visible = false
+z_index = 25
 script = ExtResource("NavGraphOverlay")
 
-[node name="AI" type="Node" parent="."]
+[node name="AI" type="Node" parent="." unique_id=101528350]
 
-[node name="FieldAI" type="Node" parent="AI"]
+[node name="FieldAI" type="Node" parent="AI" unique_id=1278476483]
 script = ExtResource("FieldAI")
 
-[node name="TrainContainer" type="Node2D" parent="."]
+[node name="TrainContainer" type="Node2D" parent="." unique_id=23886156]
 
-[node name="PlayerTrain" parent="TrainContainer" instance=ExtResource("train")]
+[node name="PlayerTrain" parent="TrainContainer" unique_id=1284806764 instance=ExtResource("train")]
 position = Vector2(-950, 2044)
 scale = Vector2(2, 2)
 
-[node name="TrainBrakeStart" type="Marker2D" parent="."]
+[node name="TrainBrakeStart" type="Marker2D" parent="." unique_id=492898888]
 position = Vector2(724, 2044)
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=845620734]
 
-[node name="InfoLabel" type="Label" parent="HUD"]
+[node name="InfoLabel" type="Label" parent="HUD" unique_id=1968503824]
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 900.0
@@ -141,41 +140,41 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 18
 
-[node name="Buttons" type="HBoxContainer" parent="HUD"]
+[node name="Buttons" type="HBoxContainer" parent="HUD" unique_id=1330337629]
 offset_left = 16.0
 offset_top = 48.0
 offset_right = 900.0
 offset_bottom = 92.0
 
-[node name="DoorsButton" type="Button" parent="HUD/Buttons"]
+[node name="DoorsButton" type="Button" parent="HUD/Buttons" unique_id=880505193]
 layout_mode = 2
 text = "Doors"
 
-[node name="FogButton" type="Button" parent="HUD/Buttons"]
+[node name="FogButton" type="Button" parent="HUD/Buttons" unique_id=94348148]
 layout_mode = 2
 text = "Fog"
 
-[node name="PathsButton" type="Button" parent="HUD/Buttons"]
+[node name="PathsButton" type="Button" parent="HUD/Buttons" unique_id=727207114]
 layout_mode = 2
 text = "All paths"
 
-[node name="SightButton" type="Button" parent="HUD/Buttons"]
+[node name="SightButton" type="Button" parent="HUD/Buttons" unique_id=1489528807]
 layout_mode = 2
 text = "Sight lines"
 
-[node name="GraphButton" type="Button" parent="HUD/Buttons"]
+[node name="GraphButton" type="Button" parent="HUD/Buttons" unique_id=727204712]
 layout_mode = 2
 text = "Nav graph"
 
-[node name="EndTurnButton" type="Button" parent="HUD/Buttons"]
+[node name="EndTurnButton" type="Button" parent="HUD/Buttons" unique_id=494785937]
 layout_mode = 2
 text = "End turn"
 
-[node name="PauseButton" type="Button" parent="HUD/Buttons"]
+[node name="PauseButton" type="Button" parent="HUD/Buttons" unique_id=1580681445]
 layout_mode = 2
 text = "Pause"
 
-[node name="ModeLabel" type="Label" parent="HUD"]
+[node name="ModeLabel" type="Label" parent="HUD" unique_id=863084849]
 offset_left = 16.0
 offset_top = 100.0
 offset_right = 900.0
@@ -185,4 +184,4 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 18
 
-[node name="UnitHud" parent="HUD" instance=ExtResource("unit_hud")]
+[node name="UnitHud" parent="HUD" unique_id=1496764850 instance=ExtResource("unit_hud")]

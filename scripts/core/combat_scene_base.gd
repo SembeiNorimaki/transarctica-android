@@ -65,221 +65,221 @@ var flow_manager: CombatFlowManager
 ## QuestManager asks (by the name of this method) when the scene runs on its own, for debugging:
 ## a battle has no use for quests, so none are loaded and no quest dialog pauses the game.
 func skips_quests_when_debugging() -> bool:
-    return true
+	return true
 
 
 func _ready() -> void:
-    _hide_quest_ui_when_standalone.call_deferred() # deferred: current_scene is set after _ready
-    flow_manager = _find_flow_manager()
-    _inject()
-    combat_map_manager.setup()
-    battle_unit_manager.setup()
-    if bullet_manager != null and bullet_container != null:
-        bullet_manager.setup()
-    fog_manager.setup() # before the soldiers are deployed: it watches them arrive
-    flow_manager.setup()
+	_hide_quest_ui_when_standalone.call_deferred() # deferred: current_scene is set after _ready
+	flow_manager = _find_flow_manager()
+	_inject()
+	combat_map_manager.setup()
+	battle_unit_manager.setup()
+	if bullet_manager != null and bullet_container != null:
+		bullet_manager.setup()
+	fog_manager.setup() # before the soldiers are deployed: it watches them arrive
+	flow_manager.setup()
 
-    _setup_scene()
-    camera_service.set_world_bounds(_get_camera_bounds())
-    camera_service.center_at_tile(grid_service.map_rect.get_center())
+	_setup_scene()
+	camera_service.set_world_bounds(_get_camera_bounds())
+	camera_service.center_at_tile(grid_service.map_rect.get_center())
 
-    combat_input_manager.tile_tapped.connect(_on_tile_tapped)
-    combat_input_manager.tile_right_tapped.connect(_on_tile_right_tapped)
-    combat_input_manager.tile_hovered.connect(_on_tile_hovered)
-    battle_unit_manager.selection_changed.connect(_on_selection_changed)
-    battle_unit_manager.shot_resolved.connect(_on_shot_resolved)
-    flow_manager.status_changed.connect(_update_mode_ui)
-    doors_button.pressed.connect(combat_map_manager.toggle_all_doors)
-    fog_button.pressed.connect(func() -> void: fog_manager.enabled = not fog_manager.enabled)
-    paths_button.pressed.connect(func() -> void: path_overlay.show_all_paths = not path_overlay.show_all_paths)
-    sight_button.pressed.connect(func() -> void: vision_overlay.visible = not vision_overlay.visible)
-    graph_button.pressed.connect(func() -> void: nav_graph_overlay.visible = not nav_graph_overlay.visible)
-    if unit_hud != null:
-        battle_unit_manager.selection_changed.connect(unit_hud.set_unit)
-        battle_unit_manager.mode_changed.connect(unit_hud.set_mode)
-        unit_hud.mode_selected.connect(battle_unit_manager.set_action_mode)
-    end_turn_button.pressed.connect(_on_end_turn_pressed)
-    pause_button.pressed.connect(_on_pause_pressed)
+	combat_input_manager.tile_tapped.connect(_on_tile_tapped)
+	combat_input_manager.tile_right_tapped.connect(_on_tile_right_tapped)
+	combat_input_manager.tile_hovered.connect(_on_tile_hovered)
+	battle_unit_manager.selection_changed.connect(_on_selection_changed)
+	battle_unit_manager.shot_resolved.connect(_on_shot_resolved)
+	flow_manager.status_changed.connect(_update_mode_ui)
+	doors_button.pressed.connect(combat_map_manager.toggle_all_doors)
+	fog_button.pressed.connect(func() -> void: fog_manager.enabled = not fog_manager.enabled)
+	paths_button.pressed.connect(func() -> void: path_overlay.show_all_paths = not path_overlay.show_all_paths)
+	sight_button.pressed.connect(func() -> void: vision_overlay.visible = not vision_overlay.visible)
+	graph_button.pressed.connect(func() -> void: nav_graph_overlay.visible = not nav_graph_overlay.visible)
+	if unit_hud != null:
+		battle_unit_manager.selection_changed.connect(unit_hud.set_unit)
+		battle_unit_manager.mode_changed.connect(unit_hud.set_mode)
+		unit_hud.mode_selected.connect(battle_unit_manager.set_action_mode)
+	end_turn_button.pressed.connect(_on_end_turn_pressed)
+	pause_button.pressed.connect(_on_pause_pressed)
 
-    _spawn_units()
-    flow_manager.start()
-    _update_mode_ui()
-    _start_scene()
-    info_label.text = "Left click one of your units (blue) to select it: left click a tile to preview the way, again to walk, right click to turn"
+	_spawn_units()
+	flow_manager.start()
+	_update_mode_ui()
+	_start_scene()
+	info_label.text = "Left click one of your units (blue) to select it: left click a tile to preview the way, again to walk, right click to turn"
 
 
 #region hooks for the scenes that extend this one
 # A tap or right click on a tile. The units have them by default.
 func _on_tile_tapped(tile: Vector2i) -> void:
-    battle_unit_manager.handle_tile_tap(tile)
+	battle_unit_manager.handle_tile_tap(tile)
 
 func _on_tile_right_tapped(tile: Vector2i) -> void:
-    battle_unit_manager.handle_tile_right_tap(tile)
+	battle_unit_manager.handle_tile_right_tap(tile)
 
 # Extra dependencies and nodes, after the managers are set up and before the soldiers are deployed
 func _setup_scene() -> void:
-    pass
+	pass
 
 # Where the camera may go (world coordinates)
 func _get_camera_bounds() -> Rect2:
-    return grid_service.get_world_bounds().grow(200.0)
+	return grid_service.get_world_bounds().grow(200.0)
 
 # Puts the first soldiers on the battlefield. By default those of the map's Spawns layer.
 func _spawn_units() -> void:
-    battle_unit_manager.spawn_all(combat_map_manager.get_spawns())
+	battle_unit_manager.spawn_all(combat_map_manager.get_spawns())
 
 # The battle has started (the flow manager is running)
 func _start_scene() -> void:
-    pass
+	pass
 #endregion
 
 
 # There must be exactly one TurnManager or RtsManager: they are two ways to run the same battle
 func _find_flow_manager() -> CombatFlowManager:
-    var found: Array[CombatFlowManager] = []
-    for child in managers.get_children():
-        if child is CombatFlowManager:
-            found.append(child)
-    if found.is_empty():
-        push_error("CombatSceneBase: add a TurnManager (turn based) or an RtsManager (real time) to Managers")
-        var fallback := CombatFlowManager.new() # everything allowed, so the scene still works
-        fallback.name = "FlowManager"
-        managers.add_child(fallback)
-        return fallback
-    for extra in found.slice(1):
-        push_error("CombatSceneBase: only one of TurnManager / RtsManager can be in Managers. '%s' is ignored and removed" % extra.name)
-        managers.remove_child(extra)
-        extra.queue_free()
-    return found[0]
+	var found: Array[CombatFlowManager] = []
+	for child in managers.get_children():
+		if child is CombatFlowManager:
+			found.append(child)
+	if found.is_empty():
+		push_error("CombatSceneBase: add a TurnManager (turn based) or an RtsManager (real time) to Managers")
+		var fallback := CombatFlowManager.new() # everything allowed, so the scene still works
+		fallback.name = "FlowManager"
+		managers.add_child(fallback)
+		return fallback
+	for extra in found.slice(1):
+		push_error("CombatSceneBase: only one of TurnManager / RtsManager can be in Managers. '%s' is ignored and removed" % extra.name)
+		managers.remove_child(extra)
+		extra.queue_free()
+	return found[0]
 
 
 # Dependency injection
 func _inject() -> void:
-    vision_service.grid_service = grid_service
-    vision_service.terrain_service = terrain_service
-    vision_service.edge_service = edge_service
-    vision_service.occupancy_service = occupancy_service
+	vision_service.grid_service = grid_service
+	vision_service.terrain_service = terrain_service
+	vision_service.edge_service = edge_service
+	vision_service.occupancy_service = occupancy_service
 
-    pathfinding_service.grid_service = grid_service
-    pathfinding_service.terrain_service = terrain_service
-    pathfinding_service.edge_service = edge_service
-    pathfinding_service.occupancy_service = occupancy_service
+	pathfinding_service.grid_service = grid_service
+	pathfinding_service.terrain_service = terrain_service
+	pathfinding_service.edge_service = edge_service
+	pathfinding_service.occupancy_service = occupancy_service
 
-    cover_service.vision_service = vision_service
-    cover_service.edge_service = edge_service
-    cover_service.terrain_service = terrain_service
+	cover_service.vision_service = vision_service
+	cover_service.edge_service = edge_service
+	cover_service.terrain_service = terrain_service
 
-    camera_service.grid_service = grid_service
+	camera_service.grid_service = grid_service
 
-    combat_map_manager.combat_map = combat_map
-    combat_map_manager.grid_service = grid_service
-    combat_map_manager.terrain_service = terrain_service
-    combat_map_manager.edge_service = edge_service
-    combat_map_manager.occupancy_service = occupancy_service
-    combat_map_manager.building_container = building_container
+	combat_map_manager.combat_map = combat_map
+	combat_map_manager.grid_service = grid_service
+	combat_map_manager.terrain_service = terrain_service
+	combat_map_manager.edge_service = edge_service
+	combat_map_manager.occupancy_service = occupancy_service
+	combat_map_manager.building_container = building_container
 
-    battle_unit_manager.unit_container = unit_container
-    battle_unit_manager.grid_service = grid_service
-    battle_unit_manager.occupancy_service = occupancy_service
-    battle_unit_manager.pathfinding_service = pathfinding_service
-    battle_unit_manager.vision_service = vision_service
-    battle_unit_manager.cover_service = cover_service
-    battle_unit_manager.flow_manager = flow_manager
-    if bullet_manager != null and bullet_container != null:
-        bullet_manager.bullet_container = bullet_container
-        battle_unit_manager.bullet_manager = bullet_manager
+	battle_unit_manager.unit_container = unit_container
+	battle_unit_manager.grid_service = grid_service
+	battle_unit_manager.occupancy_service = occupancy_service
+	battle_unit_manager.pathfinding_service = pathfinding_service
+	battle_unit_manager.vision_service = vision_service
+	battle_unit_manager.cover_service = cover_service
+	battle_unit_manager.flow_manager = flow_manager
+	if bullet_manager != null and bullet_container != null:
+		bullet_manager.bullet_container = bullet_container
+		battle_unit_manager.bullet_manager = bullet_manager
 
-    flow_manager.battle_unit_manager = battle_unit_manager
-    flow_manager.pathfinding_service = pathfinding_service
-    flow_manager.visibility_service = visibility_service
+	flow_manager.battle_unit_manager = battle_unit_manager
+	flow_manager.pathfinding_service = pathfinding_service
+	flow_manager.visibility_service = visibility_service
 
-    fog_manager.fog_layer = combat_map.fog
-    fog_manager.grid_service = grid_service
-    fog_manager.vision_service = vision_service
-    fog_manager.visibility_service = visibility_service
-    fog_manager.battle_unit_manager = battle_unit_manager
-    fog_manager.edge_service = edge_service
-    fog_manager.terrain_service = terrain_service
-    fog_manager.occupancy_service = occupancy_service
+	fog_manager.fog_layer = combat_map.fog
+	fog_manager.grid_service = grid_service
+	fog_manager.vision_service = vision_service
+	fog_manager.visibility_service = visibility_service
+	fog_manager.battle_unit_manager = battle_unit_manager
+	fog_manager.edge_service = edge_service
+	fog_manager.terrain_service = terrain_service
+	fog_manager.occupancy_service = occupancy_service
 
-    path_overlay.grid_service = grid_service
-    path_overlay.battle_unit_manager = battle_unit_manager
+	path_overlay.grid_service = grid_service
+	path_overlay.battle_unit_manager = battle_unit_manager
 
-    vision_overlay.grid_service = grid_service
-    vision_overlay.vision_service = vision_service
-    vision_overlay.battle_unit_manager = battle_unit_manager
-    vision_overlay.edge_service = edge_service
-    vision_overlay.awareness_range = fog_manager.awareness_range
-    vision_overlay.setup()
+	vision_overlay.grid_service = grid_service
+	vision_overlay.vision_service = vision_service
+	vision_overlay.battle_unit_manager = battle_unit_manager
+	vision_overlay.edge_service = edge_service
+	vision_overlay.awareness_range = fog_manager.awareness_range
+	vision_overlay.setup()
 
-    nav_graph_overlay.grid_service = grid_service
-    nav_graph_overlay.pathfinding_service = pathfinding_service
-    nav_graph_overlay.terrain_service = terrain_service
-    nav_graph_overlay.occupancy_service = occupancy_service
-    nav_graph_overlay.edge_service = edge_service
-    nav_graph_overlay.setup()
+	nav_graph_overlay.grid_service = grid_service
+	nav_graph_overlay.pathfinding_service = pathfinding_service
+	nav_graph_overlay.terrain_service = terrain_service
+	nav_graph_overlay.occupancy_service = occupancy_service
+	nav_graph_overlay.edge_service = edge_service
+	nav_graph_overlay.setup()
 
-    combat_input_manager.grid_service = grid_service
-    combat_input_manager.camera_service = camera_service
-    combat_input_manager.world = combat_map
+	combat_input_manager.grid_service = grid_service
+	combat_input_manager.camera_service = camera_service
+	combat_input_manager.world = combat_map
 
 
 # The quest list of the campaign is not wanted when the scene runs by itself
 func _hide_quest_ui_when_standalone() -> void:
-    if get_tree().current_scene != self:
-        return
-    var quest_ui := get_node_or_null("/root/QuestUI")
-    if quest_ui != null:
-        quest_ui.hide()
+	if get_tree().current_scene != self:
+		return
+	var quest_ui := get_node_or_null("/root/QuestUI")
+	if quest_ui != null:
+		quest_ui.hide()
 
 
 #region HUD
 # What the HUD shows depends on the mode: the End turn button only exists in turn based combat,
 # the Pause button in real time.
 func _update_mode_ui() -> void:
-    mode_label.text = flow_manager.get_status_text()
-    end_turn_button.visible = flow_manager is TurnManager
-    pause_button.visible = flow_manager is RtsManager
-    if flow_manager is TurnManager:
-        end_turn_button.disabled = (flow_manager as TurnManager).is_computer_turn()
-    if flow_manager is RtsManager:
-        pause_button.text = "Resume" if (flow_manager as RtsManager).paused else "Pause"
+	mode_label.text = flow_manager.get_status_text()
+	end_turn_button.visible = flow_manager is TurnManager
+	pause_button.visible = flow_manager is RtsManager
+	if flow_manager is TurnManager:
+		end_turn_button.disabled = (flow_manager as TurnManager).is_computer_turn()
+	if flow_manager is RtsManager:
+		pause_button.text = "Resume" if (flow_manager as RtsManager).paused else "Pause"
 
 func _on_end_turn_pressed() -> void:
-    if flow_manager is TurnManager:
-        (flow_manager as TurnManager).end_turn()
+	if flow_manager is TurnManager:
+		(flow_manager as TurnManager).end_turn()
 
 func _on_pause_pressed() -> void:
-    if flow_manager is RtsManager:
-        (flow_manager as RtsManager).toggle_pause()
+	if flow_manager is RtsManager:
+		(flow_manager as RtsManager).toggle_pause()
 
 func _on_tile_hovered(tile: Vector2i) -> void:
-    if not grid_service.is_inside_map(tile):
-        return
-    vision_overlay.set_probe(tile)
-    var text := "tile %s  %s (cost %s)" % [tile, terrain_service.get_type(tile), terrain_service.get_cost(tile)]
-    var state: String = ["unexplored", "explored", "visible"][visibility_service.get_state(fog_manager.local_team, tile)]
-    text += "  %s" % state
-    for object in occupancy_service.get_entities_at(tile):
-        if object is MapObject:
-            text += "  | %s" % object.type
-        elif object is GenericBuilding:
-            text += "  | %s (%d/%d hp)" % [object.building_type, object.hp, object.max_hp]
-        elif object is Soldier and (object as Soldier).visible:
-            text += "  | %s" % (object as Soldier).unit_id
-    if vision_overlay.visible and vision_overlay.get_probe_text() != "":
-        text += "  | " + vision_overlay.get_probe_text()
-    info_label.text = text
+	if not grid_service.is_inside_map(tile):
+		return
+	vision_overlay.set_probe(tile)
+	var text := "tile %s  %s (cost %s)" % [tile, terrain_service.get_type(tile), terrain_service.get_cost(tile)]
+	var state: String = ["unexplored", "explored", "visible"][visibility_service.get_state(fog_manager.local_team, tile)]
+	text += "  %s" % state
+	for object in occupancy_service.get_entities_at(tile):
+		if object is MapObject:
+			text += "  | %s" % object.type
+		elif object is GenericBuilding:
+			text += "  | %s (%d/%d hp)" % [object.building_type, object.hp, object.max_hp]
+		elif object is Soldier and (object as Soldier).visible:
+			text += "  | %s" % (object as Soldier).unit_id
+	if vision_overlay.visible and vision_overlay.get_probe_text() != "":
+		text += "  | " + vision_overlay.get_probe_text()
+	info_label.text = text
 
 func _on_selection_changed(soldier: Soldier) -> void:
-    info_label.text = "Nothing selected" if soldier == null \
-            else "Selected %s (%s). Tap a tile to preview the way, tap it again to walk, an enemy (or Attack, then any tile) to shoot" % [soldier.unit_id, soldier.unit_type]
+	info_label.text = "Nothing selected" if soldier == null \
+			else "Selected %s (%s). Tap a tile to preview the way, tap it again to walk, an enemy (or Attack, then any tile) to shoot" % [soldier.unit_id, soldier.unit_type]
 
 func _on_shot_resolved(attacker: Soldier, target: Soldier, damage: int, cover: int) -> void:
-    var cover_text: String = ["no cover", "half cover", "full cover"][cover]
-    var at := target.unit_id if target != null else "that tile"
-    if damage == 0:
-        info_label.text = "%s missed %s" % [attacker.unit_id, at]
-    else:
-        info_label.text = "%s hit %s for %d (%s)" % [attacker.unit_id, at, damage, cover_text]
+	var cover_text: String = ["no cover", "half cover", "full cover"][cover]
+	var at := target.unit_id if target != null else "that tile"
+	if damage == 0:
+		info_label.text = "%s missed %s" % [attacker.unit_id, at]
+	else:
+		info_label.text = "%s hit %s for %d (%s)" % [attacker.unit_id, at, damage, cover_text]
 #endregion
