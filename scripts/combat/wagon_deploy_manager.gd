@@ -18,6 +18,9 @@ const NO_TILE := Vector2i(-99999, -99999)
 
 ## The tiles where units may get off: the ground next to the train (tile coordinates).
 @export var deploy_area := Rect2i(0, 0, 0, 0)
+## Only the tiles of the deploy area whose x + y is in this range (x: smallest, y: largest) count: a band
+## along the south-east edge of an isometric map that looks like a rectangle. (0, 0): no such rule.
+@export var deploy_band := Vector2i.ZERO
 ## A unit is only put where it can walk to this tile (somewhere out in the open, like an avenue), so
 ## nobody gets off into a closed pocket. NO_TILE: no such rule.
 @export var exit_tile := NO_TILE
@@ -93,6 +96,8 @@ func get_deploy_tile(wagon: GenericWagon, unit_type: String) -> Vector2i:
     for y in range(deploy_area.position.y, deploy_area.end.y):
         for x in range(deploy_area.position.x, deploy_area.end.x):
             var tile := Vector2i(x, y)
+            if deploy_band != Vector2i.ZERO and (x + y < deploy_band.x or x + y > deploy_band.y):
+                continue
             if _fits(tile, footprint):
                 candidates.append({"tile": tile, "distance": grid_service.tile_to_world(Vector2(tile)).distance_to(from)})
     candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["distance"] < b["distance"])

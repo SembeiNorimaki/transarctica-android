@@ -17,6 +17,9 @@ var tile_size := Vector2i.ZERO
 var tile_half_size := Vector2.ZERO
 var tile_center_offset := Vector2.ZERO # world position of tile (0,0)'s center
 var map_rect := Rect2i()
+## The tiles that exist, when the map is not the whole of map_rect (an isometric map that looks like a
+## rectangle on the screen is a diamond of tiles inside it). tile -> true. Empty: all of map_rect.
+var valid_tiles := {}
 
 
 func set_tile_size(size: Vector2i) -> void:
@@ -31,8 +34,11 @@ func set_projection(value: TileProjection) -> void:
 func set_map_rect(rect: Rect2i) -> void:
     map_rect = rect
 
+func set_valid_tiles(tiles: Dictionary) -> void:
+    valid_tiles = tiles
+
 func is_inside_map(tile: Vector2i) -> bool:
-    return map_rect.has_point(tile)
+    return map_rect.has_point(tile) and (valid_tiles.is_empty() or valid_tiles.has(tile))
 
 
 #region conversions
@@ -74,6 +80,12 @@ func orientation_to_screen_direction(ori: String) -> String:
 
 ## World-space bounds of the whole map (tile edges, not centers). Feed to CameraService.set_world_bounds().
 func get_world_bounds() -> Rect2:
+    if not valid_tiles.is_empty():
+        var found := Rect2(tile_to_world(Vector2(valid_tiles.keys()[0])), Vector2.ZERO)
+        for tile: Vector2i in valid_tiles:
+            var center := tile_to_world(Vector2(tile))
+            found = found.expand(center - tile_half_size).expand(center + tile_half_size)
+        return found
     var a := Vector2(map_rect.position) - Vector2(0.5, 0.5)
     var b := Vector2(map_rect.end) - Vector2(0.5, 0.5)
     var corners: Array[Vector2] = [

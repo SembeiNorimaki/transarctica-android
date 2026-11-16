@@ -420,6 +420,9 @@ func _test_road_drag() -> void:
     eq(scene.camera_service.cam.global_position, camera_before, "the camera did not move")
     # a tap is still one tile
     var single := from + Vector2i(0, 2)
+    while (manager.why_not_road(single) != "" or manager.combat_map.has_road(single + Vector2i(1, 0)) or manager.combat_map.has_road(single + Vector2i(-1, 0)) \
+            or manager.combat_map.has_road(single + Vector2i(0, 1)) or manager.combat_map.has_road(single + Vector2i(0, -1))) and single.y < from.y + 30:
+        single += Vector2i(0, 1) # a free place with no road around it
     scene._on_tile_tapped(single)
     ok(manager.combat_map.has_road(single) and not manager.combat_map.has_road(single + Vector2i(1, 0)), "a tap builds one tile")
     # without the tool a drag pans again

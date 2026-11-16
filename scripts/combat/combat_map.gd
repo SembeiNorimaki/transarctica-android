@@ -74,6 +74,18 @@ func get_origin_offset() -> Vector2:
 func get_map_rect() -> Rect2i:
     return ground.get_used_rect()
 
+## The tiles that have ground (tile -> true), if they are not all the tiles of get_map_rect(): the map
+## can have any shape. Empty when the ground fills its rect.
+func get_ground_tiles() -> Dictionary:
+    var cells := ground.get_used_cells()
+    var rect := get_map_rect()
+    if cells.size() == rect.size.x * rect.size.y:
+        return {}
+    var result := {}
+    for cell in cells:
+        result[cell] = true
+    return result
+
 
 #region reading
 ## [{"tile": Vector2i, "type": String}] for each painted object.

@@ -204,18 +204,18 @@ func _test_city_map() -> void:
     ok(city.routes != null, "the city has a Routes layer")
     ok(not city.routes.visible, "hidden during the battle")
     var routes := city.read_routes()
-    eq(routes.size(), 2, "the city has two routes")
+    eq(routes.size(), 4, "the city has four routes")
     var loops := 0
     for route in routes:
         loops += 1 if route["cyclic"] else 0
-    eq(loops, 1, "one is a loop")
+    eq(loops, 2, "two are loops (round the walls and inside the base), two are open")
     var patrols := 0
     for soldier in scene.battle_unit_manager.soldiers:
         if not soldier.patrol_route.is_empty():
             patrols += 1
             ok(soldier.role == "patrol", "%s on a route is a patrol" % soldier.unit_id)
             ok(soldier.patrol_route.has(soldier.tile), "and stands on its route")
-    eq(patrols, 2, "one unit on each route")
+    eq(patrols, 4, "one unit on each route")
     var posts := 0
     for soldier in scene.battle_unit_manager.soldiers:
         if soldier.unit_type == "humvee" and soldier.team == "enemy":

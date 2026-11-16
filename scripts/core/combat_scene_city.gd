@@ -1,8 +1,10 @@
 extends CombatSceneBase
 class_name CombatSceneCity
-# A turn based battle in an isometric city, on a map bigger than the screen (see combat_map_city.tscn:
-# ground, roads, 3x3 and 4x4 buildings, walls and fences, crates). Soldiers (1x1) and tanks (2x2)
-# start where the map's Spawns layer says.
+# A turn based battle on an isometric map bigger than the screen (see combat_map_city.tscn): the
+# enemy's military base is in the middle, inside a wall with six gates that are guarded and patrolled
+# (ground, roads, military buildings of 1x1 to 4x4 tiles, walls, crates). The map is a rectangle on the
+# screen, twice as wide as high: a diamond of tiles (GridService.valid_tiles). Soldiers (1x1) and
+# vehicles (1x1 and 2x2) start where the map's Spawns layer says.
 #
 # Controls, besides those of CombatSceneBase: scroll the camera with the arrow keys or WASD, by
 # moving the mouse to the edge of the window, or by dragging; wheel to zoom.
@@ -10,7 +12,7 @@ class_name CombatSceneCity
 # yellow: beyond), and click the same tile again to walk it / attack an enemy. Right click: turn the
 # selected unit towards the tile.
 #
-# The player's train stands next to the map (below its south corner): it comes in from the left at
+# The player's train stands below the bottom edge of the map: it comes in from the left at
 # train_initial_speed and brakes when it reaches the TrainBrakeStart marker, as in the trade scene. The
 # player's units start aboard it. Tap a wagon of the train to see it in the bottom panel (its hp and
 # what it carries); a barracks or a vehicle carrier shows its units, and tapping one gets it off the

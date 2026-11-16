@@ -72,6 +72,9 @@ func _setup_grid() -> void:
     grid_service.tile_center_offset = combat_map.get_origin_offset()
     grid_service.set_map_rect(combat_map.get_map_rect())
     occupancy_service.bounds = combat_map.get_map_rect()
+    var shape := combat_map.get_ground_tiles()
+    grid_service.set_valid_tiles(shape)
+    occupancy_service.valid_tiles = shape
 
 func _load_edges() -> void:
     for data in combat_map.read_edges():

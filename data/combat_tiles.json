@@ -82,6 +82,70 @@
           0
         ],
         "building_type": "bunker"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          2,
+          0
+        ],
+        "building_type": "watchtower"
+      },
+      {
+        "atlas_id": 0,
+        "coords": [
+          3,
+          0
+        ],
+        "building_type": "radar"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          2,
+          0
+        ],
+        "building_type": "ammo_depot"
+      },
+      {
+        "atlas_id": 1,
+        "coords": [
+          3,
+          0
+        ],
+        "building_type": "checkpoint"
+      },
+      {
+        "atlas_id": 2,
+        "coords": [
+          2,
+          0
+        ],
+        "building_type": "barracks"
+      },
+      {
+        "atlas_id": 2,
+        "coords": [
+          3,
+          0
+        ],
+        "building_type": "motor_pool"
+      },
+      {
+        "atlas_id": 3,
+        "coords": [
+          2,
+          0
+        ],
+        "building_type": "command_center"
+      },
+      {
+        "atlas_id": 3,
+        "coords": [
+          3,
+          0
+        ],
+        "building_type": "hangar"
       }
     ],
     "res://assets/combat/combat_spawns.tres": [

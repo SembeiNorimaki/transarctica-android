@@ -14,6 +14,15 @@ const TYPES := {
     "warehouse": {"size": Vector2i(3, 3), "max_hp": 250},
     "factory": {"size": Vector2i(4, 4), "max_hp": 400},
     "bunker": {"size": Vector2i(4, 4), "max_hp": 700},
+    # military
+    "watchtower": {"size": Vector2i(1, 1), "max_hp": 80},
+    "radar": {"size": Vector2i(1, 1), "max_hp": 70},
+    "ammo_depot": {"size": Vector2i(2, 2), "max_hp": 220},
+    "checkpoint": {"size": Vector2i(2, 2), "max_hp": 160},
+    "barracks": {"size": Vector2i(3, 3), "max_hp": 350},
+    "motor_pool": {"size": Vector2i(3, 3), "max_hp": 300},
+    "command_center": {"size": Vector2i(4, 4), "max_hp": 600},
+    "hangar": {"size": Vector2i(4, 4), "max_hp": 450},
 }
 
 

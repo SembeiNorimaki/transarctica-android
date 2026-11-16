@@ -85,8 +85,9 @@ script = ExtResource("TurnManager")
 
 [node name="WagonDeployManager" type="Node" parent="Managers"]
 script = ExtResource("WagonDeployManager")
-deploy_area = Rect2i(46, 46, 10, 10)
-exit_tile = Vector2i(40, 46)
+deploy_area = Rect2i(0, 0, 81, 81)
+deploy_band = Vector2i(100, 119)
+exit_tile = Vector2i(55, 55)
 
 [node name="CombatMap" parent="." instance=ExtResource("map")]
 
@@ -123,11 +124,11 @@ script = ExtResource("FieldAI")
 [node name="TrainContainer" type="Node2D" parent="."]
 
 [node name="PlayerTrain" parent="TrainContainer" instance=ExtResource("train")]
-position = Vector2(-950, 1900)
+position = Vector2(-950, 2044)
 scale = Vector2(2, 2)
 
 [node name="TrainBrakeStart" type="Marker2D" parent="."]
-position = Vector2(724, 1900)
+position = Vector2(724, 2044)
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

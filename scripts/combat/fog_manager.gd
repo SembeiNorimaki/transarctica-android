@@ -44,7 +44,8 @@ func setup() -> void:
     var rect := grid_service.map_rect
     for y in range(rect.position.y, rect.end.y):
         for x in range(rect.position.x, rect.end.x):
-            fog_layer.set_cell(Vector2i(x, y), FOG_SOURCE, UNEXPLORED_ATLAS)
+            if grid_service.is_inside_map(Vector2i(x, y)):
+                fog_layer.set_cell(Vector2i(x, y), FOG_SOURCE, UNEXPLORED_ATLAS)
     visibility_service.visibility_changed.connect(_on_visibility_changed)
     battle_unit_manager.soldier_spawned.connect(_watch)
     battle_unit_manager.soldier_died.connect(_on_soldier_died)

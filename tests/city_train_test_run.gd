@@ -102,7 +102,7 @@ func _test_arrival() -> void:
 # The player's units start aboard; the enemy's are on the map
 func _test_units_aboard() -> void:
     eq(_field("player").size(), 0, "no player unit on the map")
-    eq(_field("enemy").size(), 11, "the enemy has its 9 units and the 2 patrols of the routes")
+    eq(_field("enemy").size(), 22, "the enemy has the 22 units of the base")
     var expected := 0
     for wagon_data: Dictionary in GameState.get_player_train().get("wagons", []):
         expected += wagon_data.get("unit_ids", []).size()
@@ -169,6 +169,7 @@ func _test_deploying() -> void:
         eq(tiles.size(), UnitTypes.get_footprint(first_type).size(), "it covers the tiles of its type")
         for tile in tiles:
             ok(area.has_point(tile) and scene.terrain_service.is_walkable(tile), "tile %s is in the deploy area" % tile)
+            ok(tile.x + tile.y >= manager.deploy_band.x and scene.grid_service.is_inside_map(tile), "tile %s is in the band along the bottom edge of the map" % tile)
         ok(soldier.visible, "it is visible")
     eq(manager.get_aboard(carrier), ids.slice(1), "it is no longer aboard")
     eq(hud.slots.get_child_count(), ids.size() - 1, "its button is gone")

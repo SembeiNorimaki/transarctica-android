@@ -23,6 +23,8 @@ signal tiles_changed(tiles: Array[Vector2i])
 
 ## Tiles outside it count as not free. An empty rect (the default) means unbounded.
 var bounds := Rect2i()
+## The tiles that exist inside the bounds, when the map is not all of them (see GridService.valid_tiles).
+var valid_tiles := {}
 
 class Record:
     var anchor: Vector2i
@@ -165,6 +167,8 @@ func is_occupied(tile: Vector2i, mask := LAYER_ALL, ignore: Object = null) -> bo
 ## Inside the bounds and not occupied (by the mask layers, apart from `ignore`).
 func is_free(tile: Vector2i, mask := LAYER_ALL, ignore: Object = null) -> bool:
     if bounds.has_area() and not bounds.has_point(tile):
+        return false
+    if not valid_tiles.is_empty() and not valid_tiles.has(tile):
         return false
     return not is_occupied(tile, mask, ignore)
 
